@@ -1,0 +1,73 @@
+mobile dev stack maybe react native is best to iterate on ideas first milestone
+daily check ins with weekly end rewards to increase incentive of engagement
+github style green boxes for incentive to keep going
+how to preserve ip before sharing ideas
+figma for designs
+attach images to badges for verification
+prob some sort of XP factor
+like slopes, strava
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+slide deck
+------------------------------------------------------------------------------------------------------------------------
+
+bet - bet on yourself
+
+
+
+use cases (new years resolutions, )
+
+
+existing products
+- habitica
+- todoist
+- 
+
+monetization
+
+- secondary (core product first)
+
+strategy (quick iterations, first version not perfect, won't scale, that's alright)
+
+
+
+
+addressing valid questions/concerns
+
+
+
+
+
+
+badges, verification (don't cheat yourself), 
+
+
+
+
+
+Examples of communities: 
+family
+MCAT study buddies
+hiking in PNW
+NYC marathon
+
+
+8/5 (20 days)
+- web/mobile web
+2 learn material ui
+2 learn react
+3 learn spring boot
+5 UI
+5 backend in Java Spring
+2 launch on aws
+
+
+- demo to groups: 
+[dom,nacho,daniel,della,huey,yue,dae,mihir,ruby]
+[megan, mom, dad]
+[duke board games group]
+
+
+
