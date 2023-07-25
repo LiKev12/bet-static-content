@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import { THEME } from 'src/javascripts/Theme';
@@ -33,13 +33,12 @@ const StyledTab = styled(Tab)<any>(({ theme }: any) => ({
     },
 }));
 
-const Header: React.FC = () => {
-    const [value, setValue] = useState(0);
+export interface IHeaderProps {
+    activeTabIdx: number;
+    setActiveTabIdx: any;
+}
 
-    const handleChange = (e: React.SyntheticEvent, value: number): void => {
-        setValue(value);
-    };
-
+const Header: React.FC<IHeaderProps> = (props: IHeaderProps) => {
     return (
         <React.Fragment>
             <ElevationScroll>
@@ -48,36 +47,30 @@ const Header: React.FC = () => {
                         <Button
                             component={Link}
                             to="/"
-                            style={{
+                            sx={{
                                 padding: 0,
                                 // eslint-disable-next-line
                                 color: `${THEME.palette.primary.main}`,
                                 fontSize: '4rem',
                                 marginLeft: '20px',
-                                // @ts-expect-error: no
-                                '&:hover': { backgroundColor: 'transparent' },
+                                '&.MuiButton-root:hover': { bgcolor: 'transparent' },
                             }}
                             disableRipple
-                            onClick={() => {
-                                setValue(0);
-                            }}
+                            onClick={() => props.setActiveTabIdx(0)}
                         >
                             Bet
                         </Button>
                         <Tabs
-                            value={value}
-                            onChange={handleChange}
+                            value={props.activeTabIdx}
+                            onChange={(e, activeTabIdx) => {
+                                props.setActiveTabIdx(activeTabIdx);
+                            }}
                             style={{ marginLeft: 'auto' }}
                             indicatorColor="primary"
                         >
                             <StyledTab component={Link} to="/" label="Home" />
-                            <StyledTab component={Link} to="/about" label="About Us" />
-                            <StyledTab
-                                component={Link}
-                                style={{ marginRight: '20px' }}
-                                to="/contact"
-                                label="Contact Us"
-                            />
+                            <StyledTab component={Link} to="/about" label="About" />
+                            <StyledTab component={Link} style={{ marginRight: '20px' }} to="/contact" label="Contact" />
                         </Tabs>
                     </Toolbar>
                 </AppBar>
