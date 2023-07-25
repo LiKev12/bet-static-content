@@ -71,3 +71,11 @@ NYC marathon
 
 
 
+
+
+https://www.youtube.com/watch?v=DVrGXjjkpig (AWS EC2 on ECS vs Fargate | Whats the Difference and When To Use What?)
+
+use zod library (https://www.reddit.com/r/javascript/comments/110fkf3/askjs_which_utility_libraries_are_in_your_opinion/)
+
+https://www.colorhexa.com/02b9ff
+

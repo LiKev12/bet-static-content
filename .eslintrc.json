@@ -9,7 +9,8 @@
         "react-app/jest",
         "plugin:import/typescript",
         "standard-with-typescript",
-        "plugin:react/recommended"
+        "plugin:react/recommended",
+        "plugin:prettier/recommended"
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
@@ -22,8 +23,32 @@
     },
     "plugins": [
         "react",
-        "@typescript-eslint"
+        "@typescript-eslint",
+        "prettier"
     ],
     "rules": {
+        "react/jsx-uses-react": ["off"],
+        "react/react-in-jsx-scope": ["off"],
+        "react/jsx-props-no-spreading": ["warn"],
+        "no-shadow": "off",
+        "semi": "off",
+        "@typescript-eslint/semi": ["error", "always"],
+        "@typescript-eslint/triple-slash-reference": "off",
+        "quotes": [
+            "error",
+            "single",
+            {
+              "avoidEscape": true,
+              "allowTemplateLiterals": true
+            }
+        ],
+        "@typescript-eslint/quotes": [
+            "error",
+            "single",
+            {
+              "avoidEscape": true,
+              "allowTemplateLiterals": true
+            }
+        ]
     }
 }
