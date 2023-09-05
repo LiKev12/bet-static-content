@@ -1,22 +1,31 @@
 import { Button, Grid } from '@mui/material';
 import { styled } from '@mui/system';
 import { Link } from 'react-router-dom';
+import { THEME } from 'src/javascripts/Theme';
 
 const StyledFooterButton = styled(Button)<any>(({ theme }: any) => ({
     fontFamily: 'Raleway',
     textTransform: 'none',
-    color: theme.palette.grey.A400,
+    color: theme.palette.grey.A500,
     '&.MuiButton-root:hover': { bgcolor: 'transparent' },
 }));
 
-export interface IFooterProps {
-    setActiveTabIdx: any;
-}
-
-const Footer: React.FC<IFooterProps> = (props: IFooterProps) => {
+const Footer: React.FC = () => {
     return (
         <footer>
-            <Grid container spacing={4} justifyContent="center">
+            <Grid
+                container
+                spacing={4}
+                justifyContent="center"
+                sx={{
+                    background: THEME.palette.gradient,
+                    paddingBottom: '24px',
+                    position: 'absolute',
+                    left: '0',
+                    bottom: '0',
+                    right: '0',
+                }}
+            >
                 <Grid item>
                     <StyledFooterButton
                         variant="text"
@@ -26,7 +35,6 @@ const Footer: React.FC<IFooterProps> = (props: IFooterProps) => {
                         sx={{
                             '&.MuiButton-root:hover': { bgcolor: 'transparent' },
                         }}
-                        onClick={() => props.setActiveTabIdx(1)}
                     >
                         About
                     </StyledFooterButton>
@@ -40,7 +48,6 @@ const Footer: React.FC<IFooterProps> = (props: IFooterProps) => {
                         sx={{
                             '&.MuiButton-root:hover': { bgcolor: 'transparent' },
                         }}
-                        onClick={() => props.setActiveTabIdx(2)}
                     >
                         Contact
                     </StyledFooterButton>

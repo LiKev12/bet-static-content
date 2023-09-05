@@ -2,7 +2,7 @@ import React from 'react';
 
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import { THEME } from 'src/javascripts/Theme';
-import { AppBar, Button, Tab, Tabs, Toolbar } from '@mui/material';
+import { AppBar, Tab, Tabs, Toolbar } from '@mui/material';
 import { styled } from '@mui/system';
 import { Link } from 'react-router-dom';
 
@@ -26,7 +26,7 @@ function ElevationScroll(props: any): any {
 const StyledTab = styled(Tab)<any>(({ theme }: any) => ({
     fontFamily: 'Raleway',
     textTransform: 'none',
-    color: theme.palette.grey.A400,
+    color: theme.palette.grey.A500,
     ...theme.typography.tab,
     '&.Mui-selected': {
         color: theme.palette.grey.A700,
@@ -42,24 +42,22 @@ const Header: React.FC<IHeaderProps> = (props: IHeaderProps) => {
     return (
         <React.Fragment>
             <ElevationScroll>
-                <AppBar color="inherit">
+                <AppBar color="inherit" sx={{ background: THEME.palette.gradient }}>
                     <Toolbar disableGutters>
-                        <Button
+                        {/* <Button
                             component={Link}
                             to="/"
                             sx={{
-                                padding: 0,
-                                // eslint-disable-next-line
-                                color: `${THEME.palette.primary.main}`,
-                                fontSize: '4rem',
-                                marginLeft: '20px',
+                                padding: '12px 12px 12px 12px',
                                 '&.MuiButton-root:hover': { bgcolor: 'transparent' },
                             }}
                             disableRipple
                             onClick={() => props.setActiveTabIdx(0)}
                         >
-                            Bet
-                        </Button>
+                            <Box sx={{ width: '12px' }}></Box>
+                            <img src={Logo} alt="bet logo" width="64px" height="64px" />
+                            <Box sx={{ width: '12px' }}></Box>
+                        </Button> */}
                         <Tabs
                             value={props.activeTabIdx}
                             onChange={(e, activeTabIdx) => {
@@ -69,13 +67,24 @@ const Header: React.FC<IHeaderProps> = (props: IHeaderProps) => {
                             indicatorColor="primary"
                         >
                             <StyledTab component={Link} to="/" label="Home" />
-                            <StyledTab component={Link} to="/about" label="About" />
-                            <StyledTab component={Link} style={{ marginRight: '20px' }} to="/contact" label="Contact" />
+                            <StyledTab component={Link} to="/me" label="Me" />
+                            <StyledTab
+                                component={Link}
+                                to="/discover"
+                                label="Discover"
+                                style={{ marginRight: '20px' }}
+                            />
                         </Tabs>
                     </Toolbar>
                 </AppBar>
             </ElevationScroll>
-            <div style={{ ...THEME.mixins.toolbar, marginBottom: '4rem' }} />
+            <div
+                style={{
+                    ...THEME.mixins.toolbar,
+                    paddingBottom: '4rem',
+                    background: THEME.palette.gradient,
+                }}
+            />
         </React.Fragment>
     );
 };

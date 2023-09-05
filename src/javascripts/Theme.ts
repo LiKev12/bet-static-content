@@ -9,7 +9,7 @@ import '@mui/material/styles/createPalette';
 //     }
 // }
 
-export const THEME: any = createTheme({
+const THEME: any = createTheme({
     palette: {
         primary: {
             main: '#02b9ff',
@@ -17,5 +17,10 @@ export const THEME: any = createTheme({
         secondary: {
             main: '#02ffc7',
         },
+        // @ts-expect-error expected
+        gradient: 'linear-gradient(90deg, rgba(229,255,249,1) 50%, rgba(192,237,255,1) 100%)',
     },
 });
+
+THEME.palette.grey.A500 = '#979797';
+export { THEME };

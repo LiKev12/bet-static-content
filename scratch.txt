@@ -79,3 +79,6 @@ use zod library (https://www.reddit.com/r/javascript/comments/110fkf3/askjs_whic
 
 https://www.colorhexa.com/02b9ff
 
+
+https://cssgradient.io/
+
