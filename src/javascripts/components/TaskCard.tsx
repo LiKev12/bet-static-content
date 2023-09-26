@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
-import { Button, Card, CardContent, Grid, IconButton, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Divider, Grid, IconButton, Typography, Tooltip } from '@mui/material';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { THEME } from 'src/javascripts/Theme';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
+import PushPinIcon from '@mui/icons-material/PushPin';
+import StarOutlineIcon from '@mui/icons-material/StarOutline';
+import StarIcon from '@mui/icons-material/Star';
+import UserBubbleListButton from 'src/javascripts/components/UserBubbleListButton';
+import { MOCK_USERS } from 'src/javascripts/mocks/MockUsers';
 
 export interface ITaskCardProps {
     id: string;
@@ -12,6 +19,8 @@ export interface ITaskCardProps {
     numPoints: number;
     imagePath: string;
     isComplete: boolean;
+    isStarred: boolean;
+    isPinned: boolean;
     dateCreated: string;
     dateUpdated: string;
     dateTargeted: string;
@@ -25,21 +34,30 @@ const getDateDescription = (
     dateTargeted: string,
     dateCompleted: string,
 ): string => {
-    let dateDescription = `created ${dateCreated}`;
+    let dateDescription = `Created ${dateCreated}`;
     if (dateUpdated !== null) {
-        dateDescription += ` · updated ${dateUpdated}`;
+        dateDescription += ` · Updated ${dateUpdated}`;
     }
     if (dateTargeted !== null) {
-        dateDescription += ` · target ${dateTargeted}`;
+        dateDescription += ` · Target ${dateTargeted}`;
     }
     if (dateCompleted !== null) {
-        dateDescription += ` · completed ${dateCompleted}`;
+        dateDescription += ` · Completed ${dateCompleted}`;
     }
     return dateDescription;
 };
 
 const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
     const [isEnabledShowMore, toggleShowMore] = useState(false);
+    const [isTaskStarred, toggleTaskStarred] = useState(props.isStarred);
+    const [isTaskPinned, toggleTaskPinned] = useState(props.isPinned);
+
+    const handleToggleTaskStarred = (): void => {
+        toggleTaskStarred((isTaskStarredPrev) => !isTaskStarredPrev);
+    };
+    const handleToggleTaskPinned = (): void => {
+        toggleTaskPinned((isTaskPinnedPrev) => !isTaskPinnedPrev);
+    };
     const {
         id,
         name,
@@ -56,7 +74,15 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
     const dateDescription = getDateDescription(dateCreated, dateUpdated, dateTargeted, dateCompleted);
 
     return (
-        <Card sx={{ fontFamily: 'Raleway', color: THEME.palette.grey.A700, marginBottom: '16px', width: '650px' }}>
+        <Card
+            sx={{
+                fontFamily: 'Raleway',
+                color: THEME.palette.grey.A700,
+                marginBottom: '16px',
+                width: '650px',
+                position: 'relative',
+            }}
+        >
             <CardContent>
                 <Grid container direction="row">
                     <Grid item sx={{ paddingRight: '8px', paddingTop: '8px' }}>
@@ -76,6 +102,51 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                             </Grid>
                             {isEnabledShowMore ? (
                                 <React.Fragment>
+                                    <Grid item>
+                                        <Typography variant="caption">Completed by:</Typography>
+                                    </Grid>
+                                    <Grid item sx={{ marginBottom: '8px' }}>
+                                        <UserBubbleListButton userBubbles={MOCK_USERS} />
+                                    </Grid>
+                                    <Grid item>
+                                        <Box sx={{ display: 'flex', marginBottom: '4px' }}>
+                                            <IconButton onClick={handleToggleTaskStarred}>
+                                                {isTaskStarred ? <StarIcon /> : <StarOutlineIcon />}
+                                            </IconButton>
+                                            <Tooltip
+                                                title={'Starring a task can assist with filtering and organizing'}
+                                                placement="right"
+                                            >
+                                                <InfoOutlinedIcon
+                                                    sx={{
+                                                        paddingLeft: '4px',
+                                                        paddingRight: '8px',
+                                                        paddingTop: '10px',
+                                                        paddingBottom: '10px',
+                                                    }}
+                                                    fontSize="small"
+                                                />
+                                            </Tooltip>
+                                            <Divider orientation="vertical" flexItem />
+                                            <IconButton onClick={handleToggleTaskPinned}>
+                                                {isTaskPinned ? <PushPinIcon /> : <PushPinOutlinedIcon />}
+                                            </IconButton>
+                                            <Tooltip
+                                                title={'Pinning a task displays the task on your public profile'}
+                                                placement="right"
+                                            >
+                                                <InfoOutlinedIcon
+                                                    sx={{
+                                                        paddingLeft: '4px',
+                                                        paddingRight: '8px',
+                                                        paddingTop: '10px',
+                                                        paddingBottom: '10px',
+                                                    }}
+                                                    fontSize="small"
+                                                />
+                                            </Tooltip>
+                                        </Box>
+                                    </Grid>
                                     <Grid item>
                                         <Typography variant="caption">{dateDescription}</Typography>
                                     </Grid>

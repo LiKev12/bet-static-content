@@ -11,13 +11,12 @@ const MyStats: React.FC<IMyStatsProps> = (props: IMyStatsProps) => {
     return (
         <Box
             sx={{
-                border: '1px solid red',
                 backgroundColor: THEME.palette.background.default,
                 borderRadius: '8px',
                 padding: '24px',
             }}
         >
-            <Grid container sx={{ border: '1px solid purple' }} alignItems="center" justifyContent="center">
+            <Grid container alignItems="center" justifyContent="center">
                 <Grid item>
                     <PointsGrid id="temp_id" />
                     <PointsDisplay id="temp_id" />

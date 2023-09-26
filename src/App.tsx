@@ -10,6 +10,7 @@ import PageMe from 'src/javascripts/components/PageMe';
 import PagePod from 'src/javascripts/components/PagePod';
 import PageStamp from 'src/javascripts/components/PageStamp';
 import PageDiscover from 'src/javascripts/components/PageDiscover';
+import PageProfile from 'src/javascripts/components/PageProfile';
 
 function App(): any {
     const [activeTabIdx, setActiveTabIdx] = useState(0);
@@ -25,7 +26,7 @@ function App(): any {
                     <Route path="/contact" element={<div>Contact</div>} />
                     {/** need auth */}
                     <Route path="/me" element={<PageMe />} />
-                    <Route path="/profiles" element={<div>Profile</div>} />
+                    <Route path="/profiles/:id" element={<PageProfile id="temp_id" />} />
                     <Route path="/discover" element={<PageDiscover id="temp_id" />} />
                     <Route path="/pods/:id" element={<PagePod id="temp_id" />} />
                     <Route path="/stamps/:id" element={<PageStamp id="temp_id" />} />

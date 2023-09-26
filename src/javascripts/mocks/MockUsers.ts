@@ -1,0 +1,43 @@
+const MOCK_USERS: any = [
+    {
+        id: 'user_id_1',
+        name: 'Michael Chen',
+        userName: '@chenpachi',
+        bio: "Hi! I'm new to this platform, but I enjoy baking, cooking, lifting. Follow me on insta at @chenpachi.",
+        imagePath: null,
+        numFollowers: 52,
+        numFollowing: 34,
+        mockColor: 'blue',
+    },
+    {
+        id: 'user_id_2',
+        name: 'Daniel Song',
+        userName: '@songdj',
+        bio: 'Interested in PokemonGo and tennis',
+        imagePath: null,
+        numFollowers: 25,
+        numFollowing: 24,
+        mockColor: 'red',
+    },
+    {
+        id: 'user_id_3',
+        name: 'Amit Sathe',
+        userName: '@mittens',
+        bio: 'big fan of national parks and hiking',
+        imagePath: null,
+        numFollowers: 49,
+        numFollowing: 38,
+        mockColor: 'orange',
+    },
+    {
+        id: 'user_id_4',
+        name: 'Megan Li',
+        userName: '@megan_li',
+        bio: 'running 🏃, cooking, lifting - training for my first marathon this fall!',
+        imagePath: null,
+        numFollowers: 103,
+        numFollowing: 124,
+        mockColor: 'purple',
+    },
+];
+export { MOCK_USERS };

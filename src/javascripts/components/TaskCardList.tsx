@@ -23,6 +23,8 @@ const TaskCardList: React.FC<ITaskCardListProps> = (props: ITaskCardListProps) =
                             numPoints={task.numPoints}
                             imagePath={task.imagePath}
                             isComplete={task.isComplete}
+                            isStarred={task.isStarred}
+                            isPinned={task.isPinned}
                             dateCreated={task.dateCreated}
                             dateUpdated={task.dateUpdated}
                             dateTargeted={task.dateTargeted}

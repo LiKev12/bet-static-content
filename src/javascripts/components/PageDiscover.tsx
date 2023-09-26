@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Box, Grid } from '@mui/material';
+import { Box, Grid, Divider } from '@mui/material';
 import SearchEntities from 'src/javascripts/components/SearchEntities';
 import PodCardList from 'src/javascripts/components/PodCardList';
 // import TaskCardList from 'src/javascripts/components/TaskCardList';
 import StampCardList from 'src/javascripts/components/StampCardList';
 import { MOCK_PODS } from 'src/javascripts/mocks/MockPods';
 import { MOCK_STAMPS } from 'src/javascripts/mocks/MockStamps';
+import CreatePodModal from 'src/javascripts/components/CreatePodModal';
 
 import { THEME } from 'src/javascripts/Theme';
 
@@ -26,7 +27,6 @@ const PageDiscover: React.FC<IPageDiscoverProps> = (props: IPageDiscoverProps) =
     return (
         <Box
             sx={{
-                border: '1px solid red',
                 height: '1000px',
                 background: THEME.palette.gradient,
             }}
@@ -45,7 +45,25 @@ const PageDiscover: React.FC<IPageDiscoverProps> = (props: IPageDiscoverProps) =
                         chosenEntity={searchEntity}
                     />
                 </Grid>
-                <Grid item>
+                <Grid
+                    item
+                    sx={{
+                        justifyContent: 'center',
+                        display: 'flex',
+                        paddingLeft: '48px',
+                        paddingRight: '48px',
+                        paddingTop: '24px',
+                        paddingBottom: '24px',
+                    }}
+                >
+                    <Box sx={{ width: '800px' }}>
+                        <CreatePodModal id="temp_id" />
+                    </Box>
+                </Grid>
+                <Grid item sx={{ paddingLeft: '48px', paddingRight: '48px' }}>
+                    <Divider />
+                </Grid>
+                <Grid item sx={{ paddingLeft: '48px', paddingRight: '48px', paddingTop: '24px' }}>
                     <Box>
                         {searchEntity === 'pods' ? <PodCardList podCards={MOCK_PODS} /> : null}
                         {searchEntity === 'stamps' ? <StampCardList stampCards={MOCK_STAMPS} /> : null}

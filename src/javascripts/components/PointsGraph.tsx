@@ -183,7 +183,7 @@ const PointsGraph: React.FC<IPointsDisplayProps> = (props: IPointsDisplayProps) 
         />
     );
     return (
-        <Box sx={{ border: '1px solid orange', padding: '8px' }}>
+        <Box sx={{ padding: '8px' }}>
             <Tabs
                 value={timeAggregationActiveTabIdx}
                 onChange={(e, activeTabIdx: number) => {

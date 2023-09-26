@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import LogoWithNameAndSlogan from 'src/assets/logo_with_slogan.png';
 import { Link } from 'react-router-dom';
+import { THEME } from 'src/javascripts/Theme';
 
 export interface IPodCardProps {
     id: string;
@@ -26,11 +27,12 @@ const PodCard: React.FC<IPodCardProps> = (props: IPodCardProps) => {
         description,
         // imagePath
     } = props;
+    const cardBorderColor: string = THEME.palette.primary.main;
 
     return (
         <Card
             sx={{
-                border: '1px solid blue',
+                border: `2px solid ${cardBorderColor}`,
                 width: '300px',
             }}
         >

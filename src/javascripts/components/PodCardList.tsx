@@ -13,7 +13,7 @@ const PodCardList: React.FC<IPodCardListProps> = (props: IPodCardListProps) => {
         <React.Fragment>
             <Grid container direction="row">
                 {podCards.map((podCard, idx: number) => (
-                    <Grid item key={podCard.id} sx={{ margin: '16px 16px 16px 0px' }}>
+                    <Grid item key={podCard.id} sx={{ marginBottom: '16px', marginRight: '16px' }}>
                         <PodCard
                             key={`${idx}_${podCard.id}`}
                             id={podCard.id}

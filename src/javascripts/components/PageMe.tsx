@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Box, Grid } from '@mui/material';
 import { THEME } from 'src/javascripts/Theme';
 import TaskCardList from 'src/javascripts/components/TaskCardList';
+import CreateTaskModal from 'src/javascripts/components/CreateTaskModal';
 import { MOCK_TASKS } from 'src/javascripts/mocks/MockTasks';
 import MyStats from 'src/javascripts/components/MyStats';
 // import PointsGrid from 'src/javascripts/components/PointsGrid';
@@ -29,6 +30,9 @@ const PageMe: React.FC = () => {
         >
             <Grid container direction="row">
                 <Grid item sx={{ marginRight: '24px' }}>
+                    <Box sx={{ paddingBottom: '24px' }}>
+                        <CreateTaskModal id="temp_id" />
+                    </Box>
                     <TaskCardList tasks={tasks} handleToggleTaskComplete={handleToggleTaskComplete} />
                 </Grid>
                 <Grid item>
