@@ -1,48 +1,41 @@
 import { useState } from 'react';
-import { Box, Button, Checkbox, FormGroup, FormControlLabel, Grid, TextField } from '@mui/material';
+import { Button, Box, Checkbox, FormGroup, FormControlLabel, Grid, TextField } from '@mui/material';
 // import { THEME } from 'src/javascripts/Theme';
 
-export interface IFilterTasksProps {
+export interface IFilterPodsProps {
     handleChangeText: any;
     handleUpdateFilterState: any;
-    isComplete: boolean;
-    isNotComplete: boolean;
-    isStar: boolean;
-    isNotStar: boolean;
-    isPin: boolean;
-    isNotPin: boolean;
-    isUseFilterComplete: boolean;
-    isUseFilterStar: boolean;
-    isUseFilterPin: boolean;
+    isUseKeyPodMember: boolean;
+    isPodMember: boolean;
+    isPodNotMember: boolean;
+    isUseKeyPodModerator: boolean;
+    isPodModerator: boolean;
+    isPodNotModerator: boolean;
 }
 
-const FilterTasks: React.FC<IFilterTasksProps> = (props: IFilterTasksProps) => {
+const FilterPods: React.FC<IFilterPodsProps> = (props: IFilterPodsProps) => {
     const {
         handleChangeText,
         handleUpdateFilterState,
-        isComplete,
-        isNotComplete,
-        isStar,
-        isNotStar,
-        isPin,
-        isNotPin,
-        isUseFilterComplete,
-        isUseFilterStar,
-        isUseFilterPin,
+        isUseKeyPodMember,
+        isPodMember,
+        isPodNotMember,
+        isUseKeyPodModerator,
+        isPodModerator,
+        isPodNotModerator,
     } = props;
     const [isShowAdvancedFilterOptions, setShowAdvancedFilterOptions] = useState(false);
-
     return (
         <Box>
             <Grid container direction="column">
                 <Grid item>
                     <TextField
                         id="filter-entities"
-                        label={`Filter Tasks`}
+                        label={`Filter Pods`}
                         variant="standard"
                         onChange={handleChangeText}
                         inputProps={{ maxLength: 50 }}
-                        helperText={`Filter Tasks by name or description`}
+                        helperText={`Filter Pods by name or description`}
                         sx={{ width: '800px' }}
                     />
                 </Grid>
@@ -72,91 +65,61 @@ const FilterTasks: React.FC<IFilterTasksProps> = (props: IFilterTasksProps) => {
                 {isShowAdvancedFilterOptions ? (
                     <Grid item>
                         <Grid container direction="row">
-                            {isUseFilterComplete ? (
+                            {isUseKeyPodMember ? (
                                 <Grid item>
                                     <Box sx={{ width: '200px' }}>
                                         <FormGroup>
                                             <FormControlLabel
                                                 control={
                                                     <Checkbox
-                                                        checked={isComplete}
+                                                        checked={isPodMember}
                                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                                            handleUpdateFilterState(event, 'filterIsComplete');
+                                                            handleUpdateFilterState(event, 'isPodMember');
                                                         }}
                                                     />
                                                 }
-                                                label="Complete"
+                                                label="Member"
                                             />
                                             <FormControlLabel
                                                 control={
                                                     <Checkbox
-                                                        checked={isNotComplete}
+                                                        checked={isPodNotMember}
                                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                                            handleUpdateFilterState(event, 'filterIsNotComplete');
+                                                            handleUpdateFilterState(event, 'isPodNotMember');
                                                         }}
                                                     />
                                                 }
-                                                label="Incomplete"
+                                                label="Not member"
                                             />
                                         </FormGroup>
                                     </Box>
                                 </Grid>
                             ) : null}
-                            {isUseFilterStar ? (
+                            {isUseKeyPodModerator ? (
                                 <Grid item>
                                     <Box sx={{ width: '200px' }}>
                                         <FormGroup>
                                             <FormControlLabel
                                                 control={
                                                     <Checkbox
-                                                        checked={isStar}
+                                                        checked={isPodModerator}
                                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                                            handleUpdateFilterState(event, 'filterIsStar');
+                                                            handleUpdateFilterState(event, 'isPodModerator');
                                                         }}
                                                     />
                                                 }
-                                                label="Starred"
+                                                label="Moderator"
                                             />
                                             <FormControlLabel
                                                 control={
                                                     <Checkbox
-                                                        checked={isNotStar}
+                                                        checked={isPodNotModerator}
                                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                                            handleUpdateFilterState(event, 'filterIsNotStar');
+                                                            handleUpdateFilterState(event, 'isPodNotModerator');
                                                         }}
                                                     />
                                                 }
-                                                label="No Star"
-                                            />
-                                        </FormGroup>
-                                    </Box>
-                                </Grid>
-                            ) : null}
-                            {isUseFilterPin ? (
-                                <Grid item>
-                                    <Box sx={{ width: '200px' }}>
-                                        <FormGroup>
-                                            <FormControlLabel
-                                                control={
-                                                    <Checkbox
-                                                        checked={isPin}
-                                                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                                            handleUpdateFilterState(event, 'filterIsPin');
-                                                        }}
-                                                    />
-                                                }
-                                                label="Pinned"
-                                            />
-                                            <FormControlLabel
-                                                control={
-                                                    <Checkbox
-                                                        checked={isNotPin}
-                                                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                                            handleUpdateFilterState(event, 'filterIsNotPin');
-                                                        }}
-                                                    />
-                                                }
-                                                label="No Pin"
+                                                label="Not moderator"
                                             />
                                         </FormGroup>
                                     </Box>
@@ -170,4 +133,4 @@ const FilterTasks: React.FC<IFilterTasksProps> = (props: IFilterTasksProps) => {
     );
 };
 
-export default FilterTasks;
+export default FilterPods;

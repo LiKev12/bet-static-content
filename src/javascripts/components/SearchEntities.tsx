@@ -2,10 +2,9 @@ import { Box, Grid, IconButton, InputAdornment, Select, TextField, MenuItem } fr
 import SearchIcon from '@mui/icons-material/Search';
 
 export interface ISearchEntitiesProps {
-    id: string;
-    // defaultEntity: string;
     handleChangeEntity: any;
     handleChangeText: any;
+    handleSearch: any;
     entityChoices: string[];
     chosenEntity: string;
 }
@@ -13,12 +12,12 @@ export interface ISearchEntitiesProps {
 const SearchEntities: React.FC<ISearchEntitiesProps> = (props: ISearchEntitiesProps) => {
     return (
         <Grid container direction="row" sx={{ justifyContent: 'center' }}>
-            <Box sx={{ paddingLeft: '48px', paddingRight: '48px', display: 'flex', width: '100%' }}>
+            <Box sx={{ paddingLeft: '96px', paddingRight: '96px', display: 'flex', width: '100%' }}>
                 <Grid item sx={{ width: '100%' }}>
                     <TextField
                         id="search-entities"
                         label={`Search ${props.chosenEntity}`}
-                        placeholder={`Search ${props.chosenEntity} by names or IDs, separated by pipe character "|" \nEx. "apples|bananas|cherries"`}
+                        placeholder={`Search ${props.chosenEntity} by name or description`}
                         multiline
                         minRows={4}
                         maxRows={4}
@@ -26,7 +25,7 @@ const SearchEntities: React.FC<ISearchEntitiesProps> = (props: ISearchEntitiesPr
                         InputProps={{
                             endAdornment: (
                                 <InputAdornment position="end">
-                                    <IconButton>
+                                    <IconButton onClick={props.handleSearch}>
                                         <SearchIcon />
                                     </IconButton>
                                 </InputAdornment>
@@ -41,7 +40,7 @@ const SearchEntities: React.FC<ISearchEntitiesProps> = (props: ISearchEntitiesPr
                         id="demo-simple-select"
                         value={props.chosenEntity}
                         onChange={props.handleChangeEntity}
-                        sx={{ height: '100%', width: '102px' }} // 'stamps' is the longest word, needs this to be 102px
+                        sx={{ height: '100%', width: '102px' }} // 'stamp' is the longest word, needs this to be 102px
                     >
                         {props.entityChoices.map((entity, idx) => (
                             <MenuItem key={`${idx}_${entity}`} value={entity}>

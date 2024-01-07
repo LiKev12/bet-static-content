@@ -8,6 +8,9 @@
     "@hookform/devtools": "^4.3.1",
     "@mui/icons-material": "^5.14.3",
     "@mui/material": "^5.14.1",
+    "@mui/x-date-pickers": "^6.18.4",
+    "@okta/okta-react": "^6.7.0",
+    "@okta/okta-signin-widget": "^7.12.1",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -15,7 +18,10 @@
     "@types/node": "^16.18.38",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
+    "axios": "^1.6.2",
     "chart.js": "^4.3.3",
+    "dayjs": "^1.11.10",
+    "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-avatar-editor": "^13.0.0",
     "react-chartjs-2": "^5.2.0",
@@ -52,6 +58,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@types/react-avatar-editor": "^13.0.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "eslint": "^8.45.0",

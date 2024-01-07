@@ -14,7 +14,7 @@ const PageHome: React.FC = () => {
         <React.Fragment>
             <Box
                 style={{
-                    height: '100vh',
+                    minHeight: '100vh',
                     paddingLeft: '24px',
                     paddingRight: '24px',
                     background: THEME.palette.gradient,

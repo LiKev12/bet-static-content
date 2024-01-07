@@ -20,21 +20,19 @@ export interface ICropperModalProps {
     src: any;
     modalOpen: boolean;
     setModalOpen: any;
-    setPreview: any;
+    imageUploadHandler: any;
 }
 
 // Modal
 const CropperModal: React.FC<ICropperModalProps> = (props: ICropperModalProps) => {
-    const { src, modalOpen, setModalOpen, setPreview } = props;
+    const { src, modalOpen, setModalOpen, imageUploadHandler } = props;
     const [slideValue, setSlideValue] = useState(10);
     const cropRef = useRef(null);
 
     const handleSave = async (): Promise<any> => {
         // @ts-expect-error expected
-        const dataUrl = cropRef.current.getImage().toDataURL();
-        const result = await fetch(dataUrl);
-        const blob = await result.blob();
-        setPreview(URL.createObjectURL(blob));
+        const imageAsBase64String = cropRef.current.getImage().toDataURL();
+        imageUploadHandler(imageAsBase64String);
         setModalOpen(false);
     };
 
@@ -101,23 +99,18 @@ const CropperModal: React.FC<ICropperModalProps> = (props: ICropperModalProps) =
 };
 
 export interface IAvatarImageEditorProps {
-    id: string;
+    imageUploadHandler: any;
+    imageLink: string | null;
 }
 
 // Container
 const AvatarImageEditor: React.FC<IAvatarImageEditorProps> = (props: IAvatarImageEditorProps) => {
+    const { imageLink, imageUploadHandler } = props;
     // image src
     const [src, setSrc] = useState<string | null>(null);
-
     const [isAvatarHover, setAvatarHover] = useState(false);
-    console.log({ isAvatarHover });
-
-    // preview
-    const [preview, setPreview] = useState(null);
-
     // modal state
     const [modalOpen, setModalOpen] = useState(false);
-
     // ref to control input element
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -130,14 +123,20 @@ const AvatarImageEditor: React.FC<IAvatarImageEditorProps> = (props: IAvatarImag
 
     const handleImgChange = (e: any): void => {
         if (e.target.files.length > 0) {
-            setSrc(URL.createObjectURL(e.target.files[0]));
+            const imageFile = e.target.files[0];
+            setSrc(URL.createObjectURL(imageFile));
             setModalOpen(true);
         }
     };
 
     return (
         <React.Fragment>
-            <CropperModal modalOpen={modalOpen} src={src} setPreview={setPreview} setModalOpen={setModalOpen} />
+            <CropperModal
+                modalOpen={modalOpen}
+                src={src}
+                setModalOpen={setModalOpen}
+                imageUploadHandler={imageUploadHandler}
+            />
             <Box sx={{ display: 'none' }}>
                 <input type="file" accept="image/*" ref={inputRef} onChange={handleImgChange} />
             </Box>
@@ -162,7 +161,7 @@ const AvatarImageEditor: React.FC<IAvatarImageEditorProps> = (props: IAvatarImag
                         cursor: 'pointer',
                     }}
                     alt="avatar-image"
-                    src={preview ?? 'https://www.signivis.com/img/custom/avatars/member-avatar-01.png'}
+                    src={imageLink ?? 'https://www.signivis.com/img/custom/avatars/member-avatar-01.png'}
                 />
                 {isAvatarHover ? (
                     <Box
