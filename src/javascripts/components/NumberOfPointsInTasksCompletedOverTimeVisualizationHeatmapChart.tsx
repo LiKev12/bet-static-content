@@ -1,6 +1,6 @@
 import { Box, Grid, Tooltip, Typography } from '@mui/material';
-// import { MOCK_DAILY_ACTIVITY } from 'src/javascripts/mocks/Mocks';
 import type NumberOfPointsInTasksCompletedOverTimeVisualizationModel__HeatmapChartDataPointModel from 'src/javascripts/models/NumberOfPointsInTasksCompletedOverTimeVisualizationModel__HeatmapChartDataPointModel';
+import { THEME } from 'src/javascripts/Theme';
 
 export interface INumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChartProps {
     dataHeatmapChart: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__HeatmapChartDataPointModel[];
@@ -42,8 +42,8 @@ const NumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChart: React.FC<
     INumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChartProps
 > = (props: INumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChartProps) => {
     const { dataHeatmapChart } = props;
-
-    const numColumns = dataHeatmapChart.length / 7 + 1;
+    const numWeeks = Math.floor((dataHeatmapChart.length + 6) / 7);
+    const numColumns = numWeeks; // Ex. if 372 (max datapoints, Ex. 7/7/2023-7/7/2024), then 54 columns of data and also 55 columns total on chart
     const columnIdxAndValuesWithNewMonths = dataHeatmapChart
         .map(
             (
@@ -52,7 +52,7 @@ const NumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChart: React.FC<
             ) => {
                 const isFirstDayOfMonth = datapoint.getDateLabel().split('/')[2] === '01';
                 return isFirstDayOfMonth
-                    ? { columnIdx: Math.floor(idx / 7) + 1, newMonth: datapoint.getDateLabel().split('/')[1] }
+                    ? { columnIdx: Math.floor(idx / 7), newMonth: datapoint.getDateLabel().split('/')[1] }
                     : null;
             },
         )
@@ -64,10 +64,24 @@ const NumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChart: React.FC<
     for (let i = 0; i < numColumns; i++) {
         numColumnsIdxArr.push(i);
     }
-
     const rowMonthLabels = (
         <Grid container direction="row" wrap="nowrap">
             {numColumnsIdxArr.map((currColumnIdx: number) => {
+                if (currColumnIdx === 0) {
+                    return (
+                        <Grid item key={`${currColumnIdx}_emptyGridItem`}>
+                            <Box
+                                sx={{
+                                    padding: '8px',
+                                    width: '18px',
+                                    height: '18px',
+                                    margin: '2px',
+                                }}
+                            ></Box>
+                        </Grid>
+                    );
+                }
+
                 let isFirstDayOfMonth = false;
                 let monthValue;
                 for (let j = 0; j < columnIdxAndValuesWithNewMonths.length; j++) {
@@ -83,7 +97,11 @@ const NumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChart: React.FC<
                             <Box
                                 sx={{
                                     padding: '8px',
+                                    width: '18px',
+                                    height: '18px',
                                     margin: '2px',
+                                    display: 'flex',
+                                    justifyContent: 'center',
                                 }}
                             >
                                 <Typography sx={{ textAlign: 'center', fontSize: '12px' }}>
@@ -95,21 +113,22 @@ const NumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChart: React.FC<
                 }
                 return (
                     <Grid item key={`${currColumnIdx}_emptyGridItem`}>
-                        <Box sx={{ padding: '8px', width: '18px', height: '18px', margin: '2px' }}></Box>
+                        <Box
+                            sx={{
+                                padding: '8px',
+                                width: '18px',
+                                height: '18px',
+                                margin: '2px',
+                            }}
+                        ></Box>
                     </Grid>
                 );
             })}
         </Grid>
     );
-
     const rowsData = DAYS_OF_WEEK_LABELS.map((dayOfWeek: string, idx: number) => {
         return (
             <Grid container direction="row" key={`${idx}_${dayOfWeek}_row`} wrap="nowrap">
-                <Grid item key={`${idx}_${dayOfWeek}_gridItem`}>
-                    <Box sx={{ padding: '8px', width: '18px', height: '18px', margin: '2px' }}>
-                        <Typography sx={{ textAlign: 'center', fontSize: '12px' }}>{dayOfWeek}</Typography>
-                    </Box>
-                </Grid>
                 {dataHeatmapChart
                     .filter(
                         (
@@ -123,10 +142,15 @@ const NumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChart: React.FC<
                             datapoint: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__HeatmapChartDataPointModel,
                             idx: number,
                         ) => {
+                            const tooltipTitle = `${datapoint.getDateLabel()} · ${datapoint.getNumberOfPoints()} ${
+                                datapoint.getNumberOfPoints() === 1 ? 'point' : 'points'
+                            } · ${datapoint.getNumberOfTasksComplete()} ${
+                                datapoint.getNumberOfTasksComplete() === 1 ? 'Task' : 'Tasks'
+                            } completed`;
                             return (
                                 <Tooltip
                                     key={`${idx}_${datapoint.getDateLabel()}_tooltip`}
-                                    title={datapoint.getDateLabel()}
+                                    title={tooltipTitle}
                                     placement="right"
                                 >
                                     <Grid item key={`${idx}_${datapoint.getDateLabel()}_gridItem`}>
@@ -137,10 +161,27 @@ const NumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChart: React.FC<
                                                 margin: '2px',
                                                 width: '18px',
                                                 height: '18px',
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                ...(datapoint.getIsToday()
+                                                    ? {
+                                                          boxSizing: 'border-box', // allows the box to be defined by the width and height (includes padding and border)
+                                                          border: `7px solid ${String(THEME.palette.other.highlight)}`,
+                                                          width: '33.96px',
+                                                          height: '33.96px',
+                                                      }
+                                                    : {}),
                                             }}
                                         >
-                                            <Typography sx={{ textAlign: 'center', fontSize: '12px' }}>
-                                                {datapoint.getIsAfterOrEqualToRelevantStartDate()
+                                            <Typography
+                                                sx={{
+                                                    textAlign: 'center',
+                                                    fontSize: '12px',
+                                                }}
+                                            >
+                                                {datapoint.getIsAfterOrEqualToRelevantStartDate() &&
+                                                datapoint.getIsBeforeOrEqualToRelevantEndDate()
                                                     ? datapoint.getNumberOfPoints()
                                                     : null}
                                             </Typography>
@@ -154,24 +195,58 @@ const NumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChart: React.FC<
         );
     });
     return (
-        <Grid
-            container
-            direction="column"
-            sx={{
-                width: '800px',
-                overflow: 'auto',
-                display: 'flex',
-                flexDirection: 'row-reverse',
-            }}
-        >
-            <Grid item>{rowMonthLabels}</Grid>
-            {DAYS_OF_WEEK_LABELS.map((dayOfWeek: string, idx: number) => {
-                return (
-                    <Grid item key={`${dayOfWeek}_fullRow`}>
-                        {rowsData[idx]}
+        <Grid container direction="row">
+            <Grid item>
+                <Grid container direction="column">
+                    <Grid item key={`${0}_day_of_week_emptyGridItem`}>
+                        <Box
+                            sx={{
+                                padding: '8px',
+                                width: '18px',
+                                height: '18px',
+                                margin: '2px',
+                            }}
+                        ></Box>
                     </Grid>
-                );
-            })}
+                    {DAYS_OF_WEEK_LABELS.map((dayOfWeek: string, idx: number) => (
+                        <Grid item key={`${idx}_${dayOfWeek}_gridItem`}>
+                            <Box
+                                sx={{
+                                    padding: '8px',
+                                    width: '18px',
+                                    height: '18px',
+                                    margin: '2px',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <Typography sx={{ textAlign: 'center', fontSize: '12px' }}>{dayOfWeek}</Typography>
+                            </Box>
+                        </Grid>
+                    ))}
+                </Grid>
+            </Grid>
+            <Grid item>
+                <Grid
+                    container
+                    direction="column"
+                    sx={{
+                        width: '800px',
+                        overflow: 'auto',
+                        display: 'flex',
+                        flexDirection: 'row-reverse',
+                    }}
+                >
+                    <Grid item>{rowMonthLabels}</Grid>
+                    {DAYS_OF_WEEK_LABELS.map((dayOfWeek: string, idx: number) => {
+                        return (
+                            <Grid item key={`${dayOfWeek}_fullRow`}>
+                                {rowsData[idx]}
+                            </Grid>
+                        );
+                    })}
+                </Grid>
+            </Grid>
         </Grid>
     );
 };

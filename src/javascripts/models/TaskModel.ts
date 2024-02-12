@@ -1,21 +1,29 @@
-export default class TaskModel {
-    id: string;
-    name: string;
-    description: string | null;
-    imageLink: string | null;
-    numberOfPoints: number;
-    idPod: string | null;
-    noteText: string | null;
-    noteImage: string | null;
-    isComplete: boolean;
-    isStar: boolean;
-    isPin: boolean;
-    datetimeCreate: string;
-    datetimeUpdate: string | null;
-    datetimeTarget: string | null;
-    datetimeComplete: string | null;
+import UserBubbleModel from 'src/javascripts/models/UserBubbleModel';
 
-    constructor(taskModel: any) {
+export default class TaskModel {
+    id: string = '';
+    name: string = '';
+    description: string | null = null;
+    imageLink: string | null = null;
+    numberOfPoints: number = 0;
+    idPod: string | null = null;
+    noteText: string | null = null;
+    noteImageLink: string | null = null;
+    isComplete: boolean = false;
+    isStar: boolean = false;
+    isPin: boolean = false;
+    datetimeCreate: string = '';
+    datetimeUpdate: string | null = null;
+    datetimeTarget: string | null = null;
+    datetimeComplete: string | null = null;
+    userBubblesTaskComplete: UserBubbleModel[] | null = null;
+    userBubblesTaskCompleteTotalNumber: number = 0;
+    isMemberOfTaskPod: boolean = false;
+
+    constructor(taskModel: any, isInitial: boolean = false) {
+        if (isInitial) {
+            return;
+        }
         this.id = taskModel.id;
         this.name = taskModel.name;
         this.description = taskModel.description;
@@ -24,13 +32,21 @@ export default class TaskModel {
         this.idPod = taskModel.idPod;
         this.isComplete = taskModel.isComplete;
         this.noteText = taskModel.noteText;
-        this.noteImage = taskModel.noteImage;
+        this.noteImageLink = taskModel.noteImageLink;
         this.isStar = taskModel.isStar;
         this.isPin = taskModel.isPin;
         this.datetimeCreate = taskModel.datetimeCreate;
         this.datetimeUpdate = taskModel.datetimeUpdate;
         this.datetimeTarget = taskModel.datetimeTarget;
         this.datetimeComplete = taskModel.datetimeComplete;
+        this.userBubblesTaskComplete =
+            taskModel.userBubblesTaskComplete === null
+                ? null
+                : taskModel.userBubblesTaskComplete.map(
+                      (userBubbleTaskComplete: any) => new UserBubbleModel(userBubbleTaskComplete),
+                  );
+        this.userBubblesTaskCompleteTotalNumber = taskModel.userBubblesTaskCompleteTotalNumber;
+        this.isMemberOfTaskPod = taskModel.isMemberOfTaskPod;
     }
 
     getId(): string {
@@ -61,8 +77,8 @@ export default class TaskModel {
         return this.noteText;
     }
 
-    getNoteImage(): string | null {
-        return this.noteImage;
+    getNoteImageLink(): string | null {
+        return this.noteImageLink;
     }
 
     getIsComplete(): boolean {
@@ -91,5 +107,17 @@ export default class TaskModel {
 
     getDatetimeComplete(): string | null {
         return this.datetimeComplete;
+    }
+
+    getUserBubblesTaskComplete(): UserBubbleModel[] | null {
+        return this.userBubblesTaskComplete;
+    }
+
+    getUserBubblesTaskCompleteTotalNumber(): number {
+        return this.userBubblesTaskCompleteTotalNumber;
+    }
+
+    getIsMemberOfTaskPod(): boolean {
+        return this.isMemberOfTaskPod;
     }
 }

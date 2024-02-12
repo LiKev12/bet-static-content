@@ -40,7 +40,7 @@ const SearchEntities: React.FC<ISearchEntitiesProps> = (props: ISearchEntitiesPr
                         id="demo-simple-select"
                         value={props.chosenEntity}
                         onChange={props.handleChangeEntity}
-                        sx={{ height: '100%', width: '102px' }} // 'stamp' is the longest word, needs this to be 102px
+                        sx={{ height: '100%', width: '102px', cursor: 'pointer' }} // 'stamp' is the longest word, needs this to be 102px
                     >
                         {props.entityChoices.map((entity, idx) => (
                             <MenuItem key={`${idx}_${entity}`} value={entity}>

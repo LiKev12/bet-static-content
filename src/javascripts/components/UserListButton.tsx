@@ -1,9 +1,30 @@
 import React, { useState } from 'react';
-import { Button } from '@mui/material';
+import { Box, Button, Grid } from '@mui/material';
 import UserListModal from 'src/javascripts/components/UserListModal';
+import UserBubble from 'src/javascripts/components/UserBubble';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import type UserBubbleModel from 'src/javascripts/models/UserBubbleModel';
 
-const UserListButton: React.FC = () => {
+export interface IUserListButtonProps {
+    labelText: string;
+    userBubbles: UserBubbleModel[];
+    sortByTimestampLabel: string;
+    apiPath: string;
+    modalTitle: string;
+    isUseDateTimeDateAndTime: boolean;
+}
+
+const MAX_USER_BUBBLES_VISIBLE = 3;
+
+const UserListButton: React.FC<IUserListButtonProps> = (props: IUserListButtonProps) => {
+    const { labelText, userBubbles, apiPath, modalTitle, isUseDateTimeDateAndTime } = props;
     const [isModalOpen, setModalOpen] = useState(false);
+
+    const userBubblesProcessed: UserBubbleModel[] = [];
+    for (let i = Math.min(MAX_USER_BUBBLES_VISIBLE, userBubbles.length) - 1; i >= 0; i--) {
+        userBubblesProcessed.push(userBubbles[i]);
+    }
+
     return (
         <React.Fragment>
             <Button
@@ -12,194 +33,46 @@ const UserListButton: React.FC = () => {
                     paddingRight: '16px',
                     paddingTop: '4px',
                     paddingBottom: '4px',
+                    width: '100%',
                 }}
                 variant="contained"
                 onClick={() => {
                     setModalOpen(true);
                 }}
+                disabled={userBubbles.length === 0}
             >
-                See Users
+                <Box sx={{}}>
+                    <Grid container direction="row-reverse" sx={{ justifyContent: 'flex-end', marginTop: '4px' }}>
+                        <Grid item sx={{ marginLeft: '12px' }}>
+                            {labelText}
+                        </Grid>
+                        {userBubbles.length > 0 ? (
+                            <Grid item sx={{ marginLeft: '6px', marginRight: '24px' }}>
+                                <Box sx={{ position: 'absolute' }}>
+                                    <MoreHorizIcon />
+                                </Box>
+                            </Grid>
+                        ) : null}
+                        {userBubblesProcessed.map((userBubble: UserBubbleModel, idx: number) => (
+                            <Grid item key={`${idx}_${String(userBubble.id)}`} sx={{ marginRight: '14px' }}>
+                                <UserBubble imageLink={userBubble.getImageLink()} />
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Box>
             </Button>
-            <UserListModal
-                isOpen={isModalOpen}
-                handleClose={() => {
-                    setModalOpen(false);
-                }}
-            />
+            {isModalOpen ? (
+                <UserListModal
+                    handleClose={() => {
+                        setModalOpen(false);
+                    }}
+                    sortByTimestampLabel={props.sortByTimestampLabel}
+                    apiPath={apiPath}
+                    modalTitle={modalTitle}
+                    isUseDateTimeDateAndTime={isUseDateTimeDateAndTime}
+                />
+            ) : null}
         </React.Fragment>
     );
 };
-
 export default UserListButton;
-
-// import { Box } from '@mui/material';
-// import { getHashFromString } from 'src/javascripts/utilities';
-
-// export interface IUserBubbleProps {
-//     image: string;
-// }
-
-// const MOCK_COLORS = [
-//     'maroon',
-//     'red',
-//     'purple',
-//     'fuchsia',
-//     'green',
-//     'lime',
-//     'olive',
-//     'yellow',
-//     'navy',
-//     'blue',
-//     'teal',
-//     'aqua',
-// ];
-
-// const UserBubble: React.FC<IUserBubbleProps> = (props: IUserBubbleProps) => {
-//     const { image } = props;
-//     const mockColor: string = MOCK_COLORS[getHashFromString(image) % MOCK_COLORS.length];
-//     return (
-//         <Box
-//             sx={{
-//                 backgroundColor: mockColor,
-//                 border: '2px solid #979797',
-//                 width: '16px',
-//                 height: '16px',
-//                 borderRadius: '50%',
-//                 position: 'absolute',
-//             }}
-//         ></Box>
-//     );
-// };
-
-// export default UserBubble;
-
-// import React from 'react';
-// import {
-//     Box,
-//     Button,
-//     Dialog,
-//     DialogTitle,
-//     DialogContent,
-//     DialogActions,
-//     Divider,
-//     Grid,
-//     List,
-//     ListItem,
-//     ListItemText,
-//     ListItemAvatar,
-//     Avatar,
-// } from '@mui/material';
-// import FolderIcon from '@mui/icons-material/Folder';
-
-// export interface IUserListModalItemProps {
-//     id: string;
-//     image: string;
-//     username: string;
-//     name: string;
-// }
-
-// export interface IUserListModalProps {
-//     isOpen: boolean;
-//     handleClose: any;
-//     userListModalItems: IUserListModalItemProps[];
-// }
-
-// const UserListModal: React.FC<IUserListModalProps> = (props: IUserListModalProps) => {
-//     const { isOpen, handleClose, userListModalItems } = props;
-//     return (
-//         <Dialog open={isOpen} onClose={handleClose} fullWidth>
-//             <DialogTitle>Users</DialogTitle>
-//             <DialogContent>
-//                 <Box sx={{ height: '400px', overflowY: 'auto' }}>
-//                     <Grid item>
-//                         <List dense={false}>
-//                             {userListModalItems.map((userListModalItem: IUserListModalItemProps, idx: number) => {
-//                                 return (
-//                                     <React.Fragment key={`${idx}_${String(userListModalItem.id)}`}>
-//                                         <ListItem>
-//                                             <ListItemAvatar>
-//                                                 <Avatar>
-//                                                     <FolderIcon />
-//                                                 </Avatar>
-//                                             </ListItemAvatar>
-//                                             <ListItemText primary={userListModalItem.username} />
-//                                         </ListItem>
-//                                         <Divider variant="fullWidth" />
-//                                     </React.Fragment>
-//                                 );
-//                             })}
-//                         </List>
-//                     </Grid>
-//                 </Box>
-//             </DialogContent>
-//             <DialogActions>
-//                 <Button onClick={handleClose}>Close</Button>
-//             </DialogActions>
-//         </Dialog>
-//     );
-// };
-
-// export default UserListModal;
-
-// import React, { useState } from 'react';
-// import { Box, Button, Grid } from '@mui/material';
-// import UserListModal from 'src/javascripts/snippets/UserListModal';
-// import UserBubble from 'src/javascripts/snippets/UserBubble';
-// import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-
-// import type { IUserListModalItemProps } from 'src/javascripts/snippets/UserListModal';
-
-// export interface IUserListButtonBubbleProps {
-//     id: string;
-//     image: string;
-// }
-
-// export interface IUserListButtonProps {
-//     userListButtonBubbles: IUserListButtonBubbleProps[];
-//     userListModalItems: IUserListModalItemProps[];
-// }
-
-// const UserListButton: React.FC<IUserListButtonProps> = (props: IUserListButtonProps) => {
-//     const [isModalOpen, setModalOpen] = useState(false);
-//     const { userListButtonBubbles, userListModalItems } = props;
-//     return (
-//         <React.Fragment>
-//             <Button
-//                 sx={{
-//                     paddingLeft: '12px',
-//                     paddingRight: '16px',
-//                     paddingTop: '4px',
-//                     paddingBottom: '4px',
-//                 }}
-//                 variant="contained"
-//                 onClick={() => {
-//                     setModalOpen(true);
-//                 }}
-//             >
-//                 <Box sx={{ paddingBottom: '24px' }}>
-//                     <Grid container direction="row-reverse" sx={{ justifyContent: 'flex-end', marginTop: '4px' }}>
-//                         <Grid item sx={{ marginLeft: '6px', marginRight: '16px' }}>
-//                             <Box sx={{ position: 'absolute' }}>
-//                                 <MoreHorizIcon />
-//                             </Box>
-//                         </Grid>
-//                         {userListButtonBubbles.map((userListButtonBubble: IUserListButtonBubbleProps, idx: number) => (
-//                             <Grid item key={`${idx}_${String(userListButtonBubble.id)}`} sx={{ marginRight: '14px' }}>
-//                                 <UserBubble image={userListButtonBubble.image} />
-//                             </Grid>
-//                         ))}
-//                     </Grid>
-//                 </Box>
-//             </Button>
-//             <UserListModal
-//                 isOpen={isModalOpen}
-//                 handleClose={() => {
-//                     setModalOpen(false);
-//                 }}
-//                 userListModalItems={userListModalItems}
-//             />
-//         </React.Fragment>
-//     );
-// };
-
-// export default UserListButton;

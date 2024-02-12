@@ -1,11 +1,11 @@
 import React from 'react';
-import type { IPodCardProps } from 'src/javascripts/components/PodCard';
 import PodCard from 'src/javascripts/components/PodCard';
 import { CircularProgress, Typography, Box, Grid, Pagination, Stack } from '@mui/material';
 import CreatePodModal from 'src/javascripts/components/CreatePodModal';
+import type PodCardModel from 'src/javascripts/models/PodCardModel';
 
 export interface IPodCardListProps {
-    podCards: IPodCardProps[];
+    podCards: PodCardModel[];
     isShowCreatePodModal: boolean;
     isLoading: boolean;
     paginationTotalPages: number;
@@ -29,17 +29,17 @@ const PodCardList: React.FC<IPodCardListProps> = (props: IPodCardListProps) => {
                     </Box>
                     <Grid container direction="row">
                         {podCards.map((podCard, idx: number) => (
-                            <Grid item key={podCard.id} sx={{ marginBottom: '16px', marginRight: '16px' }}>
+                            <Grid item key={podCard.getId()} sx={{ marginBottom: '16px', marginRight: '16px' }}>
                                 <PodCard
-                                    key={`${idx}_${podCard.id}`}
-                                    id={podCard.id}
-                                    name={podCard.name}
-                                    description={podCard.description}
-                                    imageLink={podCard.imageLink}
-                                    numberOfMembers={podCard.numberOfMembers}
-                                    isPublic={podCard.isPublic}
-                                    isMember={podCard.isMember}
-                                    isModerator={podCard.isModerator}
+                                    key={`${idx}_${podCard.getId()}`}
+                                    id={podCard.getId()}
+                                    name={podCard.getName()}
+                                    description={podCard.getDescription()}
+                                    imageLink={podCard.getImageLink()}
+                                    numberOfMembers={podCard.getNumberOfMembers()}
+                                    isPublic={podCard.getIsPublic()}
+                                    isMember={podCard.getIsMember()}
+                                    isModerator={podCard.getIsModerator()}
                                 />
                             </Grid>
                         ))}

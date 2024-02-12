@@ -1,11 +1,11 @@
 import React from 'react';
-import type { IStampCardProps } from 'src/javascripts/components/StampCard';
 import StampCard from 'src/javascripts/components/StampCard';
 import { Box, CircularProgress, Typography, Grid, Stack, Pagination } from '@mui/material';
-import CreateStampModal from 'src/javascripts/components/CreateStampModal';
+import CreateStampModalButton from 'src/javascripts/components/CreateStampModalButton';
+import type StampCardModel from 'src/javascripts/models/StampCardModel';
 
 export interface IStampCardListProps {
-    stampCards: IStampCardProps[];
+    stampCards: StampCardModel[];
     isShowCreateStampModal: boolean;
     isLoading: boolean;
     paginationTotalPages: number;
@@ -31,17 +31,16 @@ const StampCardList: React.FC<IStampCardListProps> = (props: IStampCardListProps
                     </Box>
                     <Grid container direction="row">
                         {stampCards.map((stampCard, idx: number) => (
-                            <Grid item key={stampCard.id} sx={{ marginBottom: '16px', marginRight: '16px' }}>
+                            <Grid item key={stampCard.getId()} sx={{ marginBottom: '16px', marginRight: '16px' }}>
                                 <StampCard
-                                    key={`${idx}_${stampCard.id}`}
-                                    id={stampCard.id}
-                                    name={stampCard.name}
-                                    description={stampCard.description}
-                                    isCollected={stampCard.isCollected}
-                                    imageLink={stampCard.imageLink}
-                                    numberOfUsersCollect={stampCard.numberOfUsersCollect}
-                                    isPublic={stampCard.isPublic}
-                                    isCollect={stampCard.isCollect}
+                                    key={`${idx}_${stampCard.getId()}`}
+                                    id={stampCard.getId()}
+                                    name={stampCard.getName()}
+                                    description={stampCard.getDescription()}
+                                    imageLink={stampCard.getImageLink()}
+                                    numberOfUsersCollect={stampCard.getNumberOfUsersCollect()}
+                                    isPublic={stampCard.getIsPublic()}
+                                    isCollect={stampCard.getIsCollect()}
                                 />
                             </Grid>
                         ))}
@@ -57,7 +56,7 @@ const StampCardList: React.FC<IStampCardListProps> = (props: IStampCardListProps
                             {isShowCreateStampModal ? (
                                 <Grid item>
                                     <Box sx={{ width: '200px' }}>
-                                        <CreateStampModal idPod={null} />
+                                        <CreateStampModalButton idPod={null} />
                                     </Box>
                                 </Grid>
                             ) : null}

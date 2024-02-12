@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
 import _ from 'lodash';
 import {
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
     Box,
     Button,
     Card,
     CardContent,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
     Divider,
     Grid,
     IconButton,
@@ -16,14 +24,18 @@ import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { THEME } from 'src/javascripts/Theme';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 import PushPinIcon from '@mui/icons-material/PushPin';
 import StarOutlineIcon from '@mui/icons-material/StarOutline';
 import StarIcon from '@mui/icons-material/Star';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import DeleteIcon from '@mui/icons-material/Delete';
 import UserListButton from 'src/javascripts/components/UserListButton';
+import TaskCommentList from 'src/javascripts/components/TaskCommentList';
 import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
-import { getInputText, getInputInteger } from 'src/javascripts/utilities';
+import { getInputText, getInputInteger, getUserListButtonText } from 'src/javascripts/utilities';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -32,28 +44,21 @@ import dayjs from 'dayjs';
 import Constants from 'src/javascripts/Constants';
 import type { Dayjs } from 'dayjs';
 import TaskModel from 'src/javascripts/models/TaskModel';
+import TaskCommentModel from 'src/javascripts/models/TaskCommentModel';
+import ReactionsModel from 'src/javascripts/models/ReactionsModel';
+import UserBubbleReactionListModalButton from 'src/javascripts/components/UserBubbleReactionListModalButton';
+import ReactionSelector from 'src/javascripts/components/ReactionSelector';
+import PlaceholderImagePod from 'src/assets/PlaceholderImagePod.png';
 
 export interface ITaskCardProps {
-    id: string;
-    name: string;
-    description: string | null;
-    imageLink: string | null;
-    numberOfPoints: number;
-    isComplete: boolean;
-    isStar: boolean;
-    isPin: boolean;
-    noteText: string | null;
-    noteImage: string | null;
-    datetimeCreate: string;
-    datetimeUpdate: string | null;
-    datetimeTarget: string | null;
-    datetimeComplete: string | null;
-
-    isDisplayOptionPin: boolean;
+    task: TaskModel;
+    isAuthorizedToComplete: boolean;
+    isReadOnlyTaskBody: boolean;
+    isReadOnlyTaskNotes: boolean;
     isDisplayViewPodLink: boolean;
-    idPod: string | null;
-    isDisplayUserBubblesComplete: boolean; // for pod tasks, from db should return true/false, and if false, the "usersCompletedBy" should be null
-    userListButtonBubblesTop3TaskComplete: any;
+    isDisplayOptionsStarPinDelete: boolean;
+    isAuthorizedToDelete: boolean;
+    handleUpdateUponToggleTaskComplete: any;
 }
 
 const getDateDescription = (
@@ -76,7 +81,12 @@ const getDateDescription = (
 };
 export interface ITaskCardState {
     isShowDetails: boolean;
+    isShowDeleteTaskConfirmationModal: boolean;
     editMode: {
+        name: {
+            isEditMode: boolean;
+            editModeValue: string;
+        };
         description: {
             isEditMode: boolean;
             editModeValue: string;
@@ -89,97 +99,99 @@ export interface ITaskCardState {
             isEditMode: boolean;
             editModeValue: Dayjs | null;
         };
+        noteText: {
+            isEditMode: boolean;
+            editModeValue: string;
+        };
     };
-    data: {
-        id: string;
-        name: string;
-        description: string | null;
-        numberOfPoints: number;
-        isComplete: boolean;
-        isStar: boolean;
-        isPin: boolean;
-        noteText: string | null;
-        noteImage: string | null;
-        datetimeCreate: string;
-        datetimeUpdate: string | null;
-        datetimeTarget: string | null;
-        datetimeComplete: string | null;
-        // isDisplayViewPodLink: string;
-        // idPod: string;
+    data: TaskModel;
+}
+
+export interface ITaskCommentsState {
+    data: TaskCommentModel[];
+    isShowTaskComments: boolean;
+    response: {
+        state: string;
+        errorMessage: string | null;
     };
 }
+
+export interface ITaskReactionsState {
+    data: ReactionsModel;
+    response: {
+        state: string;
+        errorMessage: string | null;
+    };
+}
+
 const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
     const {
-        id,
-        isDisplayUserBubblesComplete,
-        isDisplayOptionPin,
-        // isDisplayViewPodLink,
-        // idPod,
+        task,
+        isAuthorizedToComplete,
+        isReadOnlyTaskBody,
+        isReadOnlyTaskNotes,
+        isDisplayViewPodLink,
+        isDisplayOptionsStarPinDelete,
+        isAuthorizedToDelete,
+        handleUpdateUponToggleTaskComplete,
     } = props;
     const [taskCardState, setTaskCardState] = useState<ITaskCardState>({
         isShowDetails: false,
+        isShowDeleteTaskConfirmationModal: false,
         editMode: {
+            name: {
+                isEditMode: false,
+                editModeValue: task.getName(),
+            },
             description: {
                 isEditMode: false,
-                editModeValue: props.description !== null ? props.description : '',
+                editModeValue: task.getDescription() ?? '',
             },
             numberOfPoints: {
                 isEditMode: false,
-                editModeValue: props.numberOfPoints,
+                editModeValue: task.getNumberOfPoints(),
+            },
+            noteText: {
+                isEditMode: false,
+                editModeValue: task.getNoteText() ?? '',
             },
             datetimeTarget: {
                 isEditMode: false,
-                editModeValue: props.datetimeTarget === null ? null : dayjs(props.datetimeTarget),
+                editModeValue: task.getDatetimeTarget() === null ? null : dayjs(task.getDatetimeTarget()),
             },
         },
+        data: task,
+    });
 
-        data: {
-            id: props.id,
-            name: props.name,
-            description: props.description,
-            numberOfPoints: props.numberOfPoints,
-            isComplete: props.isComplete,
-            isStar: props.isStar,
-            isPin: props.isPin,
-            noteText: props.noteText,
-            noteImage: props.noteImage,
-            datetimeCreate: props.datetimeCreate,
-            datetimeUpdate: props.datetimeUpdate,
-            datetimeTarget: props.datetimeTarget,
-            datetimeComplete: props.datetimeComplete,
+    const [taskReactionsState, setTaskReactionsState] = useState<ITaskReactionsState>({
+        data: new ReactionsModel(null, true),
+        response: {
+            state: Constants.RESPONSE_STATE_UNSTARTED,
+            errorMessage: null,
+        },
+    });
+
+    const [taskCommentsState, setTaskCommentsState] = useState<ITaskCommentsState>({
+        data: [],
+        isShowTaskComments: false,
+        response: {
+            state: Constants.RESPONSE_STATE_UNSTARTED,
+            errorMessage: null,
         },
     });
 
     const dateDescription = getDateDescription(
-        taskCardState.data.datetimeCreate,
-        taskCardState.data.datetimeUpdate,
-        // taskCardState.editMode.datetimeTarget.editModeValue === null ? null : dayjs(datetimeTarget).format(),
-        taskCardState.data.datetimeTarget,
-        taskCardState.data.datetimeComplete,
+        taskCardState.data.getDatetimeCreate(),
+        taskCardState.data.getDatetimeUpdate(),
+        taskCardState.data.getDatetimeTarget(),
+        taskCardState.data.getDatetimeComplete(),
     );
 
     const handleUpdateTask = (responseJson: any): void => {
-        const taskModel = new TaskModel(responseJson);
         setTaskCardState((prevState: any) => {
             return {
                 ...prevState,
-                data: {
-                    id: taskModel.getId(),
-                    name: taskModel.getName(),
-                    description: taskModel.getDescription(),
-                    imageLink: taskModel.getImageLink(),
-                    numberOfPoints: taskModel.getNumberOfPoints(),
-                    idPod: taskModel.getIdPod(),
-                    noteText: taskModel.getNoteText(),
-                    noteImage: taskModel.getNoteImage(),
-                    isComplete: taskModel.getIsComplete(),
-                    isStar: taskModel.getIsStar(),
-                    isPin: taskModel.getIsPin(),
-                    datetimeCreate: taskModel.getDatetimeCreate(),
-                    datetimeUpdate: taskModel.getDatetimeUpdate(),
-                    datetimeTarget: taskModel.getDatetimeTarget(),
-                    datetimeComplete: taskModel.getDatetimeComplete(),
-                },
+                data: new TaskModel(responseJson),
             };
         });
     };
@@ -201,26 +213,131 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
             'api/task/update/task',
             { idUser: MOCK_MY_USER_ID },
             {
-                id,
-                timestampTarget: editModeValue === undefined || editModeValue === null ? null : editModeValue.unix(),
+                id: task.getId(),
+                datetimeTarget:
+                    editModeValue === undefined || editModeValue === null ? null : editModeValue.format('YYYY/MM/DD'),
             },
         )
             .then((responseJson: any) => {
                 handleUpdateTask(responseJson);
+                setTaskCardState((prevState: any) => {
+                    return {
+                        ...prevState,
+                        editMode: {
+                            ...prevState.editMode,
+                            datetimeTarget: {
+                                ...prevState.editMode.datetimeTarget,
+                                isEditMode: false,
+                            },
+                        },
+                    };
+                });
             })
             .catch(() => {});
     };
 
-    const debouncedOnChangeDatetimeTarget = _.debounce(handleOnChangeDatetimeTarget, 2000);
+    const handlePostResourceTaskComments = (
+        pathApi: string,
+        queryParamsObject: Record<string, unknown>,
+        requestBodyObject: Record<string, unknown>,
+    ): void => {
+        setTaskCommentsState((prevState: ITaskCommentsState) => {
+            return {
+                ...prevState,
+                response: {
+                    ...prevState.response,
+                    state: Constants.RESPONSE_STATE_LOADING,
+                    errorMessage: null,
+                },
+            };
+        });
+        ResourceClient.postResource(pathApi, queryParamsObject, requestBodyObject)
+            .then((responseJson: any) => {
+                setTaskCommentsState((prevState: ITaskCommentsState) => {
+                    return {
+                        ...prevState,
+                        data: responseJson.map((datapoint: any) => new TaskCommentModel(datapoint)),
+                        isShowTaskComments: true,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_SUCCESS,
+                            errorMessage: null,
+                        },
+                    };
+                });
+            })
+            .catch((responseError: any) => {
+                setTaskCommentsState((prevState: ITaskCommentsState) => {
+                    return {
+                        ...prevState,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_ERROR,
+                            errorMessage: responseError,
+                        },
+                    };
+                });
+            });
+    };
 
+    const handlePostResourceTaskReactions = (
+        pathApi: string,
+        queryParamsObject: Record<string, unknown>,
+        requestBodyObject: Record<string, unknown>,
+    ): void => {
+        setTaskReactionsState((prevState: ITaskReactionsState) => {
+            return {
+                ...prevState,
+                response: {
+                    ...prevState.response,
+                    state: Constants.RESPONSE_STATE_LOADING,
+                    errorMessage: null,
+                },
+            };
+        });
+        ResourceClient.postResource(pathApi, queryParamsObject, requestBodyObject)
+            .then((responseJson: any) => {
+                setTaskReactionsState((prevState: ITaskReactionsState) => {
+                    return {
+                        ...prevState,
+                        data: new ReactionsModel(responseJson),
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_SUCCESS,
+                            errorMessage: null,
+                        },
+                    };
+                });
+            })
+            .catch((responseError: any) => {
+                setTaskReactionsState((prevState: ITaskReactionsState) => {
+                    return {
+                        ...prevState,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_ERROR,
+                            errorMessage: responseError,
+                        },
+                    };
+                });
+            });
+    };
+    const debouncedOnChangeDatetimeTarget = _.debounce(handleOnChangeDatetimeTarget, 1000);
+
+    const isErrorEditModeValueName =
+        getInputText(taskCardState.editMode.name.editModeValue).length < Constants.TASK_NAME_MIN_LENGTH_CHARACTERS ||
+        getInputText(taskCardState.editMode.name.editModeValue).length > Constants.TASK_NAME_MAX_LENGTH_CHARACTERS;
+    const isErrorEditModeValueDescription =
+        getInputText(taskCardState.editMode.description.editModeValue).length >
+        Constants.TASK_DESCRIPTION_MAX_LENGTH_CHARACTERS;
     const isErrorEditModeValueNumberOfPoints =
         getInputInteger(String(taskCardState.editMode.numberOfPoints.editModeValue)) <
             Constants.TASK_NUMBER_OF_POINTS_MIN ||
         getInputInteger(String(taskCardState.editMode.numberOfPoints.editModeValue)) >
             Constants.TASK_NUMBER_OF_POINTS_MAX;
-    const isErrorEditModeValueDescription =
-        getInputText(taskCardState.editMode.description.editModeValue).length >
-        Constants.TASK_DESCRIPTION_MAX_LENGTH_CHARACTERS;
+    const isErrorEditModeValueNoteText =
+        getInputText(taskCardState.editMode.noteText.editModeValue).length >
+        Constants.TASK_NOTE_TEXT_MAX_LENGTH_CHARACTERS;
 
     return (
         <Card
@@ -228,75 +345,418 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                 fontFamily: 'Raleway',
                 color: THEME.palette.grey.A700,
                 marginBottom: '16px',
-                width: '650px',
+                width: '680px',
                 position: 'relative',
             }}
         >
             <CardContent>
-                <Grid container direction="row">
-                    <Grid item sx={{ paddingRight: '8px', paddingTop: '8px' }}>
-                        <IconButton
-                            onClick={() => {
-                                ResourceClient.postResource(
-                                    'api/task/update/task',
-                                    { idUser: MOCK_MY_USER_ID },
-                                    {
-                                        id,
-                                        isComplete: true,
-                                    },
-                                )
-                                    .then((responseJson: any) => {
-                                        handleUpdateTask(responseJson);
-                                    })
-                                    .catch(() => {});
-                            }}
-                        >
-                            {taskCardState.data.isComplete ? <CheckCircleIcon /> : <RadioButtonUncheckedIcon />}
-                        </IconButton>
-                    </Grid>
-                    <Grid item sx={{ marginRight: 'auto', maxWidth: '500px' }}>
-                        <Grid container direction="column">
-                            <Grid item>
-                                <Typography variant="body1">{taskCardState.data.name}</Typography>
+                <Grid container direction="column">
+                    <Grid item>
+                        <Grid container direction="row">
+                            <Grid item sx={{ paddingRight: '8px', paddingTop: '8px' }}>
+                                <IconButton
+                                    onClick={() => {
+                                        ResourceClient.postResource(
+                                            'api/task/update/task',
+                                            { idUser: MOCK_MY_USER_ID },
+                                            {
+                                                id: task.getId(),
+                                                isComplete: !taskCardState.data.getIsComplete(),
+                                            },
+                                        )
+                                            .then((responseJson: any) => {
+                                                handleUpdateTask(responseJson);
+                                                handleUpdateUponToggleTaskComplete();
+                                            })
+                                            .catch(() => {});
+                                    }}
+                                    disabled={
+                                        !isAuthorizedToComplete || !taskCardState.data.getIsMemberOfTaskPod() // disabled if either unauthorized or if not a member
+                                    }
+                                >
+                                    {taskCardState.data.getIsComplete() ? (
+                                        <CheckCircleIcon />
+                                    ) : (
+                                        <RadioButtonUncheckedIcon />
+                                    )}
+                                </IconButton>
                             </Grid>
-                            {taskCardState.editMode.description.isEditMode ? (
-                                <Grid item>
+                            <Grid item sx={{ marginRight: 'auto', width: '500px' }}>
+                                <Grid container direction="column">
+                                    {taskCardState.editMode.name.isEditMode ? (
+                                        <Grid item>
+                                            <TextField
+                                                id="task-name-edit"
+                                                defaultValue={taskCardState.editMode.name.editModeValue}
+                                                fullWidth
+                                                value={taskCardState.editMode.name.editModeValue}
+                                                onBlur={() => {
+                                                    setTaskCardState((prevState: ITaskCardState) => {
+                                                        return {
+                                                            ...prevState,
+                                                            editMode: {
+                                                                ...prevState.editMode,
+                                                                name: {
+                                                                    ...prevState.editMode.name,
+                                                                    isEditMode: false,
+                                                                    ...(isErrorEditModeValueName
+                                                                        ? {
+                                                                              editModeValue:
+                                                                                  prevState.data.name !== null
+                                                                                      ? prevState.data.name
+                                                                                      : '',
+                                                                          }
+                                                                        : {}),
+                                                                },
+                                                            },
+                                                        };
+                                                    });
+                                                    if (!isErrorEditModeValueName) {
+                                                        ResourceClient.postResource(
+                                                            'api/task/update/task',
+                                                            { idUser: MOCK_MY_USER_ID },
+                                                            {
+                                                                id: task.getId(),
+                                                                name:
+                                                                    getInputText(
+                                                                        taskCardState.editMode.name.editModeValue,
+                                                                    ).length === 0
+                                                                        ? null
+                                                                        : getInputText(
+                                                                              taskCardState.editMode.name.editModeValue,
+                                                                          ),
+                                                            },
+                                                        )
+                                                            .then((responseJson: any) => {
+                                                                handleUpdateTask(responseJson);
+                                                            })
+                                                            .catch(() => {});
+                                                    }
+                                                }}
+                                                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                                    setTaskCardState((prevState: any) => {
+                                                        const editModeValue = event.target.value;
+                                                        return {
+                                                            ...prevState,
+                                                            editMode: {
+                                                                ...prevState.editMode,
+                                                                name: {
+                                                                    ...prevState.editMode.name,
+                                                                    editModeValue,
+                                                                },
+                                                            },
+                                                        };
+                                                    });
+                                                }}
+                                                onKeyDown={(event: React.KeyboardEvent) => {
+                                                    if (event.key === 'Enter' && !event.shiftKey) {
+                                                        setTaskCardState((prevState: ITaskCardState) => {
+                                                            return {
+                                                                ...prevState,
+                                                                editMode: {
+                                                                    ...prevState.editMode,
+                                                                    name: {
+                                                                        ...prevState.editMode.name,
+                                                                        isEditMode: false,
+                                                                        ...(isErrorEditModeValueName
+                                                                            ? {
+                                                                                  editModeValue:
+                                                                                      prevState.data.name !== null
+                                                                                          ? prevState.data.name
+                                                                                          : '',
+                                                                              }
+                                                                            : {}),
+                                                                    },
+                                                                },
+                                                            };
+                                                        });
+                                                        if (!isErrorEditModeValueName) {
+                                                            ResourceClient.postResource(
+                                                                'api/task/update/task',
+                                                                { idUser: MOCK_MY_USER_ID },
+                                                                {
+                                                                    id: task.getId(),
+                                                                    name:
+                                                                        getInputText(
+                                                                            taskCardState.editMode.name.editModeValue,
+                                                                        ).length === 0
+                                                                            ? null
+                                                                            : getInputText(
+                                                                                  taskCardState.editMode.name
+                                                                                      .editModeValue,
+                                                                              ),
+                                                                },
+                                                            )
+                                                                .then((responseJson: any) => {
+                                                                    handleUpdateTask(responseJson);
+                                                                })
+                                                                .catch(() => {});
+                                                        }
+                                                    }
+                                                }}
+                                                helperText={Constants.TASK_INPUT_NAME_HELPER_TEXT(
+                                                    getInputText(taskCardState.editMode.name.editModeValue).length,
+                                                )}
+                                                error={isErrorEditModeValueName}
+                                            />
+                                        </Grid>
+                                    ) : (
+                                        <Grid
+                                            item
+                                            onClick={() => {
+                                                setTaskCardState((prevState: any) => {
+                                                    return {
+                                                        ...prevState,
+                                                        editMode: {
+                                                            ...prevState.editMode,
+                                                            name: {
+                                                                ...prevState.editMode.name,
+                                                                isEditMode: !isReadOnlyTaskBody,
+                                                            },
+                                                        },
+                                                    };
+                                                });
+                                            }}
+                                        >
+                                            <Typography variant="body1">{taskCardState.data.getName()}</Typography>
+                                        </Grid>
+                                    )}
+                                    {taskCardState.editMode.description.isEditMode ? (
+                                        <Grid item sx={{ marginBottom: '12px' }}>
+                                            <TextField
+                                                id="task-description-edit"
+                                                multiline
+                                                maxRows={12}
+                                                defaultValue={taskCardState.editMode.description.editModeValue}
+                                                fullWidth
+                                                value={taskCardState.editMode.description.editModeValue}
+                                                onBlur={() => {
+                                                    setTaskCardState((prevState: ITaskCardState) => {
+                                                        return {
+                                                            ...prevState,
+                                                            editMode: {
+                                                                ...prevState.editMode,
+                                                                description: {
+                                                                    ...prevState.editMode.description,
+                                                                    isEditMode: false,
+                                                                    ...(isErrorEditModeValueDescription
+                                                                        ? {
+                                                                              editModeValue:
+                                                                                  prevState.data.description !== null
+                                                                                      ? prevState.data.description
+                                                                                      : '',
+                                                                          }
+                                                                        : {}),
+                                                                },
+                                                            },
+                                                        };
+                                                    });
+                                                    if (!isErrorEditModeValueDescription) {
+                                                        ResourceClient.postResource(
+                                                            'api/task/update/task',
+                                                            { idUser: MOCK_MY_USER_ID },
+                                                            {
+                                                                id: task.getId(),
+                                                                description:
+                                                                    getInputText(
+                                                                        taskCardState.editMode.description
+                                                                            .editModeValue,
+                                                                    ).length === 0
+                                                                        ? null
+                                                                        : getInputText(
+                                                                              taskCardState.editMode.description
+                                                                                  .editModeValue,
+                                                                          ),
+                                                            },
+                                                        )
+                                                            .then((responseJson: any) => {
+                                                                handleUpdateTask(responseJson);
+                                                            })
+                                                            .catch(() => {});
+                                                    }
+                                                }}
+                                                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                                    setTaskCardState((prevState: any) => {
+                                                        const editModeValue = event.target.value;
+                                                        return {
+                                                            ...prevState,
+                                                            editMode: {
+                                                                ...prevState.editMode,
+                                                                description: {
+                                                                    ...prevState.editMode.description,
+                                                                    editModeValue,
+                                                                },
+                                                            },
+                                                        };
+                                                    });
+                                                }}
+                                                onKeyDown={(event: React.KeyboardEvent) => {
+                                                    if (event.key === 'Enter' && !event.shiftKey) {
+                                                        setTaskCardState((prevState: ITaskCardState) => {
+                                                            return {
+                                                                ...prevState,
+                                                                editMode: {
+                                                                    ...prevState.editMode,
+                                                                    description: {
+                                                                        ...prevState.editMode.description,
+                                                                        isEditMode: false,
+                                                                        ...(isErrorEditModeValueDescription
+                                                                            ? {
+                                                                                  editModeValue:
+                                                                                      prevState.data.description !==
+                                                                                      null
+                                                                                          ? prevState.data.description
+                                                                                          : '',
+                                                                              }
+                                                                            : {}),
+                                                                    },
+                                                                },
+                                                            };
+                                                        });
+                                                        if (!isErrorEditModeValueDescription) {
+                                                            ResourceClient.postResource(
+                                                                'api/task/update/task',
+                                                                { idUser: MOCK_MY_USER_ID },
+                                                                {
+                                                                    id: task.getId(),
+                                                                    description:
+                                                                        getInputText(
+                                                                            taskCardState.editMode.description
+                                                                                .editModeValue,
+                                                                        ).length === 0
+                                                                            ? null
+                                                                            : getInputText(
+                                                                                  taskCardState.editMode.description
+                                                                                      .editModeValue,
+                                                                              ),
+                                                                },
+                                                            )
+                                                                .then((responseJson: any) => {
+                                                                    handleUpdateTask(responseJson);
+                                                                })
+                                                                .catch(() => {});
+                                                        }
+                                                    }
+                                                }}
+                                                helperText={Constants.TASK_INPUT_DESCRIPTION_HELPER_TEXT(
+                                                    getInputText(taskCardState.editMode.description.editModeValue)
+                                                        .length,
+                                                )}
+                                                error={isErrorEditModeValueDescription}
+                                            />
+                                        </Grid>
+                                    ) : taskCardState.data.getDescription() !== null ? (
+                                        <Grid
+                                            item
+                                            onClick={() => {
+                                                setTaskCardState((prevState: any) => {
+                                                    return {
+                                                        ...prevState,
+                                                        editMode: {
+                                                            ...prevState.editMode,
+                                                            description: {
+                                                                ...prevState.editMode.description,
+                                                                isEditMode: !isReadOnlyTaskBody,
+                                                            },
+                                                        },
+                                                    };
+                                                });
+                                            }}
+                                        >
+                                            <Typography
+                                                variant="body2"
+                                                sx={{ paddingBottom: '8px', fontStyle: 'oblique' }}
+                                            >
+                                                {taskCardState.data.getDescription()}
+                                            </Typography>
+                                        </Grid>
+                                    ) : (
+                                        <Grid item sx={{ marginBottom: '32px' }}></Grid>
+                                    )}
+                                </Grid>
+                            </Grid>
+                            {!taskCardState.editMode.numberOfPoints.isEditMode ? (
+                                <Grid
+                                    item
+                                    sx={{
+                                        padding: '8px',
+                                        borderRadius: '50%',
+                                        width: '54px',
+                                        textAlign: 'center',
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        maxHeight: '60px',
+                                        height: '54px',
+                                    }}
+                                    onClick={() => {
+                                        setTaskCardState((prevState: any) => {
+                                            return {
+                                                ...prevState,
+                                                editMode: {
+                                                    ...prevState.editMode,
+                                                    numberOfPoints: {
+                                                        ...prevState.editMode.numberOfPoints,
+                                                        isEditMode: !isReadOnlyTaskBody,
+                                                    },
+                                                },
+                                            };
+                                        });
+                                    }}
+                                >
+                                    <Typography sx={{ fontSize: '1.5rem' }}>
+                                        {taskCardState.data.getNumberOfPoints()}
+                                    </Typography>
+                                </Grid>
+                            ) : (
+                                <Grid item sx={{ width: '100px', height: '54px' }}>
                                     <TextField
-                                        id="task-description-edit"
-                                        multiline
-                                        maxRows={12}
-                                        defaultValue={taskCardState.editMode.description.editModeValue}
-                                        fullWidth
-                                        value={taskCardState.editMode.description.editModeValue}
+                                        id="edit-task-num-points"
+                                        label="Points"
+                                        type="number"
+                                        InputLabelProps={{
+                                            shrink: true,
+                                        }}
+                                        value={taskCardState.editMode.numberOfPoints.editModeValue}
+                                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                            setTaskCardState((prevState: any) => {
+                                                return {
+                                                    ...prevState,
+                                                    editMode: {
+                                                        ...prevState.editMode,
+                                                        numberOfPoints: {
+                                                            ...prevState.editMode.numberOfPoints,
+                                                            editModeValue: event.target.value,
+                                                        },
+                                                    },
+                                                };
+                                            });
+                                        }}
                                         onBlur={() => {
                                             setTaskCardState((prevState: ITaskCardState) => {
                                                 return {
                                                     ...prevState,
                                                     editMode: {
                                                         ...prevState.editMode,
-                                                        description: {
-                                                            ...prevState.editMode.description,
+                                                        numberOfPoints: {
+                                                            ...prevState.editMode.numberOfPoints,
                                                             isEditMode: false,
-                                                            ...(isErrorEditModeValueDescription
+                                                            ...(isErrorEditModeValueNumberOfPoints
                                                                 ? {
-                                                                      editModeValue:
-                                                                          prevState.data.description !== null
-                                                                              ? prevState.data.description
-                                                                              : '',
+                                                                      editModeValue: prevState.data.numberOfPoints,
                                                                   }
                                                                 : {}),
                                                         },
                                                     },
                                                 };
                                             });
-                                            if (!isErrorEditModeValueDescription) {
+                                            if (!isErrorEditModeValueNumberOfPoints) {
                                                 ResourceClient.postResource(
                                                     'api/task/update/task',
                                                     { idUser: MOCK_MY_USER_ID },
                                                     {
-                                                        id,
-                                                        description: getInputText(
-                                                            taskCardState.editMode.description.editModeValue,
+                                                        id: task.getId(),
+                                                        numberOfPoints: getInputInteger(
+                                                            String(taskCardState.editMode.numberOfPoints.editModeValue),
                                                         ),
                                                     },
                                                 )
@@ -306,21 +766,6 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                     .catch(() => {});
                                             }
                                         }}
-                                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                            setTaskCardState((prevState: any) => {
-                                                const editModeValue = event.target.value;
-                                                return {
-                                                    ...prevState,
-                                                    editMode: {
-                                                        ...prevState.editMode,
-                                                        description: {
-                                                            ...prevState.editMode.description,
-                                                            editModeValue,
-                                                        },
-                                                    },
-                                                };
-                                            });
-                                        }}
                                         onKeyDown={(event: React.KeyboardEvent) => {
                                             if (event.key === 'Enter' && !event.shiftKey) {
                                                 setTaskCardState((prevState: ITaskCardState) => {
@@ -328,29 +773,28 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                         ...prevState,
                                                         editMode: {
                                                             ...prevState.editMode,
-                                                            description: {
-                                                                ...prevState.editMode.description,
+                                                            numberOfPoints: {
+                                                                ...prevState.editMode.numberOfPoints,
                                                                 isEditMode: false,
-                                                                ...(isErrorEditModeValueDescription
+                                                                ...(isErrorEditModeValueNumberOfPoints
                                                                     ? {
-                                                                          editModeValue:
-                                                                              prevState.data.description !== null
-                                                                                  ? prevState.data.description
-                                                                                  : '',
+                                                                          editModeValue: prevState.data.numberOfPoints,
                                                                       }
                                                                     : {}),
                                                             },
                                                         },
                                                     };
                                                 });
-                                                if (!isErrorEditModeValueDescription) {
+                                                if (!isErrorEditModeValueNumberOfPoints) {
                                                     ResourceClient.postResource(
                                                         'api/task/update/task',
                                                         { idUser: MOCK_MY_USER_ID },
                                                         {
-                                                            id,
-                                                            description: getInputText(
-                                                                taskCardState.editMode.description.editModeValue,
+                                                            id: task.getId(),
+                                                            numberOfPoints: getInputInteger(
+                                                                String(
+                                                                    taskCardState.editMode.numberOfPoints.editModeValue,
+                                                                ),
                                                             ),
                                                         },
                                                     )
@@ -361,72 +805,232 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                 }
                                             }
                                         }}
-                                        helperText={Constants.TASK_INPUT_DESCRIPTION_HELPER_TEXT(
-                                            getInputText(taskCardState.editMode.description.editModeValue).length,
-                                        )}
-                                        error={isErrorEditModeValueDescription}
+                                        error={isErrorEditModeValueNumberOfPoints}
                                     />
                                 </Grid>
-                            ) : (
+                            )}
+                        </Grid>
+                    </Grid>
+                    {taskCardState.data.getImageLink() !== null ? (
+                        <Grid
+                            item
+                            sx={{
+                                paddingBottom: '12px',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <Box
+                                component="img"
+                                sx={{
+                                    maxHeight: 512,
+                                    maxWidth: 512,
+                                }}
+                                alt="task image"
+                                // src="https://bet-app-io-alpha.s3.us-west-2.amazonaws.com/user-image/574bd532-8b74-467f-9828-68beb58d7a1c?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240204T100410Z&X-Amz-SignedHeaders=host&X-Amz-Credential=AKIAXCSRXEVRKDS4NPHR%2F20240204%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Expires=3600&X-Amz-Signature=c4d7f89dc995960ce2e3b8a68b747886238d64aa19cc004c26cce6d28b7c9b41"
+                                src={taskCardState.data.getImageLink() ?? PlaceholderImagePod}
+                            />
+                        </Grid>
+                    ) : null}
+                    {taskCardState.isShowDetails ? (
+                        <React.Fragment>
+                            {!isReadOnlyTaskBody &&
+                            taskCardState.data.getDescription() === null &&
+                            !taskCardState.editMode.description.isEditMode ? (
                                 <Grid
                                     item
-                                    onClick={() => {
-                                        setTaskCardState((prevState: any) => {
-                                            return {
-                                                ...prevState,
-                                                editMode: {
-                                                    ...prevState.editMode,
-                                                    description: {
-                                                        ...prevState.editMode.description,
-                                                        isEditMode: true,
-                                                    },
-                                                },
-                                            };
-                                        });
+                                    sx={{
+                                        marginTop: '12px',
+                                        marginBottom: '12px',
+                                        display: 'flex',
+                                        justifyContent: 'center',
                                     }}
                                 >
-                                    <Typography variant="body2" sx={{ paddingBottom: '8px', fontStyle: 'oblique' }}>
-                                        {taskCardState.data.description}
-                                    </Typography>
+                                    <Button
+                                        variant="text"
+                                        sx={{ textTransform: 'none', padding: '0px' }}
+                                        onClick={() => {
+                                            setTaskCardState((prevState: any) => {
+                                                return {
+                                                    ...prevState,
+                                                    editMode: {
+                                                        ...prevState.editMode,
+                                                        description: {
+                                                            ...prevState.editMode.description,
+                                                            isEditMode: !isReadOnlyTaskBody,
+                                                        },
+                                                    },
+                                                };
+                                            });
+                                        }}
+                                    >
+                                        {'Add description'}
+                                    </Button>
                                 </Grid>
-                            )}
-                            {taskCardState.isShowDetails ? (
-                                <React.Fragment>
-                                    {isDisplayUserBubblesComplete ? (
+                            ) : null}
+                            {!isReadOnlyTaskBody ? (
+                                <Grid item sx={{ paddingBottom: '12px', display: 'flex', justifyContent: 'center' }}>
+                                    <Button
+                                        variant="text"
+                                        sx={{ textTransform: 'none', padding: '0px' }}
+                                        component="label"
+                                    >
+                                        {taskCardState.data.getImageLink() === null ? 'Attach image' : 'Edit image'}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            hidden
+                                            onChange={(e: any) => {
+                                                const file = e.target.files[0];
+                                                const fileReader = new FileReader();
+                                                fileReader.onload = (function (file) {
+                                                    return function (e) {
+                                                        if (this.result !== null && String(this.result).length > 0) {
+                                                            ResourceClient.postResource(
+                                                                'api/task/update/task',
+                                                                { idUser: MOCK_MY_USER_ID },
+                                                                {
+                                                                    id: task.getId(),
+                                                                    imageAsBase64String: getInputText(
+                                                                        String(this.result),
+                                                                    ),
+                                                                },
+                                                            )
+                                                                .then((responseJson: any) => {
+                                                                    handleUpdateTask(responseJson);
+                                                                })
+                                                                .catch(() => {});
+                                                        }
+                                                    };
+                                                })(file);
+                                                fileReader.readAsDataURL(file);
+                                            }}
+                                        />
+                                    </Button>
+                                    {taskCardState.data.getImageLink() !== null ? (
                                         <React.Fragment>
-                                            <Grid item>
-                                                <Typography variant="caption">Completed by:</Typography>
-                                            </Grid>
-                                            <Grid item sx={{ marginBottom: '8px' }}>
-                                                <UserListButton />
-                                            </Grid>
+                                            <Divider
+                                                orientation="vertical"
+                                                flexItem
+                                                sx={{ marginLeft: '8px', marginRight: '8px' }}
+                                            />
+                                            <Button
+                                                variant="text"
+                                                color="error"
+                                                sx={{ textTransform: 'none', padding: '0px' }}
+                                                onClick={() => {
+                                                    ResourceClient.postResource(
+                                                        'api/task/update/task',
+                                                        { idUser: MOCK_MY_USER_ID },
+                                                        {
+                                                            id: task.getId(),
+                                                            imageAsBase64String: null,
+                                                        },
+                                                    )
+                                                        .then((responseJson: any) => {
+                                                            handleUpdateTask(responseJson);
+                                                        })
+                                                        .catch(() => {});
+                                                }}
+                                            >
+                                                {'Delete image'}
+                                            </Button>
                                         </React.Fragment>
                                     ) : null}
-                                    <Grid item>
-                                        <Box sx={{ display: 'flex', marginBottom: '4px' }}>
+                                </Grid>
+                            ) : null}
+
+                            {isDisplayOptionsStarPinDelete ? (
+                                <Grid item>
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            marginBottom: '4px',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        <IconButton
+                                            onClick={() => {
+                                                ResourceClient.postResource(
+                                                    'api/task/update/task',
+                                                    { idUser: MOCK_MY_USER_ID },
+                                                    {
+                                                        id: task.getId(),
+                                                        isStar: !taskCardState.data.getIsStar(),
+                                                    },
+                                                )
+                                                    .then((responseJson: any) => {
+                                                        handleUpdateTask(responseJson);
+                                                    })
+                                                    .catch(() => {});
+                                            }}
+                                        >
+                                            {taskCardState.data.getIsStar() ? <StarIcon /> : <StarOutlineIcon />}
+                                        </IconButton>
+                                        <Tooltip
+                                            title={'Starring a Task can assist with filtering and organizing'}
+                                            placement="right"
+                                        >
+                                            <InfoOutlinedIcon
+                                                sx={{
+                                                    paddingLeft: '4px',
+                                                    paddingRight: '8px',
+                                                    paddingTop: '10px',
+                                                    paddingBottom: '10px',
+                                                }}
+                                                fontSize="small"
+                                            />
+                                        </Tooltip>
+                                        <Divider orientation="vertical" flexItem />
+                                        <IconButton
+                                            onClick={() => {
+                                                ResourceClient.postResource(
+                                                    'api/task/update/task',
+                                                    { idUser: MOCK_MY_USER_ID },
+                                                    {
+                                                        id: task.getId(),
+                                                        isPin: !taskCardState.data.getIsPin(),
+                                                    },
+                                                )
+                                                    .then((responseJson: any) => {
+                                                        handleUpdateTask(responseJson);
+                                                    })
+                                                    .catch(() => {});
+                                            }}
+                                        >
+                                            {taskCardState.data.getIsPin() ? <PushPinIcon /> : <PushPinOutlinedIcon />}
+                                        </IconButton>
+                                        <Tooltip
+                                            title={'Pinning a Task displays the task on your public profile'}
+                                            placement="right"
+                                        >
+                                            <InfoOutlinedIcon
+                                                sx={{
+                                                    paddingLeft: '4px',
+                                                    paddingRight: '8px',
+                                                    paddingTop: '10px',
+                                                    paddingBottom: '10px',
+                                                }}
+                                                fontSize="small"
+                                            />
+                                        </Tooltip>
+                                        {isAuthorizedToDelete ? (
                                             <React.Fragment>
+                                                <Divider orientation="vertical" flexItem />
                                                 <IconButton
                                                     onClick={() => {
-                                                        ResourceClient.postResource(
-                                                            'api/task/update/task',
-                                                            { idUser: MOCK_MY_USER_ID },
-                                                            {
-                                                                id,
-                                                                isStar: !taskCardState.data.isStar,
-                                                            },
-                                                        )
-                                                            .then((responseJson: any) => {
-                                                                handleUpdateTask(responseJson);
-                                                            })
-                                                            .catch(() => {});
+                                                        setTaskCardState((prevState: any) => {
+                                                            return {
+                                                                ...prevState,
+                                                                isShowDeleteTaskConfirmationModal: true,
+                                                            };
+                                                        });
                                                     }}
                                                 >
-                                                    {taskCardState.data.isStar ? <StarIcon /> : <StarOutlineIcon />}
+                                                    <DeleteIcon />
                                                 </IconButton>
-                                                <Tooltip
-                                                    title={'Starring a task can assist with filtering and organizing'}
-                                                    placement="right"
-                                                >
+                                                <Tooltip title={'Delete Task'} placement="right">
                                                     <InfoOutlinedIcon
                                                         sx={{
                                                             paddingLeft: '4px',
@@ -437,262 +1041,678 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                         fontSize="small"
                                                     />
                                                 </Tooltip>
-                                                <Divider orientation="vertical" flexItem />{' '}
                                             </React.Fragment>
-                                            {isDisplayOptionPin ? (
-                                                <React.Fragment>
-                                                    <IconButton
-                                                        onClick={() => {
-                                                            ResourceClient.postResource(
-                                                                'api/task/update/task',
-                                                                { idUser: MOCK_MY_USER_ID },
-                                                                {
-                                                                    id,
-                                                                    isPin: !taskCardState.data.isPin,
-                                                                },
-                                                            )
-                                                                .then((responseJson: any) => {
-                                                                    handleUpdateTask(responseJson);
-                                                                })
-                                                                .catch(() => {});
+                                        ) : null}
+                                    </Box>
+                                </Grid>
+                            ) : null}
+                            <Grid
+                                item
+                                sx={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}
+                                onClick={() => {
+                                    setTaskCardState((prevState: any) => {
+                                        return {
+                                            ...prevState,
+                                            editMode: {
+                                                ...prevState.editMode,
+                                                datetimeTarget: {
+                                                    ...prevState.editMode.datetimeTarget,
+                                                    isEditMode: !isReadOnlyTaskBody,
+                                                },
+                                            },
+                                        };
+                                    });
+                                }}
+                            >
+                                <Typography variant="caption">{dateDescription}</Typography>
+                            </Grid>
+                            {taskCardState.editMode.datetimeTarget.isEditMode ? (
+                                <Grid item sx={{ marginBottom: '12px', display: 'flex', justifyContent: 'center' }}>
+                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                        <DatePicker
+                                            label={'Set target completion date'}
+                                            format="YYYY/MM/DD"
+                                            value={taskCardState.editMode.datetimeTarget.editModeValue}
+                                            slotProps={{
+                                                field: { clearable: true },
+                                            }}
+                                            onChange={debouncedOnChangeDatetimeTarget}
+                                            sx={{ width: '250px' }}
+                                        />
+                                    </LocalizationProvider>
+                                </Grid>
+                            ) : null}
+                            {isDisplayViewPodLink && taskCardState.data.getIdPod() !== null ? (
+                                <Grid
+                                    item
+                                    sx={{
+                                        marginBottom: '12px',
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        // width: '250px',
+                                    }}
+                                >
+                                    <Box sx={{ width: '250px' }}>
+                                        <Button
+                                            variant="contained"
+                                            href={`/pods/${String(taskCardState.data.getIdPod())}`}
+                                            sx={{ width: '100%' }}
+                                        >
+                                            View Pod
+                                        </Button>
+                                    </Box>
+                                </Grid>
+                            ) : null}
+                            {taskCardState.data.getIdPod() !== null &&
+                            taskCardState.data.getUserBubblesTaskComplete() !== null ? (
+                                <Grid
+                                    item
+                                    sx={{
+                                        marginBottom: '12px',
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <Box sx={{ width: '250px' }}>
+                                        <UserListButton
+                                            labelText={getUserListButtonText(
+                                                taskCardState.data.getUserBubblesTaskCompleteTotalNumber(),
+                                                'completed',
+                                                'completed',
+                                            )}
+                                            userBubbles={taskCardState.data.getUserBubblesTaskComplete() ?? []}
+                                            sortByTimestampLabel="time completed"
+                                            apiPath={`api/task/read/tasks/${String(
+                                                task.getId(),
+                                            )}/userBubblesTaskComplete`}
+                                            modalTitle="Users Completed Task"
+                                            isUseDateTimeDateAndTime={true}
+                                        />
+                                    </Box>
+                                </Grid>
+                            ) : null}
+                            <Grid item sx={{ paddingBottom: '12px' }}>
+                                <Accordion>
+                                    <AccordionSummary
+                                        expandIcon={<ExpandMoreIcon />}
+                                        aria-controls="panel1-content"
+                                        id="panel1-header"
+                                    >
+                                        <Typography variant="button">My Notes</Typography>
+                                    </AccordionSummary>
+                                    <AccordionDetails>
+                                        {!isReadOnlyTaskNotes ? (
+                                            <Grid container direction="column">
+                                                {taskCardState.data.getNoteText() === null &&
+                                                !taskCardState.editMode.noteText.isEditMode ? (
+                                                    <Grid
+                                                        item
+                                                        sx={{
+                                                            marginBottom: '12px',
+                                                            display: 'flex',
+                                                            justifyContent: 'center',
                                                         }}
                                                     >
-                                                        {taskCardState.data.isPin ? (
-                                                            <PushPinIcon />
-                                                        ) : (
-                                                            <PushPinOutlinedIcon />
-                                                        )}
-                                                    </IconButton>
-                                                    <Tooltip
-                                                        title={
-                                                            'Pinning a task displays the task on your public profile'
-                                                        }
-                                                        placement="right"
-                                                    >
-                                                        <InfoOutlinedIcon
-                                                            sx={{
-                                                                paddingLeft: '4px',
-                                                                paddingRight: '8px',
-                                                                paddingTop: '10px',
-                                                                paddingBottom: '10px',
+                                                        <Button
+                                                            variant="text"
+                                                            sx={{ textTransform: 'none', padding: '0px' }}
+                                                            onClick={() => {
+                                                                setTaskCardState((prevState: any) => {
+                                                                    return {
+                                                                        ...prevState,
+                                                                        editMode: {
+                                                                            ...prevState.editMode,
+                                                                            noteText: {
+                                                                                ...prevState.editMode.noteText,
+                                                                                isEditMode: !isReadOnlyTaskNotes,
+                                                                            },
+                                                                        },
+                                                                    };
+                                                                });
                                                             }}
-                                                            fontSize="small"
+                                                        >
+                                                            {'Add text'}
+                                                        </Button>
+                                                    </Grid>
+                                                ) : null}
+                                                {taskCardState.editMode.noteText.isEditMode ? (
+                                                    <Grid item sx={{ marginBottom: '12px' }}>
+                                                        <TextField
+                                                            id="task-noteText-edit"
+                                                            multiline
+                                                            maxRows={12}
+                                                            defaultValue={taskCardState.editMode.noteText.editModeValue}
+                                                            fullWidth
+                                                            value={taskCardState.editMode.noteText.editModeValue}
+                                                            onBlur={() => {
+                                                                setTaskCardState((prevState: ITaskCardState) => {
+                                                                    return {
+                                                                        ...prevState,
+                                                                        editMode: {
+                                                                            ...prevState.editMode,
+                                                                            noteText: {
+                                                                                ...prevState.editMode.noteText,
+                                                                                isEditMode: false,
+                                                                                ...(isErrorEditModeValueDescription
+                                                                                    ? {
+                                                                                          editModeValue:
+                                                                                              prevState.data
+                                                                                                  .noteText !== null
+                                                                                                  ? prevState.data
+                                                                                                        .noteText
+                                                                                                  : '',
+                                                                                      }
+                                                                                    : {}),
+                                                                            },
+                                                                        },
+                                                                    };
+                                                                });
+                                                                if (!isErrorEditModeValueNoteText) {
+                                                                    ResourceClient.postResource(
+                                                                        'api/task/update/task',
+                                                                        { idUser: MOCK_MY_USER_ID },
+                                                                        {
+                                                                            id: task.getId(),
+                                                                            noteText:
+                                                                                getInputText(
+                                                                                    taskCardState.editMode.noteText
+                                                                                        .editModeValue,
+                                                                                ).length === 0
+                                                                                    ? null
+                                                                                    : getInputText(
+                                                                                          taskCardState.editMode
+                                                                                              .noteText.editModeValue,
+                                                                                      ),
+                                                                        },
+                                                                    )
+                                                                        .then((responseJson: any) => {
+                                                                            handleUpdateTask(responseJson);
+                                                                        })
+                                                                        .catch(() => {});
+                                                                }
+                                                            }}
+                                                            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                                                setTaskCardState((prevState: any) => {
+                                                                    const editModeValue = event.target.value;
+                                                                    return {
+                                                                        ...prevState,
+                                                                        editMode: {
+                                                                            ...prevState.editMode,
+                                                                            noteText: {
+                                                                                ...prevState.editMode.noteText,
+                                                                                editModeValue,
+                                                                            },
+                                                                        },
+                                                                    };
+                                                                });
+                                                            }}
+                                                            onKeyDown={(event: React.KeyboardEvent) => {
+                                                                if (event.key === 'Enter' && !event.shiftKey) {
+                                                                    setTaskCardState((prevState: ITaskCardState) => {
+                                                                        return {
+                                                                            ...prevState,
+                                                                            editMode: {
+                                                                                ...prevState.editMode,
+                                                                                noteText: {
+                                                                                    ...prevState.editMode.noteText,
+                                                                                    isEditMode: false,
+                                                                                    ...(isErrorEditModeValueNoteText
+                                                                                        ? {
+                                                                                              editModeValue:
+                                                                                                  prevState.data
+                                                                                                      .noteText !== null
+                                                                                                      ? prevState.data
+                                                                                                            .noteText
+                                                                                                      : '',
+                                                                                          }
+                                                                                        : {}),
+                                                                                },
+                                                                            },
+                                                                        };
+                                                                    });
+                                                                    if (!isErrorEditModeValueNoteText) {
+                                                                        ResourceClient.postResource(
+                                                                            'api/task/update/task',
+                                                                            { idUser: MOCK_MY_USER_ID },
+                                                                            {
+                                                                                id: task.getId(),
+                                                                                noteText:
+                                                                                    getInputText(
+                                                                                        taskCardState.editMode.noteText
+                                                                                            .editModeValue,
+                                                                                    ).length === 0
+                                                                                        ? null
+                                                                                        : getInputText(
+                                                                                              taskCardState.editMode
+                                                                                                  .noteText
+                                                                                                  .editModeValue,
+                                                                                          ),
+                                                                            },
+                                                                        )
+                                                                            .then((responseJson: any) => {
+                                                                                handleUpdateTask(responseJson);
+                                                                            })
+                                                                            .catch(() => {});
+                                                                    }
+                                                                }
+                                                            }}
+                                                            helperText={Constants.TASK_INPUT_NOTE_TEXT_HELPER_TEXT(
+                                                                getInputText(
+                                                                    taskCardState.editMode.noteText.editModeValue,
+                                                                ).length,
+                                                            )}
+                                                            error={isErrorEditModeValueNoteText}
                                                         />
-                                                    </Tooltip>
-                                                </React.Fragment>
-                                            ) : null}
-                                        </Box>
-                                    </Grid>
-                                    <Grid item sx={{ marginBottom: '12px' }}>
-                                        <Typography variant="caption">{dateDescription}</Typography>
-                                    </Grid>
-                                    {taskCardState.data.description === null ||
-                                    taskCardState.data.description.length === 0 ? (
-                                        <Grid item sx={{ marginBottom: '24px' }}>
-                                            <Button
-                                                variant="contained"
-                                                onClick={() => {
-                                                    setTaskCardState((prevState: any) => {
-                                                        return {
-                                                            ...prevState,
-                                                            editMode: {
-                                                                ...prevState.editMode,
-                                                                description: {
-                                                                    ...prevState.editMode.description,
-                                                                    isEditMode: true,
-                                                                },
-                                                            },
-                                                        };
-                                                    });
-                                                }}
-                                            >
-                                                Add description
-                                            </Button>
-                                        </Grid>
-                                    ) : null}
-                                    <Grid item sx={{ marginBottom: '24px' }}>
-                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                            <DatePicker
-                                                label={'Target completion date'}
-                                                value={taskCardState.editMode.datetimeTarget.editModeValue}
-                                                slotProps={{
-                                                    field: { clearable: true },
-                                                }}
-                                                onChange={debouncedOnChangeDatetimeTarget}
-                                            />
-                                        </LocalizationProvider>
-                                    </Grid>
-                                    {taskCardState.editMode.numberOfPoints.isEditMode ? (
-                                        <Grid item>
-                                            <TextField
-                                                id="edit-task-num-points"
-                                                label="Points"
-                                                type="number"
-                                                InputLabelProps={{
-                                                    shrink: true,
-                                                }}
-                                                value={taskCardState.editMode.numberOfPoints.editModeValue}
-                                                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                                    setTaskCardState((prevState: any) => {
-                                                        return {
-                                                            ...prevState,
-                                                            editMode: {
-                                                                ...prevState.editMode,
-                                                                numberOfPoints: {
-                                                                    ...prevState.editMode.numberOfPoints,
-                                                                    editModeValue: event.target.value,
-                                                                },
-                                                            },
-                                                        };
-                                                    });
-                                                }}
-                                                onBlur={() => {
-                                                    setTaskCardState((prevState: ITaskCardState) => {
-                                                        return {
-                                                            ...prevState,
-                                                            editMode: {
-                                                                ...prevState.editMode,
-                                                                numberOfPoints: {
-                                                                    ...prevState.editMode.numberOfPoints,
-                                                                    isEditMode: false,
-                                                                    ...(isErrorEditModeValueNumberOfPoints
-                                                                        ? {
-                                                                              editModeValue:
-                                                                                  prevState.data.numberOfPoints,
-                                                                          }
-                                                                        : {}),
-                                                                },
-                                                            },
-                                                        };
-                                                    });
-                                                    if (!isErrorEditModeValueNumberOfPoints) {
-                                                        ResourceClient.postResource(
-                                                            'api/task/update/task',
-                                                            { idUser: MOCK_MY_USER_ID },
-                                                            {
-                                                                id,
-                                                                numberOfPoints: getInputInteger(
-                                                                    String(
-                                                                        taskCardState.editMode.numberOfPoints
-                                                                            .editModeValue,
-                                                                    ),
-                                                                ),
-                                                            },
-                                                        )
-                                                            .then((responseJson: any) => {
-                                                                handleUpdateTask(responseJson);
-                                                            })
-                                                            .catch(() => {});
-                                                    }
-                                                }}
-                                                onKeyDown={(event: React.KeyboardEvent) => {
-                                                    if (event.key === 'Enter' && !event.shiftKey) {
-                                                        setTaskCardState((prevState: ITaskCardState) => {
-                                                            return {
-                                                                ...prevState,
-                                                                editMode: {
-                                                                    ...prevState.editMode,
-                                                                    numberOfPoints: {
-                                                                        ...prevState.editMode.numberOfPoints,
-                                                                        isEditMode: false,
-                                                                        ...(isErrorEditModeValueNumberOfPoints
-                                                                            ? {
-                                                                                  editModeValue:
-                                                                                      prevState.data.numberOfPoints,
-                                                                              }
-                                                                            : {}),
+                                                    </Grid>
+                                                ) : (
+                                                    <Grid
+                                                        item
+                                                        sx={{ marginBottom: '12px' }}
+                                                        onClick={() => {
+                                                            setTaskCardState((prevState: any) => {
+                                                                return {
+                                                                    ...prevState,
+                                                                    editMode: {
+                                                                        ...prevState.editMode,
+                                                                        noteText: {
+                                                                            ...prevState.editMode.noteText,
+                                                                            isEditMode: !isReadOnlyTaskNotes,
+                                                                        },
                                                                     },
-                                                                },
-                                                            };
-                                                        });
-                                                        if (!isErrorEditModeValueNumberOfPoints) {
-                                                            ResourceClient.postResource(
-                                                                'api/task/update/task',
-                                                                { idUser: MOCK_MY_USER_ID },
-                                                                {
-                                                                    id,
-                                                                    numberOfPoints: getInputInteger(
-                                                                        String(
-                                                                            taskCardState.editMode.numberOfPoints
-                                                                                .editModeValue,
-                                                                        ),
-                                                                    ),
-                                                                },
-                                                            )
-                                                                .then((responseJson: any) => {
-                                                                    handleUpdateTask(responseJson);
-                                                                })
-                                                                .catch(() => {});
-                                                        }
-                                                    }
-                                                }}
-                                                error={isErrorEditModeValueNumberOfPoints}
-                                                helperText={Constants.INPUT_NUMBER_OF_POINTS_HELPER_TEXT}
-                                            />
-                                        </Grid>
-                                    ) : null}
-                                    <Grid item>
-                                        <Button
-                                            sx={{ padding: '0px', textTransform: 'none' }}
-                                            variant="text"
-                                            onClick={() => {
-                                                setTaskCardState((prevState: any) => {
-                                                    return { ...prevState, isShowDetails: false };
-                                                });
-                                            }}
-                                        >
-                                            hide details
-                                        </Button>
-                                    </Grid>
-                                </React.Fragment>
-                            ) : (
-                                <Grid item>
-                                    <IconButton
-                                        sx={{ padding: '0px' }}
-                                        onClick={() => {
-                                            setTaskCardState((prevState: any) => {
-                                                return { ...prevState, isShowDetails: true };
+                                                                };
+                                                            });
+                                                        }}
+                                                    >
+                                                        <Typography variant="body1">
+                                                            {taskCardState.data.getNoteText()}
+                                                        </Typography>
+                                                    </Grid>
+                                                )}
+                                                {taskCardState.data.getNoteImageLink() !== null ? (
+                                                    <Grid
+                                                        item
+                                                        sx={{
+                                                            paddingBottom: '12px',
+                                                            display: 'flex',
+                                                            justifyContent: 'center',
+                                                        }}
+                                                    >
+                                                        <Box
+                                                            component="img"
+                                                            sx={{
+                                                                maxHeight: 512,
+                                                                maxWidth: 512,
+                                                            }}
+                                                            alt="task-note-image"
+                                                            src={
+                                                                taskCardState.data.getNoteImageLink() ??
+                                                                PlaceholderImagePod
+                                                            }
+                                                        />
+                                                    </Grid>
+                                                ) : null}
+                                                <Grid
+                                                    item
+                                                    sx={{
+                                                        paddingBottom: '12px',
+                                                        display: 'flex',
+                                                        justifyContent: 'center',
+                                                    }}
+                                                >
+                                                    <Button
+                                                        variant="text"
+                                                        sx={{ textTransform: 'none', padding: '0px' }}
+                                                        component="label"
+                                                    >
+                                                        {taskCardState.data.getNoteImageLink() === null
+                                                            ? 'Attach image'
+                                                            : 'Edit image'}
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            hidden
+                                                            onChange={(e: any) => {
+                                                                const file = e.target.files[0];
+                                                                const fileReader = new FileReader();
+                                                                fileReader.onload = (function (file) {
+                                                                    return function (e) {
+                                                                        if (
+                                                                            this.result !== null &&
+                                                                            String(this.result).length > 0
+                                                                        ) {
+                                                                            ResourceClient.postResource(
+                                                                                'api/task/update/task',
+                                                                                { idUser: MOCK_MY_USER_ID },
+                                                                                {
+                                                                                    id: task.getId(),
+                                                                                    noteImageAsBase64String:
+                                                                                        getInputText(
+                                                                                            String(this.result),
+                                                                                        ),
+                                                                                },
+                                                                            )
+                                                                                .then((responseJson: any) => {
+                                                                                    handleUpdateTask(responseJson);
+                                                                                })
+                                                                                .catch(() => {});
+                                                                        }
+                                                                    };
+                                                                })(file);
+                                                                fileReader.readAsDataURL(file);
+                                                            }}
+                                                        />
+                                                    </Button>
+                                                    {taskCardState.data.getNoteImageLink() !== null ? (
+                                                        <React.Fragment>
+                                                            <Divider
+                                                                orientation="vertical"
+                                                                flexItem
+                                                                sx={{ marginLeft: '8px', marginRight: '8px' }}
+                                                            />
+                                                            <Button
+                                                                variant="text"
+                                                                color="error"
+                                                                sx={{ textTransform: 'none', padding: '0px' }}
+                                                                onClick={() => {
+                                                                    ResourceClient.postResource(
+                                                                        'api/task/update/task',
+                                                                        { idUser: MOCK_MY_USER_ID },
+                                                                        {
+                                                                            id: task.getId(),
+                                                                            noteImageAsBase64String: null,
+                                                                        },
+                                                                    )
+                                                                        .then((responseJson: any) => {
+                                                                            handleUpdateTask(responseJson);
+                                                                        })
+                                                                        .catch(() => {});
+                                                                }}
+                                                            >
+                                                                {'Delete image'}
+                                                            </Button>
+                                                        </React.Fragment>
+                                                    ) : null}
+                                                </Grid>
+                                            </Grid>
+                                        ) : (
+                                            <Grid container direction="column">
+                                                {taskCardState.data.getNoteText() === null &&
+                                                taskCardState.data.getNoteImageLink() === null ? (
+                                                    <Typography>{'No notes posted yet.'}</Typography>
+                                                ) : (
+                                                    <React.Fragment>
+                                                        {taskCardState.data.getNoteText() !== null ? (
+                                                            <Grid
+                                                                item
+                                                                sx={{ marginBottom: '12px' }}
+                                                                onClick={() => {
+                                                                    setTaskCardState((prevState: any) => {
+                                                                        return {
+                                                                            ...prevState,
+                                                                            editMode: {
+                                                                                ...prevState.editMode,
+                                                                                noteText: {
+                                                                                    ...prevState.editMode.noteText,
+                                                                                    isEditMode: true,
+                                                                                },
+                                                                            },
+                                                                        };
+                                                                    });
+                                                                }}
+                                                            >
+                                                                <Typography variant="body1">
+                                                                    {taskCardState.data.getNoteText()}
+                                                                </Typography>
+                                                            </Grid>
+                                                        ) : null}
+                                                        {taskCardState.data.getNoteImageLink() !== null ? (
+                                                            <Grid
+                                                                item
+                                                                sx={{
+                                                                    paddingBottom: '12px',
+                                                                    display: 'flex',
+                                                                    justifyContent: 'center',
+                                                                }}
+                                                            >
+                                                                <Box
+                                                                    component="img"
+                                                                    sx={{
+                                                                        maxHeight: 512,
+                                                                        maxWidth: 512,
+                                                                    }}
+                                                                    alt="task-note-image"
+                                                                    src={
+                                                                        taskCardState.data.getNoteImageLink() ??
+                                                                        PlaceholderImagePod
+                                                                    }
+                                                                />
+                                                            </Grid>
+                                                        ) : null}
+                                                    </React.Fragment>
+                                                )}
+                                            </Grid>
+                                        )}
+                                    </AccordionDetails>
+                                </Accordion>
+                                <Accordion
+                                    onChange={(event: React.SyntheticEvent, expanded: boolean) => {
+                                        if (expanded) {
+                                            handlePostResourceTaskComments(
+                                                'api/task/read/taskComments',
+                                                {
+                                                    idUser: MOCK_MY_USER_ID,
+                                                },
+                                                {
+                                                    idTask: task.getId(),
+                                                },
+                                            );
+                                            handlePostResourceTaskReactions(
+                                                'api/task/read/taskReactions',
+                                                {
+                                                    idUser: MOCK_MY_USER_ID,
+                                                },
+                                                {
+                                                    idTask: task.getId(),
+                                                    numberOfReactionsLimit: 3,
+                                                },
+                                            );
+                                        } else {
+                                            setTaskCommentsState((prevState: ITaskCommentsState) => {
+                                                return {
+                                                    ...prevState,
+                                                    isShowTaskComments: false,
+                                                };
                                             });
-                                        }}
+                                        }
+                                    }}
+                                >
+                                    <AccordionSummary
+                                        expandIcon={<ExpandMoreIcon />}
+                                        aria-controls="panel2-content"
+                                        id="panel2-header"
                                     >
-                                        <MoreHorizIcon />
-                                    </IconButton>
-                                </Grid>
-                            )}
-                        </Grid>
+                                        <Typography variant="button">Comments and Reactions</Typography>
+                                    </AccordionSummary>
+                                    <AccordionDetails>
+                                        <Card
+                                            variant="outlined"
+                                            sx={{ marginBottom: '12px', backgroundColor: '#e3f2fd' }}
+                                        >
+                                            <CardContent>
+                                                <Grid
+                                                    container
+                                                    direction="row"
+                                                    sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                    }}
+                                                >
+                                                    <Grid item>
+                                                        <ReactionSelector
+                                                            handleUpdateCallback={() => {
+                                                                handlePostResourceTaskReactions(
+                                                                    'api/task/read/taskReactions',
+                                                                    {
+                                                                        idUser: MOCK_MY_USER_ID,
+                                                                    },
+                                                                    {
+                                                                        idTask: task.getId(),
+                                                                        numberOfReactionsLimit: 3,
+                                                                    },
+                                                                );
+                                                            }}
+                                                            myReaction={taskReactionsState.data.getMyReactionType()}
+                                                            apiPathSelectReaction={'api/task/update/taskReaction'}
+                                                            apiSelectReactionSourceEntityIdKey={'idTask'}
+                                                            apiSelectReactionSourceEntityIdValue={task.getId()}
+                                                        />
+                                                    </Grid>
+                                                    <Divider
+                                                        orientation="vertical"
+                                                        sx={{ marginLeft: '12px', marginRight: '12px' }}
+                                                    />
+                                                    <Grid item>
+                                                        <UserBubbleReactionListModalButton
+                                                            labelText={getUserListButtonText(
+                                                                taskReactionsState.data.getUserBubblesReactionTotalNumber(),
+                                                                'task reaction',
+                                                                'task reactions',
+                                                            )}
+                                                            userBubbles={taskReactionsState.data.getUserBubblesReaction()}
+                                                            sortByTimestampLabel="time of reaction"
+                                                            apiPath={`api/task/read/taskReactions`}
+                                                            apiReactionSourceEntityIdKey={'idTask'}
+                                                            apiReactionSourceEntityIdValue={task.getId()}
+                                                            modalTitle="Reactions"
+                                                        />
+                                                    </Grid>
+                                                </Grid>
+                                            </CardContent>
+                                        </Card>
+
+                                        {taskCommentsState.isShowTaskComments ? (
+                                            <TaskCommentList
+                                                taskComments={taskCommentsState.data}
+                                                idTask={task.getId()}
+                                            />
+                                        ) : null}
+                                    </AccordionDetails>
+                                </Accordion>
+                            </Grid>
+                        </React.Fragment>
+                    ) : null}
+                    <Grid item sx={{ display: 'flex', justifyContent: 'center' }}>
+                        {taskCardState.isShowDetails ? (
+                            <IconButton
+                                sx={{ padding: '0px' }}
+                                onClick={() => {
+                                    setTaskCardState((prevState: any) => {
+                                        return {
+                                            ...prevState,
+                                            isShowDetails: false,
+                                            editMode: {
+                                                ...prevState.editMode,
+                                                name: {
+                                                    ...prevState.editMode.name,
+                                                    isEditMode: false,
+                                                },
+                                                description: {
+                                                    ...prevState.editMode.description,
+                                                    isEditMode: false,
+                                                },
+                                                numberOfPoints: {
+                                                    ...prevState.editMode.numberOfPoints,
+                                                    isEditMode: false,
+                                                },
+                                                datetimeTarget: {
+                                                    ...prevState.editMode.datetimeTarget,
+                                                    isEditMode: false,
+                                                },
+                                                noteText: {
+                                                    ...prevState.editMode.noteText,
+                                                    isEditMode: false,
+                                                },
+                                            },
+                                        };
+                                    });
+                                }}
+                            >
+                                <ExpandLessIcon />
+                            </IconButton>
+                        ) : (
+                            <IconButton
+                                sx={{ padding: '0px' }}
+                                onClick={() => {
+                                    setTaskCardState((prevState: any) => {
+                                        return { ...prevState, isShowDetails: true };
+                                    });
+                                }}
+                            >
+                                <MoreHorizIcon />
+                            </IconButton>
+                        )}
                     </Grid>
-                    {!taskCardState.editMode.numberOfPoints.isEditMode ? (
-                        <Grid
-                            item
-                            sx={{
-                                padding: '8px',
-                                borderRadius: '50%',
-                                width: '54px',
-                                textAlign: 'center',
-                            }}
+                </Grid>
+                <Dialog
+                    open={taskCardState.isShowDeleteTaskConfirmationModal}
+                    onClose={() => {
+                        setTaskCardState((prevState: any) => {
+                            return {
+                                ...prevState,
+                                isShowDeleteTaskConfirmationModal: false,
+                            };
+                        });
+                    }}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                >
+                    <DialogTitle id="alert-dialog-title">{'Are you sure?'}</DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="alert-dialog-description">{`Are you sure you would like to delete this Task?${
+                            taskCardState.data.getIdPod() !== null && taskCardState.data.getIdPod() !== undefined
+                                ? ' Deleting a Task from a Pod also removes the Task from any Stamp which references the Task.'
+                                : ''
+                        }`}</DialogContentText>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
                             onClick={() => {
-                                if (taskCardState.data.isComplete) {
-                                    return;
-                                }
                                 setTaskCardState((prevState: any) => {
                                     return {
                                         ...prevState,
-                                        isShowDetails: true,
-                                        editMode: {
-                                            ...prevState.editMode,
-                                            numberOfPoints: {
-                                                ...prevState.editMode.numberOfPoints,
-                                                isEditMode: true,
-                                            },
-                                        },
+                                        isShowDeleteTaskConfirmationModal: false,
                                     };
                                 });
                             }}
+                            autoFocus
                         >
-                            <Typography sx={{ fontSize: '1.5rem' }}>{taskCardState.data.numberOfPoints}</Typography>
-                        </Grid>
-                    ) : null}
-                </Grid>
+                            Close
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                ResourceClient.postResource(
+                                    'api/task/delete/task',
+                                    { idUser: MOCK_MY_USER_ID },
+                                    {
+                                        id: task.getId(),
+                                    },
+                                )
+                                    .then(() => {
+                                        setTaskCardState((prevState: any) => {
+                                            return {
+                                                ...prevState,
+                                                isShowDeleteTaskConfirmationModal: false,
+                                            };
+                                        });
+                                    })
+                                    .catch(() => {});
+                            }}
+                        >
+                            Delete
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </CardContent>
         </Card>
     );

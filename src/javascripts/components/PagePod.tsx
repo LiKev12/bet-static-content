@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import _ from 'lodash';
 import { useParams } from 'react-router-dom';
-import { Box, Divider, Grid, Typography, Tab, Tabs, TextField } from '@mui/material';
+import { Box, Divider, Grid, Typography, Tab, Tabs, TextField, IconButton, Tooltip } from '@mui/material';
 import { THEME } from 'src/javascripts/Theme';
 import FilterTasks from 'src/javascripts/components/FilterTasks';
 import FilterStamps from 'src/javascripts/components/FilterStamps';
@@ -10,10 +10,15 @@ import StampCardList from 'src/javascripts/components/StampCardList';
 import AvatarImageEditor from 'src/javascripts/components/AvatarImageEditor';
 import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import UserListButton from 'src/javascripts/components/UserListButton';
-import JoinPodButton from 'src/javascripts/components/JoinPodButton';
-import CreateStampModal from 'src/javascripts/components/CreateStampModal';
-import CreateTaskModal from 'src/javascripts/components/CreateTaskModal';
-import { getInputText } from 'src/javascripts/utilities';
+import IconButtonJoinPod from 'src/javascripts/components/IconButtonJoinPod';
+import CreateStampModalButton from 'src/javascripts/components/CreateStampModalButton';
+import IconButtonInviteUsersJoinPodModal from 'src/javascripts/components/IconButtonInviteUsersJoinPodModal';
+import IconButtonAddPodModeratorsModal from 'src/javascripts/components/IconButtonAddPodModeratorsModal';
+import IconButtonManagePendingBecomePodModeratorRequestsModal from 'src/javascripts/components/IconButtonManagePendingBecomePodModeratorRequestsModal';
+import IconButtonSendBecomePodModeratorRequest from 'src/javascripts/components/IconButtonSendBecomePodModeratorRequest';
+import IconButtonLeavePod from 'src/javascripts/components/IconButtonLeavePod';
+import CreateTaskModalButton from 'src/javascripts/components/CreateTaskModalButton';
+import { getInputText, getUserListButtonText } from 'src/javascripts/utilities';
 import NumberOfPointsInTasksCompletedOverTimeVisualization from 'src/javascripts/components/NumberOfPointsInTasksCompletedOverTimeVisualization';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import TaskModel from 'src/javascripts/models/TaskModel';
@@ -21,6 +26,11 @@ import StampCardModel from 'src/javascripts/models/StampCardModel';
 import { PAGE_SIZE_STAMP, PAGE_SIZE_TASK } from 'src/javascripts/clients/ResourceClientConfig';
 import PodPageModel from 'src/javascripts/models/PodPageModel';
 import Constants from 'src/javascripts/Constants';
+import PlaceholderImagePod from 'src/assets/PlaceholderImagePod.png';
+import AlertDialog from 'src/javascripts/components/AlertDialog';
+import PersonIcon from '@mui/icons-material/Person';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+
 const tabIdxToDisplayMap: any = {
     0: 'task',
     1: 'stamp',
@@ -28,9 +38,11 @@ const tabIdxToDisplayMap: any = {
 };
 
 export interface IPodPageState {
-    data: any;
-    isLoading: boolean;
-    responseError: any;
+    data: PodPageModel;
+    response: {
+        state: string;
+        errorMessage: string | null;
+    };
     editMode: {
         name: {
             isEditMode: boolean;
@@ -48,8 +60,10 @@ export interface IPodPageState {
 }
 export interface ITaskState {
     data: any;
-    isLoading: boolean;
-    responseError: any;
+    response: {
+        state: string;
+        errorMessage: string | null;
+    };
     filter: {
         filterNameOrDescription: string;
         filterIsComplete: boolean;
@@ -66,9 +80,11 @@ export interface ITaskState {
     };
 }
 export interface IStampCardState {
-    data: any;
-    isLoading: boolean;
-    responseError: any;
+    data: StampCardModel[];
+    response: {
+        state: string;
+        errorMessage: string | null;
+    };
     filter: {
         filterNameOrDescription: string;
         filterIsCollect: boolean;
@@ -98,23 +114,23 @@ const PagePod: React.FC = () => {
                 editModeValue: '', // TODO what to show during loading? maybe blank imageLink?
             },
         },
-        data: {
-            name: '',
-            description: '',
-            imageLink: '',
+        data: new PodPageModel(null, true),
+        response: {
+            state: Constants.RESPONSE_STATE_LOADING,
+            errorMessage: null,
         },
-        isLoading: true,
-        responseError: null,
     });
 
     // filter tasks
     const [taskState, setTaskState] = useState<ITaskState>({
         data: [],
-        isLoading: true,
-        responseError: null,
+        response: {
+            state: Constants.RESPONSE_STATE_LOADING,
+            errorMessage: null,
+        },
         filter: {
             filterNameOrDescription: '',
-            filterIsComplete: false,
+            filterIsComplete: true,
             filterIsNotComplete: true,
             filterIsStar: true,
             filterIsNotStar: true,
@@ -131,8 +147,10 @@ const PagePod: React.FC = () => {
     // filter stamps
     const [stampCardState, setStampCardState] = useState<IStampCardState>({
         data: [],
-        isLoading: true,
-        responseError: null,
+        response: {
+            state: Constants.RESPONSE_STATE_LOADING,
+            errorMessage: null,
+        },
         filter: {
             filterNameOrDescription: '',
             filterIsCollect: true,
@@ -169,13 +187,12 @@ const PagePod: React.FC = () => {
                                 editModeValue: podPageModel.getImageLink(),
                             },
                         },
-                        data: {
-                            id: podPageModel.getId(),
-                            name: podPageModel.getName(),
-                            description: podPageModel.getDescription(),
-                            imageLink: podPageModel.getImageLink(),
+                        data: podPageModel,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_SUCCESS,
+                            errorMessage: null,
                         },
-                        isLoading: false,
                     };
                 });
             })
@@ -183,8 +200,11 @@ const PagePod: React.FC = () => {
                 setPodPageState((prevState: IPodPageState) => {
                     return {
                         ...prevState,
-                        isLoading: false,
-                        responseError,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_ERROR,
+                            errorMessage: responseError,
+                        },
                     };
                 });
             });
@@ -199,35 +219,13 @@ const PagePod: React.FC = () => {
                     return {
                         ...prevState,
                         data: responseJson.content.map((datapoint: any) => {
-                            const taskModel = new TaskModel(datapoint);
-                            return {
-                                id: taskModel.getId(),
-                                name: taskModel.getName(),
-                                description: taskModel.getDescription(),
-                                imageLink: taskModel.getImageLink(),
-                                numberOfPoints: taskModel.getNumberOfPoints(),
-                                idPod: taskModel.getIdPod(),
-                                noteText: taskModel.getNoteText(),
-                                noteImage: taskModel.getNoteImage(),
-                                isComplete: taskModel.getIsComplete(),
-                                isStar: taskModel.getIsStar(),
-                                isPin: taskModel.getIsPin(),
-                                datetimeCreate: taskModel.getDatetimeCreate(),
-                                datetimeUpdate: taskModel.getDatetimeUpdate(),
-                                datetimeTarget: taskModel.getDatetimeTarget(),
-                                datetimeComplete: taskModel.getDatetimeComplete(),
-
-                                handleToggleStar: () => {},
-                                handleTogglePin: () => {},
-                                handleToggleComplete: () => {},
-
-                                isDisplayOptionPin: true,
-                                isDisplayViewPodLink: false,
-                                isDisplayUserBubblesComplete: false,
-                                userListButtonBubblesTop3TaskComplete: null,
-                            };
+                            return new TaskModel(datapoint);
                         }),
-                        isLoading: false,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_SUCCESS,
+                            errorMessage: null,
+                        },
                         pagination: {
                             ...prevState.pagination,
                             totalNumberOfPages: responseJson.totalPages,
@@ -239,8 +237,11 @@ const PagePod: React.FC = () => {
                 setTaskState((prevState: ITaskState) => {
                     return {
                         ...prevState,
-                        isLoading: false,
-                        responseError,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_ERROR,
+                            errorMessage: responseError,
+                        },
                     };
                 });
             });
@@ -256,15 +257,13 @@ const PagePod: React.FC = () => {
                     return {
                         ...prevState,
                         data: responseJson.content.map((datapoint: any) => {
-                            const stampCardModel = new StampCardModel(datapoint);
-                            return {
-                                id: stampCardModel.getId(),
-                                name: stampCardModel.getName(),
-                                description: stampCardModel.getDescription(),
-                                imageLink: stampCardModel.getImageLink(),
-                            };
+                            return new StampCardModel(datapoint);
                         }),
-                        isLoading: false,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_SUCCESS,
+                            errorMessage: null,
+                        },
                         pagination: {
                             ...prevState.pagination,
                             totalNumberOfPages: responseJson.totalPages,
@@ -276,27 +275,25 @@ const PagePod: React.FC = () => {
                 setStampCardState((prevState: IStampCardState) => {
                     return {
                         ...prevState,
-                        isLoading: false,
-                        responseError,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_ERROR,
+                            errorMessage: responseError,
+                        },
                     };
                 });
             });
     };
 
     const handleUpdatePodPage = (responseJson: any): void => {
-        const podPageModel = new PodPageModel(responseJson);
         setPodPageState((prevState: any) => {
             return {
                 ...prevState,
-                data: {
-                    id: podPageModel.getId(),
-                    name: podPageModel.getName(),
-                    description: podPageModel.getDescription(),
-                    imageLink: podPageModel.getImageLink(),
-                },
+                data: new PodPageModel(responseJson),
             };
         });
     };
+
     const debouncedHandleChangeFilterNameOrDescription = _.debounce(
         (event: React.ChangeEvent<HTMLInputElement>): void => {
             if (tabIdxToDisplayMap[tabIdx] === 'task') {
@@ -323,7 +320,6 @@ const PagePod: React.FC = () => {
         });
         // eslint-disable-next-line
     }, []);
-
     useEffect(() => {
         handleGetResourceTasksAssociatedWithPod(`api/pod/read/pods/${String(idPod)}/tasks`, {
             idUser: MOCK_MY_USER_ID,
@@ -336,7 +332,7 @@ const PagePod: React.FC = () => {
             filterIsNotPin: taskState.filter.filterIsNotPin,
         });
         // eslint-disable-next-line
-    }, [taskState.filter]);
+    }, [taskState.filter, tabIdx]);
     useEffect(() => {
         handleGetResourceStampsAssociatedWithPod(`api/pod/read/pods/${String(idPod)}/stamps`, {
             idUser: MOCK_MY_USER_ID,
@@ -345,7 +341,7 @@ const PagePod: React.FC = () => {
             filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
         });
         // eslint-disable-next-line
-    }, [stampCardState.filter]);
+    }, [stampCardState.filter, tabIdx]);
 
     const isErrorEditModeValuePodName =
         getInputText(podPageState.editMode.name.editModeValue).length < Constants.POD_NAME_MIN_LENGTH_CHARACTERS ||
@@ -355,7 +351,27 @@ const PagePod: React.FC = () => {
         Constants.POD_DESCRIPTION_MAX_LENGTH_CHARACTERS;
 
     return (
-        <Box sx={{ minHeight: '100vh', background: THEME.palette.gradient }}>
+        <Box sx={{ minHeight: '100vh', background: THEME.palette.other.gradient }}>
+            {podPageState.response.state === Constants.RESPONSE_STATE_ERROR &&
+            podPageState.response.errorMessage !== null ? (
+                <AlertDialog
+                    title="Error"
+                    message={podPageState.response.errorMessage}
+                    isOpen={podPageState.response.state === Constants.RESPONSE_STATE_ERROR}
+                    handleClose={() => {
+                        setPodPageState((prevState: IPodPageState) => {
+                            return {
+                                ...prevState,
+                                response: {
+                                    ...prevState.response,
+                                    state: Constants.RESPONSE_STATE_UNSTARTED,
+                                    errorMessage: null,
+                                },
+                            };
+                        });
+                    }}
+                />
+            ) : null}
             <Box>
                 <Grid container direction="row">
                     <Grid item sx={{ padding: '24px' }}>
@@ -374,39 +390,236 @@ const PagePod: React.FC = () => {
                                     })
                                     .catch(() => {});
                             }}
-                            imageLink={podPageState.data.imageLink}
+                            imageLink={podPageState.data.getImageLink()}
+                            placeholderImage={PlaceholderImagePod}
+                            isReadOnly={!podPageState.data.getIsPodModerator()}
                         />
-                        <Box sx={{ paddingTop: '24px', paddingBottom: '12px' }}>
-                            <Grid container direction="row" sx={{ marginBottom: '8px' }}>
-                                <Grid item>
-                                    <Box sx={{ padding: '8px 8px 8px 0px', width: '100px' }}>
-                                        <Typography>Members:</Typography>
-                                    </Box>
-                                </Grid>
-                                <Grid item sx={{ display: 'flex' }}>
-                                    <UserListButton />
+                        <Box
+                            sx={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginTop: '16px',
+                                marginBottom: '12px',
+                            }}
+                        >
+                            {!podPageState.data.getIsPodMember() ? (
+                                <IconButtonJoinPod
+                                    handleJoinPod={() => {
+                                        ResourceClient.postResource(
+                                            'api/pod/update/joinPod',
+                                            { idUser: MOCK_MY_USER_ID },
+                                            {
+                                                idPod,
+                                            },
+                                        )
+                                            .then(() => {
+                                                handleGetResourcePodPage(`api/pod/read/pods/${String(idPod)}/page`, {
+                                                    idUser: MOCK_MY_USER_ID,
+                                                });
+                                            })
+                                            .catch(() => {});
+                                    }}
+                                />
+                            ) : null}
+                            {podPageState.data.getIsPodMember() && !podPageState.data.getIsPodModerator() ? (
+                                <React.Fragment>
+                                    <IconButton
+                                        edge="end"
+                                        aria-label="icon-button-is-member"
+                                        sx={{
+                                            cursor: 'default',
+                                            color: THEME.palette.info.main,
+                                        }}
+                                        disableRipple={true}
+                                    >
+                                        <Tooltip title={'You are a member'} placement="bottom">
+                                            <PersonIcon />
+                                        </Tooltip>
+                                    </IconButton>
+                                    <Divider
+                                        orientation="vertical"
+                                        flexItem
+                                        sx={{ marginLeft: '8px', marginRight: '8px' }}
+                                    />
+                                </React.Fragment>
+                            ) : null}
+                            {podPageState.data.getIsPodModerator() ? (
+                                <React.Fragment>
+                                    <IconButton
+                                        edge="end"
+                                        aria-label="icon-button-is-moderator"
+                                        sx={{
+                                            cursor: 'default',
+                                            color: THEME.palette.info.main,
+                                        }}
+                                        disableRipple={true}
+                                    >
+                                        <Tooltip title={'You are a moderator'} placement="bottom">
+                                            <ManageAccountsIcon />
+                                        </Tooltip>
+                                    </IconButton>
+                                    <Divider
+                                        orientation="vertical"
+                                        flexItem
+                                        sx={{ marginLeft: '8px', marginRight: '8px' }}
+                                    />
+                                </React.Fragment>
+                            ) : null}
+                            {podPageState.data.getIsPodMember() ? (
+                                <React.Fragment>
+                                    <IconButtonInviteUsersJoinPodModal idPod={idPod ?? ''} />
+                                    <Divider
+                                        orientation="vertical"
+                                        flexItem
+                                        sx={{ marginLeft: '8px', marginRight: '8px' }}
+                                    />
+                                </React.Fragment>
+                            ) : null}
+                            {podPageState.data.getIsPodModerator() ? (
+                                <React.Fragment>
+                                    <IconButtonAddPodModeratorsModal idPod={idPod ?? ''} />
+                                    <Divider
+                                        orientation="vertical"
+                                        flexItem
+                                        sx={{ marginLeft: '8px', marginRight: '8px' }}
+                                    />
+                                </React.Fragment>
+                            ) : null}
+                            {podPageState.data.getIsPodMember() && !podPageState.data.getIsPodModerator() ? (
+                                <React.Fragment>
+                                    <IconButtonSendBecomePodModeratorRequest
+                                        isSentBecomePodModeratorRequest={podPageState.data.getIsSentBecomePodModeratorRequest()}
+                                        handleSendBecomePodModeratorRequest={() => {
+                                            ResourceClient.postResource(
+                                                'api/pod/update/sendBecomePodModeratorRequest',
+                                                { idUser: MOCK_MY_USER_ID },
+                                                {
+                                                    idPod,
+                                                },
+                                            )
+                                                .then(() => {
+                                                    handleGetResourcePodPage(
+                                                        `api/pod/read/pods/${String(idPod)}/page`,
+                                                        {
+                                                            idUser: MOCK_MY_USER_ID,
+                                                        },
+                                                    );
+                                                })
+                                                .catch(() => {});
+                                        }}
+                                    />
+                                    <Divider
+                                        orientation="vertical"
+                                        flexItem
+                                        sx={{ marginLeft: '8px', marginRight: '8px' }}
+                                    />
+                                </React.Fragment>
+                            ) : null}
+                            {podPageState.data.getIsPodModerator() ? (
+                                <React.Fragment>
+                                    <IconButtonManagePendingBecomePodModeratorRequestsModal
+                                        idPod={idPod ?? ''}
+                                        numberOfPendingBecomeModeratorRequests={podPageState.data.getNumberOfPendingBecomeModeratorRequests()}
+                                        handleUpdatePodPage={() => {
+                                            handleGetResourcePodPage(`api/pod/read/pods/${String(idPod)}/page`, {
+                                                idUser: MOCK_MY_USER_ID,
+                                            });
+                                        }}
+                                    />
+                                    <Divider
+                                        orientation="vertical"
+                                        flexItem
+                                        sx={{ marginLeft: '8px', marginRight: '8px' }}
+                                    />
+                                </React.Fragment>
+                            ) : null}
+                            {podPageState.data.getIsPodMember() ? (
+                                <IconButtonLeavePod
+                                    handleLeavePod={() => {
+                                        ResourceClient.postResource(
+                                            'api/pod/update/leavePod',
+                                            { idUser: MOCK_MY_USER_ID },
+                                            {
+                                                idPod,
+                                            },
+                                        )
+                                            .then(() => {
+                                                handleGetResourcePodPage(`api/pod/read/pods/${String(idPod)}/page`, {
+                                                    idUser: MOCK_MY_USER_ID,
+                                                });
+                                            })
+                                            .catch(() => {});
+                                    }}
+                                />
+                            ) : null}
+                        </Box>
+                        {podPageState.response.state !== Constants.RESPONSE_STATE_LOADING &&
+                        podPageState.data.getUserBubblesPodMember() !== null ? (
+                            <Grid container direction="row" sx={{ marginTop: '16px', marginBottom: '12px' }}>
+                                <Grid item sx={{ display: 'flex', width: '100%' }}>
+                                    <UserListButton
+                                        labelText={getUserListButtonText(
+                                            podPageState.data.getUserBubblesPodMemberTotalNumber(),
+                                            'member',
+                                            'members',
+                                        )}
+                                        userBubbles={podPageState.data.getUserBubblesPodMember()}
+                                        sortByTimestampLabel="time become member"
+                                        apiPath={`api/pod/read/pods/${String(idPod)}/userBubblesPodMember`}
+                                        modalTitle="Pod Members"
+                                        isUseDateTimeDateAndTime={false}
+                                    />
                                 </Grid>
                             </Grid>
-                            <Grid container direction="row" sx={{ marginBottom: '8px' }}>
-                                <Grid item>
-                                    <Box sx={{ padding: '8px 8px 8px 0px', width: '100px' }}>
-                                        <Typography>Moderators:</Typography>
-                                    </Box>
-                                </Grid>
-                                <Grid item sx={{ display: 'flex' }}>
-                                    <UserListButton />
+                        ) : null}
+                        {podPageState.response.state !== Constants.RESPONSE_STATE_LOADING &&
+                        podPageState.data.getUserBubblesPodModerator() !== null ? (
+                            <Grid container direction="row" sx={{ marginBottom: '12px' }}>
+                                <Grid item sx={{ display: 'flex', width: '100%' }}>
+                                    <UserListButton
+                                        labelText={getUserListButtonText(
+                                            podPageState.data.getUserBubblesPodModeratorTotalNumber(),
+                                            'moderator',
+                                            'moderators',
+                                        )}
+                                        userBubbles={podPageState.data.getUserBubblesPodModerator()}
+                                        sortByTimestampLabel="time become moderator"
+                                        apiPath={`api/pod/read/pods/${String(idPod)}/userBubblesPodModerator`}
+                                        modalTitle="Pod Moderators"
+                                        isUseDateTimeDateAndTime={false}
+                                    />
                                 </Grid>
                             </Grid>
-                        </Box>
-                        <Box sx={{ paddingBottom: '12px' }}>
-                            <JoinPodButton isMember={true} />
-                        </Box>
-                        <Box sx={{ paddingBottom: '12px' }}>
-                            <CreateStampModal idPod={idPod ?? ''} />
-                        </Box>
-                        <Box sx={{ paddingBottom: '12px' }}>
-                            <CreateTaskModal idPod={idPod ?? ''} />
-                        </Box>
+                        ) : null}
+                        {podPageState.data.getIsPodMember() ? (
+                            <Box sx={{ marginBottom: '12px' }}>
+                                <CreateStampModalButton idPod={idPod === undefined || idPod === null ? null : idPod} />
+                            </Box>
+                        ) : null}
+                        {podPageState.data.getIsPodModerator() ? (
+                            <Box sx={{ marginBottom: '12px' }}>
+                                <CreateTaskModalButton
+                                    idPod={idPod ?? null}
+                                    handleUpdate={() => {
+                                        handleGetResourceTasksAssociatedWithPod(
+                                            `api/pod/read/pods/${String(idPod)}/tasks`,
+                                            {
+                                                idUser: MOCK_MY_USER_ID,
+                                                filterNameOrDescription: taskState.filter.filterNameOrDescription,
+                                                filterIsComplete: taskState.filter.filterIsComplete,
+                                                filterIsNotComplete: taskState.filter.filterIsNotComplete,
+                                                filterIsStar: taskState.filter.filterIsStar,
+                                                filterIsNotStar: taskState.filter.filterIsNotStar,
+                                                filterIsPin: taskState.filter.filterIsPin,
+                                                filterIsNotPin: taskState.filter.filterIsNotPin,
+                                            },
+                                        );
+                                    }}
+                                />
+                            </Box>
+                        ) : null}
                     </Grid>
                     <Grid item sx={{ width: '1000px', padding: '24px' }}>
                         <Grid container direction="column">
@@ -414,7 +627,7 @@ const PagePod: React.FC = () => {
                                 {podPageState.editMode.name.isEditMode ? (
                                     <TextField
                                         id="pod-edit-name"
-                                        defaultValue={podPageState.data.name}
+                                        defaultValue={podPageState.data.getName()}
                                         fullWidth
                                         value={podPageState.editMode.name.editModeValue}
                                         onBlur={() => {
@@ -449,7 +662,20 @@ const PagePod: React.FC = () => {
                                                     .then((responseJson: any) => {
                                                         handleUpdatePodPage(responseJson);
                                                     })
-                                                    .catch(() => {});
+                                                    .catch((responseError: any) => {
+                                                        setPodPageState((prevState: IPodPageState) => {
+                                                            return {
+                                                                ...prevState,
+                                                                response: {
+                                                                    ...prevState.response,
+                                                                    state: Constants.RESPONSE_STATE_ERROR,
+                                                                    errorMessage: Constants.RESPONSE_GET_ERROR_MESSAGE(
+                                                                        responseError?.response?.data?.message,
+                                                                    ),
+                                                                },
+                                                            };
+                                                        });
+                                                    });
                                             }
                                         }}
                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -501,7 +727,21 @@ const PagePod: React.FC = () => {
                                                         .then((responseJson: any) => {
                                                             handleUpdatePodPage(responseJson);
                                                         })
-                                                        .catch(() => {});
+                                                        .catch((responseError: any) => {
+                                                            setPodPageState((prevState: IPodPageState) => {
+                                                                return {
+                                                                    ...prevState,
+                                                                    response: {
+                                                                        ...prevState.response,
+                                                                        state: Constants.RESPONSE_STATE_ERROR,
+                                                                        errorMessage:
+                                                                            Constants.RESPONSE_GET_ERROR_MESSAGE(
+                                                                                responseError?.response?.data?.message,
+                                                                            ),
+                                                                    },
+                                                                };
+                                                            });
+                                                        });
                                                 }
                                             }
                                         }}
@@ -521,7 +761,7 @@ const PagePod: React.FC = () => {
                                                         ...prevState.editMode,
                                                         name: {
                                                             ...prevState.editMode.name,
-                                                            isEditMode: true,
+                                                            isEditMode: podPageState.data.getIsPodModerator(),
                                                         },
                                                     },
                                                 };
@@ -529,7 +769,7 @@ const PagePod: React.FC = () => {
                                         }}
                                         sx={{ height: '60px', overflowY: 'auto' }}
                                     >
-                                        {podPageState.data.name}
+                                        {podPageState.data.getName()}
                                     </Typography>
                                 )}
                             </Grid>
@@ -549,7 +789,7 @@ const PagePod: React.FC = () => {
                                         id="user-edit-bio"
                                         multiline
                                         maxRows={12}
-                                        defaultValue={podPageState.data.description}
+                                        defaultValue={podPageState.data.getDescription()}
                                         fullWidth
                                         value={podPageState.editMode.description.editModeValue}
                                         onBlur={() => {
@@ -563,7 +803,7 @@ const PagePod: React.FC = () => {
                                                             isEditMode: false,
                                                             ...(isErrorEditModeValuePodDescription
                                                                 ? {
-                                                                      editModeValue: prevState.data.description,
+                                                                      editModeValue: prevState.data.description ?? '',
                                                                   }
                                                                 : {}),
                                                         },
@@ -578,9 +818,14 @@ const PagePod: React.FC = () => {
                                                     },
                                                     {
                                                         id: idPod,
-                                                        description: getInputText(
-                                                            podPageState.editMode.description.editModeValue,
-                                                        ),
+                                                        description:
+                                                            getInputText(
+                                                                podPageState.editMode.description.editModeValue,
+                                                            ).length === 0
+                                                                ? null
+                                                                : getInputText(
+                                                                      podPageState.editMode.description.editModeValue,
+                                                                  ),
                                                     },
                                                 )
                                                     .then((responseJson: any) => {
@@ -615,7 +860,8 @@ const PagePod: React.FC = () => {
                                                                 isEditMode: false,
                                                                 ...(isErrorEditModeValuePodDescription
                                                                     ? {
-                                                                          editModeValue: prevState.data.description,
+                                                                          editModeValue:
+                                                                              prevState.data.description ?? '',
                                                                       }
                                                                     : {}),
                                                             },
@@ -630,9 +876,15 @@ const PagePod: React.FC = () => {
                                                         },
                                                         {
                                                             id: idPod,
-                                                            description: getInputText(
-                                                                podPageState.editMode.description.editModeValue,
-                                                            ),
+                                                            description:
+                                                                getInputText(
+                                                                    podPageState.editMode.description.editModeValue,
+                                                                ).length === 0
+                                                                    ? null
+                                                                    : getInputText(
+                                                                          podPageState.editMode.description
+                                                                              .editModeValue,
+                                                                      ),
                                                         },
                                                     )
                                                         .then((responseJson: any) => {
@@ -660,7 +912,7 @@ const PagePod: React.FC = () => {
                                                         ...prevState.editMode,
                                                         description: {
                                                             ...prevState.editMode.description,
-                                                            isEditMode: true,
+                                                            isEditMode: podPageState.data.getIsPodModerator(),
                                                         },
                                                     },
                                                 };
@@ -668,7 +920,9 @@ const PagePod: React.FC = () => {
                                         }}
                                         sx={{ whiteSpace: 'pre-wrap' }}
                                     >
-                                        {podPageState.data.description !== null ? podPageState.data.description : ' '}
+                                        {podPageState.data.getDescription() !== null
+                                            ? podPageState.data.getDescription()
+                                            : ' '}
                                     </Typography>
                                 )}
                             </Grid>
@@ -730,7 +984,16 @@ const PagePod: React.FC = () => {
                         />
                     </Box>
                     <Box sx={{ padding: '24px 96px 96px 96px', justifyContent: 'center', display: 'flex' }}>
-                        <TaskCardList tasks={taskState.data} />
+                        <TaskCardList
+                            tasks={taskState.data}
+                            isAuthorizedToComplete={podPageState.data.getIsPodMember()}
+                            isReadOnlyTaskBody={!podPageState.data.getIsPodModerator()}
+                            isReadOnlyTaskNotes={!podPageState.data.getIsPodMember()}
+                            isDisplayViewPodLink={false}
+                            isDisplayOptionsStarPinDelete={podPageState.data.getIsPodMember()}
+                            isAuthorizedToDelete={podPageState.data.getIsPodModerator()}
+                            handleUpdateUponToggleTaskComplete={() => {}}
+                        />
                     </Box>
                 </React.Fragment>
             ) : null}
@@ -770,8 +1033,8 @@ const PagePod: React.FC = () => {
                     <Box sx={{ padding: '24px 96px 96px 96px', justifyContent: 'center', display: 'flex' }}>
                         <StampCardList
                             stampCards={stampCardState.data}
-                            isShowCreateStampModal={false}
-                            isLoading={stampCardState.isLoading}
+                            isShowCreateStampModal={true}
+                            isLoading={stampCardState.response.state === Constants.RESPONSE_STATE_LOADING}
                             handleChangePaginationPageNumber={() => {}}
                             paginationTotalPages={0}
                         />
@@ -781,6 +1044,7 @@ const PagePod: React.FC = () => {
             {tabIdxToDisplayMap[tabIdx] === 'progress' ? (
                 <NumberOfPointsInTasksCompletedOverTimeVisualization
                     apiPath={`api/pod/read/pods/${String(idPod)}/numberOfPointsInTasksCompletedOverTimeVisualization`}
+                    refreshSwitchValue={true}
                 />
             ) : null}
         </Box>

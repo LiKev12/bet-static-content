@@ -8,6 +8,7 @@ import NumberOfPointsInTasksCompletedOverTimeVisualizationModel from 'src/javasc
 
 export interface IPointsDisplayProps {
     apiPath: string;
+    refreshSwitchValue: boolean; // short of refactoring to redux, we need to toggle this to refresh upon completing a personal task, as that is the only page which requires manually refresh (other pages, like Pod, have the viz tucked away in a separate tab from tasks, which loads anew each time)
 }
 
 export interface INumberOfPointsInTasksCompletedOverTimeVisualizationStateType {
@@ -18,7 +19,7 @@ export interface INumberOfPointsInTasksCompletedOverTimeVisualizationStateType {
 const NumberOfPointsInTasksCompletedOverTimeVisualization: React.FC<IPointsDisplayProps> = (
     props: IPointsDisplayProps,
 ) => {
-    const { apiPath } = props;
+    const { apiPath, refreshSwitchValue } = props;
     const [
         numberOfPointsInTasksCompletedOverTimeVisualizationState,
         setNumberOfPointsInTasksCompletedOverTimeVisualizationState,
@@ -57,13 +58,14 @@ const NumberOfPointsInTasksCompletedOverTimeVisualization: React.FC<IPointsDispl
         handleGetResouorceNumberOfPointsInTasksCompletedOverTimeVisualization(apiPath, {
             idUser: MOCK_MY_USER_ID,
         });
-    }, [apiPath]);
+    }, [apiPath, refreshSwitchValue]);
 
     return !numberOfPointsInTasksCompletedOverTimeVisualizationState.isLoading ? (
         <Box
             sx={{
                 borderRadius: '8px',
                 padding: '24px',
+                paddingTop: '0px',
             }}
         >
             <Grid container alignItems="center" justifyContent="center">

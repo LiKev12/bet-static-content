@@ -17,7 +17,7 @@ const PageHome: React.FC = () => {
                     minHeight: '100vh',
                     paddingLeft: '24px',
                     paddingRight: '24px',
-                    background: THEME.palette.gradient,
+                    background: THEME.palette.other.gradient,
                 }}
             >
                 <Grid container direction="row">

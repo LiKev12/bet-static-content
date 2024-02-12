@@ -18,7 +18,7 @@ const Footer: React.FC = () => {
                 spacing={4}
                 justifyContent="center"
                 sx={{
-                    background: THEME.palette.gradient,
+                    background: THEME.palette.other.gradient,
                     paddingBottom: '24px',
                     position: 'absolute',
                     left: '0',

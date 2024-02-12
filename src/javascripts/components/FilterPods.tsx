@@ -5,6 +5,9 @@ import { Button, Box, Checkbox, FormGroup, FormControlLabel, Grid, TextField } f
 export interface IFilterPodsProps {
     handleChangeText: any;
     handleUpdateFilterState: any;
+    isUseKeyPodPublic: boolean;
+    isPodPublic: boolean;
+    isPodNotPublic: boolean;
     isUseKeyPodMember: boolean;
     isPodMember: boolean;
     isPodNotMember: boolean;
@@ -17,6 +20,9 @@ const FilterPods: React.FC<IFilterPodsProps> = (props: IFilterPodsProps) => {
     const {
         handleChangeText,
         handleUpdateFilterState,
+        isUseKeyPodPublic,
+        isPodPublic,
+        isPodNotPublic,
         isUseKeyPodMember,
         isPodMember,
         isPodNotMember,
@@ -65,6 +71,36 @@ const FilterPods: React.FC<IFilterPodsProps> = (props: IFilterPodsProps) => {
                 {isShowAdvancedFilterOptions ? (
                     <Grid item>
                         <Grid container direction="row">
+                            {isUseKeyPodPublic ? (
+                                <Grid item>
+                                    <Box sx={{ width: '200px' }}>
+                                        <FormGroup>
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox
+                                                        checked={isPodPublic}
+                                                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                                            handleUpdateFilterState(event, 'filterIsPublic');
+                                                        }}
+                                                    />
+                                                }
+                                                label="Public"
+                                            />
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox
+                                                        checked={isPodNotPublic}
+                                                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                                            handleUpdateFilterState(event, 'filterIsNotPublic');
+                                                        }}
+                                                    />
+                                                }
+                                                label="Not public"
+                                            />
+                                        </FormGroup>
+                                    </Box>
+                                </Grid>
+                            ) : null}
                             {isUseKeyPodMember ? (
                                 <Grid item>
                                     <Box sx={{ width: '200px' }}>
@@ -74,7 +110,7 @@ const FilterPods: React.FC<IFilterPodsProps> = (props: IFilterPodsProps) => {
                                                     <Checkbox
                                                         checked={isPodMember}
                                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                                            handleUpdateFilterState(event, 'isPodMember');
+                                                            handleUpdateFilterState(event, 'filterIsMember');
                                                         }}
                                                     />
                                                 }
@@ -85,7 +121,7 @@ const FilterPods: React.FC<IFilterPodsProps> = (props: IFilterPodsProps) => {
                                                     <Checkbox
                                                         checked={isPodNotMember}
                                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                                            handleUpdateFilterState(event, 'isPodNotMember');
+                                                            handleUpdateFilterState(event, 'filterIsNotMember');
                                                         }}
                                                     />
                                                 }
@@ -104,7 +140,7 @@ const FilterPods: React.FC<IFilterPodsProps> = (props: IFilterPodsProps) => {
                                                     <Checkbox
                                                         checked={isPodModerator}
                                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                                            handleUpdateFilterState(event, 'isPodModerator');
+                                                            handleUpdateFilterState(event, 'filterIsModerator');
                                                         }}
                                                     />
                                                 }
@@ -115,7 +151,7 @@ const FilterPods: React.FC<IFilterPodsProps> = (props: IFilterPodsProps) => {
                                                     <Checkbox
                                                         checked={isPodNotModerator}
                                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                                            handleUpdateFilterState(event, 'isPodNotModerator');
+                                                            handleUpdateFilterState(event, 'filterIsNotModerator');
                                                         }}
                                                     />
                                                 }

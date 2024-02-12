@@ -10,7 +10,7 @@ import PagePersonal from 'src/javascripts/components/PagePersonal';
 import PagePod from 'src/javascripts/components/PagePod';
 import PageStamp from 'src/javascripts/components/PageStamp';
 import PageDiscover from 'src/javascripts/components/PageDiscover';
-import PageProfile from 'src/javascripts/components/PageProfile';
+import PageUser from 'src/javascripts/components/PageUser';
 // import LoginWidget from 'src/javascripts/components/thirdParty/LoginWidget';
 // import { oktaConfig } from 'src/javascripts/config/OktaConfig';
 // import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
@@ -46,7 +46,7 @@ function App(): any {
                 <Route path="/contact" element={<div>Contact</div>} />
                 {/** need auth */}
                 <Route path="/me" element={<PagePersonal />} />
-                <Route path="/profiles/:id" element={<PageProfile />} />
+                <Route path="/profiles/:id" element={<PageUser />} />
                 <Route path="/discover" element={<PageDiscover />} />
                 <Route path="/pods/:id" element={<PagePod />} />
                 <Route path="/stamps/:id" element={<PageStamp />} />

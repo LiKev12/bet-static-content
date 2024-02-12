@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
     Alert,
     Button,
-    Checkbox,
     Dialog,
     DialogTitle,
     DialogContent,
@@ -12,7 +11,6 @@ import {
     FormControlLabel,
     FormControl,
     FormLabel,
-    FormGroup,
     RadioGroup,
     Radio,
     // FormGroup,
@@ -23,48 +21,40 @@ import {
 // import { THEME } from 'src/javascripts/Theme';
 import { getInputText } from 'src/javascripts/utilities';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {
-    MIN_LEN_CHARS_POD_NAME,
-    MAX_LEN_CHARS_POD_NAME,
-    MAX_LEN_CHARS_POD_DESCRIPTION,
-    POD_INPUT_NAME_HELPER_TEXT,
-    POD_INPUT_DESCRIPTION_HELPER_TEXT,
-} from 'src/javascripts/Constants';
+import Constants from 'src/javascripts/Constants';
 import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
-
-export interface CreatePodModalState {
+import { Link } from 'react-router-dom';
+export interface ICreatePodModalState {
     data: {
+        id: string | null;
         name: string;
         isPublic: boolean;
-        isRequireApproveRequestToJoin: boolean;
         description: string;
     };
     isBlurredInputName: boolean;
     isBlurredInputDescription: boolean;
     isModalOpen: boolean;
     response: {
-        isError: boolean;
+        state: string;
         errorMessage: string | null;
-        isLoading: boolean;
     };
 }
 
 const CreatePodModal: React.FC = () => {
-    const [createPodModalState, setCreatePodModalState] = useState<CreatePodModalState>({
+    const [createPodModalState, setCreatePodModalState] = useState<ICreatePodModalState>({
         data: {
+            id: null,
             name: '',
             description: '',
             isPublic: true,
-            isRequireApproveRequestToJoin: false,
         },
         isBlurredInputName: false,
         isBlurredInputDescription: false,
         isModalOpen: false,
         response: {
-            isError: false,
+            state: Constants.RESPONSE_STATE_UNSTARTED,
             errorMessage: null,
-            isLoading: false,
         },
     });
 
@@ -80,10 +70,12 @@ const CreatePodModal: React.FC = () => {
     };
 
     const isErrorPodName =
-        createPodModalState.data.name.length < MIN_LEN_CHARS_POD_NAME ||
-        createPodModalState.data.name.length > MAX_LEN_CHARS_POD_NAME;
-    const isErrorPodDescription = createPodModalState.data.description.length > MAX_LEN_CHARS_POD_DESCRIPTION;
+        getInputText(createPodModalState.data.name).length < Constants.POD_NAME_MIN_LENGTH_CHARACTERS ||
+        getInputText(createPodModalState.data.name).length > Constants.POD_NAME_MAX_LENGTH_CHARACTERS;
+    const isErrorPodDescription =
+        getInputText(createPodModalState.data.description).length > Constants.POD_DESCRIPTION_MAX_LENGTH_CHARACTERS;
     const isErrorCreatePod = isErrorPodName || isErrorPodDescription;
+
     return (
         <React.Fragment>
             <Button variant="contained" sx={{ width: '100%', height: '100%' }} onClick={handleClickOpen}>
@@ -132,7 +124,9 @@ const CreatePodModal: React.FC = () => {
                             });
                         }}
                         error={isErrorPodName && createPodModalState.isBlurredInputName}
-                        helperText={POD_INPUT_NAME_HELPER_TEXT(getInputText(createPodModalState.data.name).length)}
+                        helperText={Constants.POD_INPUT_NAME_HELPER_TEXT(
+                            getInputText(createPodModalState.data.name).length,
+                        )}
                     />
                     <Grid container direction="row">
                         <Grid item>
@@ -179,7 +173,7 @@ const CreatePodModal: React.FC = () => {
                             });
                         }}
                         error={isErrorPodDescription && createPodModalState.isBlurredInputDescription}
-                        helperText={POD_INPUT_DESCRIPTION_HELPER_TEXT(
+                        helperText={Constants.POD_INPUT_DESCRIPTION_HELPER_TEXT(
                             getInputText(createPodModalState.data.description).length,
                         )}
                     />
@@ -215,8 +209,6 @@ const CreatePodModal: React.FC = () => {
                                         data: {
                                             ...prevState.data,
                                             isPublic: (event.target as HTMLInputElement).value === 'public',
-                                            isRequireApproveRequestToJoin:
-                                                (event.target as HTMLInputElement).value === 'private',
                                         },
                                     };
                                 });
@@ -226,34 +218,14 @@ const CreatePodModal: React.FC = () => {
                             <FormControlLabel value="private" control={<Radio />} label="Private" />
                         </RadioGroup>
                     </FormControl>
-                    <FormGroup>
-                        <FormLabel id="other-pod-setting">Other:</FormLabel>
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    disabled={!createPodModalState.data.isPublic}
-                                    checked={createPodModalState.data.isRequireApproveRequestToJoin}
-                                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                                        setCreatePodModalState((prevState: any) => {
-                                            const prevStateIsRequireApproveRequestToJoin: boolean =
-                                                prevState.data.isRequireApproveRequestToJoin;
-                                            return {
-                                                ...prevState,
-                                                data: {
-                                                    ...prevState.data,
-                                                    isRequireApproveRequestToJoin:
-                                                        !prevStateIsRequireApproveRequestToJoin,
-                                                },
-                                            };
-                                        });
-                                    }}
-                                />
-                            }
-                            label="Require moderator approval to join"
-                        />
-                    </FormGroup>
-                    {createPodModalState.response.isError ? (
+                    {createPodModalState.response.state === Constants.RESPONSE_STATE_ERROR ? (
                         <Alert severity="error">{createPodModalState.response.errorMessage}</Alert>
+                    ) : null}
+                    {createPodModalState.response.state === Constants.RESPONSE_STATE_SUCCESS ? (
+                        <Alert severity="success">
+                            {'Pod successfully created. Click '}
+                            <Link to={`/pods/${String(createPodModalState.data.id)}`}>{'here'}</Link> {' to view.'}
+                        </Alert>
                     ) : null}
                 </DialogContent>
                 <DialogActions>
@@ -267,7 +239,8 @@ const CreatePodModal: React.FC = () => {
                                     ...prevState,
                                     response: {
                                         ...prevState.response,
-                                        isLoading: true,
+                                        state: Constants.RESPONSE_STATE_LOADING,
+                                        errorMessage: null,
                                     },
                                 };
                             });
@@ -277,20 +250,23 @@ const CreatePodModal: React.FC = () => {
                                 {
                                     name: getInputText(createPodModalState.data.name),
                                     isPublic: createPodModalState.data.isPublic,
-                                    isRequireApproveRequestToJoin:
-                                        createPodModalState.data.isRequireApproveRequestToJoin,
-                                    ...(createPodModalState.data.description.length > 0
-                                        ? { description: getInputText(createPodModalState.data.description) }
-                                        : {}),
+                                    description:
+                                        getInputText(createPodModalState.data.description).length === 0
+                                            ? null
+                                            : getInputText(createPodModalState.data.description),
                                 },
                             )
-                                .then(() => {
+                                .then((responseJson: any) => {
                                     setCreatePodModalState((prevState: any) => {
                                         return {
                                             ...prevState,
+                                            data: {
+                                                ...prevState.data,
+                                                id: responseJson.id,
+                                            },
                                             response: {
-                                                isLoading: false,
-                                                isError: false,
+                                                ...prevState.response,
+                                                state: Constants.RESPONSE_STATE_SUCCESS,
                                                 errorMessage: null,
                                             },
                                         };
@@ -301,15 +277,18 @@ const CreatePodModal: React.FC = () => {
                                         return {
                                             ...prevState,
                                             response: {
-                                                isLoading: false,
-                                                isError: true,
+                                                ...prevState.response,
+                                                state: Constants.RESPONSE_STATE_ERROR,
                                                 errorMessage,
                                             },
                                         };
                                     });
                                 });
                         }}
-                        disabled={isErrorCreatePod}
+                        disabled={
+                            isErrorCreatePod ||
+                            createPodModalState.response.state !== Constants.RESPONSE_STATE_UNSTARTED
+                        }
                     >
                         Create
                     </Button>

@@ -1,15 +1,31 @@
 import TaskCard from 'src/javascripts/components/TaskCard';
 import { Box, Grid, Typography } from '@mui/material';
-
-import type { ITaskCardProps } from 'src/javascripts/components/TaskCard';
+import type TaskModel from 'src/javascripts/models/TaskModel';
 
 export interface ITaskCardListProps {
-    tasks: ITaskCardProps[];
+    tasks: TaskModel[];
+    isAuthorizedToComplete: boolean;
+    isReadOnlyTaskBody: boolean;
+    isReadOnlyTaskNotes: boolean;
+    isDisplayViewPodLink: boolean;
+    isDisplayOptionsStarPinDelete: boolean;
+    isAuthorizedToDelete: boolean;
+    handleUpdateUponToggleTaskComplete: any;
 }
 
 const TaskCardList: React.FC<ITaskCardListProps> = (props: ITaskCardListProps) => {
-    const { tasks } = props;
+    const {
+        tasks,
+        isAuthorizedToComplete,
+        isReadOnlyTaskBody,
+        isReadOnlyTaskNotes,
+        isDisplayViewPodLink,
+        isDisplayOptionsStarPinDelete,
+        isAuthorizedToDelete,
+        handleUpdateUponToggleTaskComplete,
+    } = props;
 
+    console.log({ tasks });
     return tasks.length > 0 ? (
         <Box
             sx={{
@@ -19,29 +35,18 @@ const TaskCardList: React.FC<ITaskCardListProps> = (props: ITaskCardListProps) =
             }}
         >
             <Grid container direction="column" sx={{ alignItems: 'center' }}>
-                {tasks.map((task, idx) => (
+                {tasks.map((task: TaskModel, idx: number) => (
                     <Grid item key={task.id} sx={{ justifyContent: 'center' }}>
                         <TaskCard
-                            key={`${idx}_${task.id}`}
-                            id={task.id}
-                            name={task.name}
-                            description={task.description}
-                            numberOfPoints={task.numberOfPoints}
-                            imageLink={task.imageLink}
-                            isDisplayUserBubblesComplete={task.isDisplayUserBubblesComplete}
-                            userListButtonBubblesTop3TaskComplete={task.userListButtonBubblesTop3TaskComplete}
-                            isComplete={task.isComplete}
-                            isStar={task.isStar}
-                            isDisplayOptionPin={task.isDisplayOptionPin}
-                            isPin={task.isPin}
-                            isDisplayViewPodLink={task.isDisplayViewPodLink}
-                            idPod={task.idPod}
-                            noteText={task.noteText}
-                            noteImage={task.noteImage}
-                            datetimeCreate={task.datetimeCreate}
-                            datetimeUpdate={task.datetimeUpdate}
-                            datetimeTarget={task.datetimeTarget}
-                            datetimeComplete={task.datetimeComplete}
+                            key={`${idx}_${String(task.getId())}`}
+                            task={task}
+                            isAuthorizedToComplete={isAuthorizedToComplete}
+                            isReadOnlyTaskBody={isReadOnlyTaskBody}
+                            isReadOnlyTaskNotes={isReadOnlyTaskNotes}
+                            isDisplayViewPodLink={isDisplayViewPodLink}
+                            isDisplayOptionsStarPinDelete={isDisplayOptionsStarPinDelete}
+                            isAuthorizedToDelete={isAuthorizedToDelete}
+                            handleUpdateUponToggleTaskComplete={handleUpdateUponToggleTaskComplete}
                         />
                     </Grid>
                 ))}

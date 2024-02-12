@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import _ from 'lodash';
-import { useParams } from 'react-router-dom';
-import { Box, Divider, Grid, Typography, Tab, Tabs, TextField } from '@mui/material';
+import { Link, useParams } from 'react-router-dom';
+import { Box, Divider, Grid, Typography, Tab, Tabs, TextField, IconButton, Tooltip } from '@mui/material';
 import { THEME } from 'src/javascripts/Theme';
 import FilterTasks from 'src/javascripts/components/FilterTasks';
 import FilterPods from 'src/javascripts/components/FilterPods';
@@ -10,15 +10,19 @@ import PodCardList from 'src/javascripts/components/PodCardList';
 import AvatarImageEditor from 'src/javascripts/components/AvatarImageEditor';
 import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import UserListButton from 'src/javascripts/components/UserListButton';
-import CollectStampButton from 'src/javascripts/components/CollectStampButton';
-import { getInputText } from 'src/javascripts/utilities';
+import EditStampModalButton from 'src/javascripts/components/EditStampModalButton';
+import { getInputText, getUserListButtonText } from 'src/javascripts/utilities';
 import NumberOfPointsInTasksCompletedOverTimeVisualization from 'src/javascripts/components/NumberOfPointsInTasksCompletedOverTimeVisualization';
 import { PAGE_SIZE_POD, PAGE_SIZE_TASK } from 'src/javascripts/clients/ResourceClientConfig';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import TaskModel from 'src/javascripts/models/TaskModel';
 import PodCardModel from 'src/javascripts/models/PodCardModel';
-import StampPageModel from 'src/javascripts/models/PodPageModel';
+import StampPageModel from 'src/javascripts/models/StampPageModel';
 import Constants from 'src/javascripts/Constants';
+import PlaceholderImageStamp from 'src/assets/PlaceholderImageStamp.png';
+import AlertDialog from 'src/javascripts/components/AlertDialog';
+import CollectionsBookmarkRoundedIcon from '@mui/icons-material/CollectionsBookmarkRounded';
+import AddIcon from '@mui/icons-material/Add';
 
 const tabIdxToDisplayMap: any = {
     0: 'task',
@@ -26,9 +30,7 @@ const tabIdxToDisplayMap: any = {
     2: 'progress',
 };
 export interface IStampPageState {
-    data: any;
-    isLoading: boolean;
-    responseError: any;
+    data: StampPageModel;
     editMode: {
         name: {
             isEditMode: boolean;
@@ -43,11 +45,13 @@ export interface IStampPageState {
             editModeValue: string | null;
         };
     };
+    response: {
+        state: string;
+        errorMessage: string | null;
+    };
 }
 export interface ITaskState {
     data: any;
-    isLoading: boolean;
-    responseError: any;
     filter: {
         filterNameOrDescription: string;
         filterIsComplete: boolean;
@@ -62,13 +66,17 @@ export interface ITaskState {
         pageSize: number;
         totalNumberOfPages: number;
     };
+    response: {
+        state: string;
+        errorMessage: string | null;
+    };
 }
 export interface IPodCardState {
-    data: any;
-    isLoading: boolean;
-    responseError: any;
+    data: PodCardModel[];
     filter: {
         filterNameOrDescription: string;
+        filterIsPublic: boolean;
+        filterIsNotPublic: boolean;
         filterIsMember: boolean;
         filterIsNotMember: boolean;
         filterIsModerator: boolean;
@@ -78,6 +86,10 @@ export interface IPodCardState {
         pageNumber: number;
         pageSize: number;
         totalNumberOfPages: number;
+    };
+    response: {
+        state: string;
+        errorMessage: string | null;
     };
 }
 const PageStamp: React.FC = () => {
@@ -97,24 +109,20 @@ const PageStamp: React.FC = () => {
                 editModeValue: '', // TODO what to show during loading? maybe blank image?
             },
         },
-        data: {
-            name: '',
-            description: '',
-            imageLink: '',
+        data: new StampPageModel(null, true),
+        response: {
+            state: Constants.RESPONSE_STATE_LOADING,
+            errorMessage: null,
         },
-        isLoading: true,
-        responseError: null,
     });
 
     const [tabIdx, setTabIdx] = useState(0);
     // tasks
     const [taskState, setTaskState] = useState<ITaskState>({
         data: [],
-        isLoading: true,
-        responseError: null,
         filter: {
             filterNameOrDescription: '',
-            filterIsComplete: false,
+            filterIsComplete: true,
             filterIsNotComplete: true,
             filterIsStar: true,
             filterIsNotStar: true,
@@ -126,15 +134,19 @@ const PageStamp: React.FC = () => {
             pageSize: Number(PAGE_SIZE_TASK),
             totalNumberOfPages: 1,
         },
+        response: {
+            state: Constants.RESPONSE_STATE_LOADING,
+            errorMessage: null,
+        },
     });
 
     // filter pods
     const [podCardState, setPodCardState] = useState<IPodCardState>({
         data: [],
-        isLoading: true,
-        responseError: null,
         filter: {
             filterNameOrDescription: '',
+            filterIsPublic: true,
+            filterIsNotPublic: true,
             filterIsMember: true,
             filterIsNotMember: true,
             filterIsModerator: true,
@@ -144,6 +156,10 @@ const PageStamp: React.FC = () => {
             pageNumber: 0,
             pageSize: Number(PAGE_SIZE_POD),
             totalNumberOfPages: 1,
+        },
+        response: {
+            state: Constants.RESPONSE_STATE_LOADING,
+            errorMessage: null,
         },
     });
     const handleGetResourceStampPage = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
@@ -170,13 +186,12 @@ const PageStamp: React.FC = () => {
                                 editModeValue: stampPageModel.getImageLink(),
                             },
                         },
-                        data: {
-                            id: stampPageModel.getId(),
-                            name: stampPageModel.getName(),
-                            description: stampPageModel.getDescription(),
-                            imageLink: stampPageModel.getImageLink(),
+                        data: new StampPageModel(responseJson),
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_SUCCESS,
+                            errorMessage: null,
                         },
-                        isLoading: false,
                     };
                 });
             })
@@ -184,13 +199,16 @@ const PageStamp: React.FC = () => {
                 setStampPageState((prevState: IStampPageState) => {
                     return {
                         ...prevState,
-                        isLoading: false,
-                        responseError,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_ERROR,
+                            errorMessage: responseError,
+                        },
                     };
                 });
             });
     };
-    const handleGetResouorceTasksAssociatedWithStamp = (
+    const handleGetResourceTasksAssociatedWithStamp = (
         pathApi: string,
         queryParamsObject: Record<string, unknown>,
     ): void => {
@@ -200,35 +218,13 @@ const PageStamp: React.FC = () => {
                     return {
                         ...prevState,
                         data: responseJson.content.map((datapoint: any) => {
-                            const taskModel = new TaskModel(datapoint);
-                            return {
-                                id: taskModel.getId(),
-                                name: taskModel.getName(),
-                                description: taskModel.getDescription(),
-                                imageLink: taskModel.getImageLink(),
-                                numberOfPoints: taskModel.getNumberOfPoints(),
-                                idPod: taskModel.getIdPod(),
-                                noteText: taskModel.getNoteText(),
-                                noteImage: taskModel.getNoteImage(),
-                                isComplete: taskModel.getIsComplete(),
-                                isStar: taskModel.getIsStar(),
-                                isPin: taskModel.getIsPin(),
-                                datetimeCreate: taskModel.getDatetimeCreate(),
-                                datetimeUpdate: taskModel.getDatetimeUpdate(),
-                                datetimeTarget: taskModel.getDatetimeTarget(),
-                                datetimeComplete: taskModel.getDatetimeComplete(),
-
-                                handleToggleStar: () => {},
-                                handleTogglePin: () => {},
-                                handleToggleComplete: () => {},
-
-                                isDisplayOptionPin: true,
-                                isDisplayViewPodLink: false,
-                                isDisplayUserBubblesComplete: false,
-                                userListButtonBubblesTop3TaskComplete: null,
-                            };
+                            return new TaskModel(datapoint);
                         }),
-                        isLoading: false,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_SUCCESS,
+                            errorMessage: null,
+                        },
                         pagination: {
                             ...prevState.pagination,
                             totalNumberOfPages: responseJson.totalPages,
@@ -240,14 +236,17 @@ const PageStamp: React.FC = () => {
                 setTaskState((prevState) => {
                     return {
                         ...prevState,
-                        isLoading: false,
-                        responseError,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_ERROR,
+                            errorMessage: responseError,
+                        },
                     };
                 });
             });
     };
 
-    const handleGetResouorcePodsAssociatedWithStamp = (
+    const handleGetResourcePodsAssociatedWithStamp = (
         pathApi: string,
         queryParamsObject: Record<string, unknown>,
     ): void => {
@@ -257,15 +256,13 @@ const PageStamp: React.FC = () => {
                     return {
                         ...prevState,
                         data: responseJson.content.map((datapoint: any) => {
-                            const podCardModel = new PodCardModel(datapoint);
-                            return {
-                                id: podCardModel.getId(),
-                                name: podCardModel.getName(),
-                                description: podCardModel.getDescription(),
-                                imageLink: podCardModel.getImageLink(),
-                            };
+                            return new PodCardModel(datapoint);
                         }),
-                        isLoading: false,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_SUCCESS,
+                            errorMessage: null,
+                        },
                         pagination: {
                             ...prevState.pagination,
                             totalNumberOfPages: responseJson.totalPages,
@@ -277,23 +274,20 @@ const PageStamp: React.FC = () => {
                 setPodCardState((prevState) => {
                     return {
                         ...prevState,
-                        isLoading: false,
-                        responseError,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_ERROR,
+                            errorMessage: responseError,
+                        },
                     };
                 });
             });
     };
     const handleUpdateStampPage = (responseJson: any): void => {
-        const stampPageModel = new StampPageModel(responseJson);
         setStampPageState((prevState: any) => {
             return {
                 ...prevState,
-                data: {
-                    id: stampPageModel.getId(),
-                    name: stampPageModel.getName(),
-                    description: stampPageModel.getDescription(),
-                    imageLink: stampPageModel.getImageLink(),
-                },
+                data: new StampPageModel(responseJson),
             };
         });
     };
@@ -324,7 +318,7 @@ const PageStamp: React.FC = () => {
         // eslint-disable-next-line
     }, []);
     useEffect(() => {
-        handleGetResouorceTasksAssociatedWithStamp(`api/stamp/read/stamps/${String(idStamp)}/tasks`, {
+        handleGetResourceTasksAssociatedWithStamp(`api/stamp/read/stamps/${String(idStamp)}/tasks`, {
             idUser: MOCK_MY_USER_ID,
             filterNameOrDescription: taskState.filter.filterNameOrDescription,
             filterIsComplete: taskState.filter.filterIsComplete,
@@ -337,11 +331,13 @@ const PageStamp: React.FC = () => {
             size: taskState.pagination.pageSize,
         });
         // eslint-disable-next-line
-    }, [taskState.filter]);
+    }, [taskState.filter, tabIdx]);
     useEffect(() => {
-        handleGetResouorcePodsAssociatedWithStamp(`api/stamp/read/stamps/${String(idStamp)}/pods`, {
+        handleGetResourcePodsAssociatedWithStamp(`api/stamp/read/stamps/${String(idStamp)}/pods`, {
             idUser: MOCK_MY_USER_ID,
             filterNameOrDescription: podCardState.filter.filterNameOrDescription,
+            filterIsPublic: podCardState.filter.filterIsPublic,
+            filterIsNotPublic: podCardState.filter.filterIsNotPublic,
             filterIsMember: podCardState.filter.filterIsMember,
             filterIsNotMember: podCardState.filter.filterIsNotMember,
             filterIsModerator: podCardState.filter.filterIsModerator,
@@ -350,7 +346,7 @@ const PageStamp: React.FC = () => {
             size: podCardState.pagination.pageSize,
         });
         // eslint-disable-next-line
-    }, [podCardState.filter]);
+    }, [podCardState.filter, tabIdx]);
 
     const isErrorEditModeValueStampName =
         getInputText(stampPageState.editMode.name.editModeValue).length < Constants.STAMP_NAME_MIN_LENGTH_CHARACTERS ||
@@ -358,8 +354,29 @@ const PageStamp: React.FC = () => {
     const isErrorEditModeValueStampDescription =
         getInputText(stampPageState.editMode.description.editModeValue).length >
         Constants.STAMP_DESCRIPTION_MAX_LENGTH_CHARACTERS;
+
     return (
-        <Box sx={{ background: THEME.palette.gradient, minHeight: '100vh' }}>
+        <Box sx={{ background: THEME.palette.other.gradient, minHeight: '100vh' }}>
+            {stampPageState.response.state === Constants.RESPONSE_STATE_ERROR &&
+            stampPageState.response.errorMessage !== null ? (
+                <AlertDialog
+                    title="Error"
+                    message={stampPageState.response.errorMessage}
+                    isOpen={stampPageState.response.state === Constants.RESPONSE_STATE_ERROR}
+                    handleClose={() => {
+                        setStampPageState((prevState: IStampPageState) => {
+                            return {
+                                ...prevState,
+                                response: {
+                                    ...prevState.response,
+                                    state: Constants.RESPONSE_STATE_UNSTARTED,
+                                    errorMessage: null,
+                                },
+                            };
+                        });
+                    }}
+                />
+            ) : null}
             <Box>
                 <Grid container direction="row">
                     <Grid item sx={{ padding: '24px' }}>
@@ -378,23 +395,138 @@ const PageStamp: React.FC = () => {
                                     })
                                     .catch(() => {});
                             }}
-                            imageLink={stampPageState.data.imageLink}
+                            imageLink={stampPageState.data.getImageLink()}
+                            placeholderImage={PlaceholderImageStamp}
+                            isReadOnly={!stampPageState.data.getIsCreatedByMe()}
                         />
-                        <Box sx={{ paddingTop: '24px', paddingBottom: '12px' }}>
-                            <Grid container direction="row" sx={{ marginBottom: '8px' }}>
-                                <Grid item>
-                                    <Box sx={{ padding: '8px 8px 8px 0px', width: '100px' }}>
-                                        <Typography>Users Collected:</Typography>
-                                    </Box>
-                                </Grid>
-                                <Grid item sx={{ display: 'flex' }}>
-                                    <UserListButton />
-                                </Grid>
-                            </Grid>
+                        <Box
+                            sx={{
+                                marginTop: '16px',
+                                marginBottom: '8px',
+                                display: 'flex',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <Typography variant="h6">
+                                {`Created by: `}
+                                <Link to={`/profiles/${String(stampPageState.data.getIdUserCreate())}`}>
+                                    {`@${stampPageState.data.getUsernameUserCreate()}`}
+                                </Link>
+                            </Typography>
                         </Box>
-                        <Box sx={{ paddingBottom: '12px' }}>
-                            <CollectStampButton numTasksCompleted={6} numTasksTotal={6} isCollected={false} />
+                        <Box
+                            sx={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            {stampPageState.data.getIsCollectedByMe() ? (
+                                <IconButton
+                                    edge="end"
+                                    aria-label="icon-button-is-collect-stamp"
+                                    sx={{
+                                        cursor: 'default',
+                                        color: THEME.palette.info.main,
+                                    }}
+                                    disableRipple={true}
+                                >
+                                    <Tooltip title={'You have collected this stamp'} placement="bottom">
+                                        <CollectionsBookmarkRoundedIcon />
+                                    </Tooltip>
+                                </IconButton>
+                            ) : stampPageState.data.getIsEligibleToBeCollectedByMe() ? (
+                                <Tooltip title={'Add this Stamp to your collection'} placement="bottom">
+                                    <IconButton
+                                        edge="end"
+                                        aria-label="icon-button-collect-stamp-eligible"
+                                        onClick={() => {
+                                            ResourceClient.postResource(
+                                                'api/stamp/update/collectStamp',
+                                                {
+                                                    idUser: MOCK_MY_USER_ID,
+                                                },
+                                                {
+                                                    idStamp,
+                                                },
+                                            )
+                                                .then(() => {
+                                                    handleGetResourceStampPage(
+                                                        `api/stamp/read/stamps/${String(idStamp)}/page`,
+                                                        {
+                                                            idUser: MOCK_MY_USER_ID,
+                                                        },
+                                                    );
+                                                })
+                                                .catch((responseError: any) => {
+                                                    setStampPageState((prevState: IStampPageState) => {
+                                                        return {
+                                                            ...prevState,
+                                                            response: {
+                                                                ...prevState.response,
+                                                                state: Constants.RESPONSE_STATE_ERROR,
+                                                                errorMessage: Constants.RESPONSE_GET_ERROR_MESSAGE(
+                                                                    responseError?.response?.data?.message,
+                                                                ),
+                                                            },
+                                                        };
+                                                    });
+                                                });
+                                        }}
+                                    >
+                                        <CollectionsBookmarkRoundedIcon />
+                                        <AddIcon />
+                                    </IconButton>
+                                </Tooltip>
+                            ) : (
+                                <Tooltip
+                                    title={
+                                        'Add this Stamp to your collection (requires all Tasks to be completed first)'
+                                    }
+                                    placement="bottom"
+                                >
+                                    <IconButton
+                                        edge="end"
+                                        aria-label="icon-button-collect-stamp-ineligible"
+                                        sx={{
+                                            cursor: 'default',
+                                            color: THEME.palette.other.disabledButtonColor,
+                                        }}
+                                        disableRipple={true}
+                                    >
+                                        <CollectionsBookmarkRoundedIcon />
+                                        <AddIcon />
+                                    </IconButton>
+                                </Tooltip>
+                            )}
                         </Box>
+                        <Box sx={{ marginTop: '12px', paddingBottom: '12px' }}>
+                            {stampPageState.response.state !== Constants.RESPONSE_STATE_LOADING &&
+                            stampPageState.data.getUserBubblesStampCollect() !== null ? (
+                                <Grid container direction="row" sx={{ marginBottom: '8px' }}>
+                                    <Grid item sx={{ display: 'flex', width: '100%' }}>
+                                        <UserListButton
+                                            labelText={getUserListButtonText(
+                                                stampPageState.data.getUserBubblesStampCollectTotalNumber(),
+                                                'collected',
+                                                'collected',
+                                            )}
+                                            userBubbles={stampPageState.data.getUserBubblesStampCollect()}
+                                            sortByTimestampLabel="time collect stamp"
+                                            apiPath={`api/stamp/read/stamps/${String(idStamp)}/userBubblesStampCollect`}
+                                            modalTitle="Users Collected Stamp"
+                                            isUseDateTimeDateAndTime={false}
+                                        />
+                                    </Grid>
+                                </Grid>
+                            ) : null}
+                        </Box>
+                        {stampPageState.data.getIsCreatedByMe() ? (
+                            <Box sx={{ marginBottom: '12px' }}>
+                                <EditStampModalButton idStamp={stampPageState.data.getId()} />
+                            </Box>
+                        ) : null}
                     </Grid>
                     <Grid item sx={{ width: '1000px', padding: '24px' }}>
                         <Grid container direction="column">
@@ -402,7 +534,7 @@ const PageStamp: React.FC = () => {
                                 {stampPageState.editMode.name.isEditMode ? (
                                     <TextField
                                         id="pod-edit-name"
-                                        defaultValue={stampPageState.data.name}
+                                        defaultValue={stampPageState.data.getName()}
                                         fullWidth
                                         value={stampPageState.editMode.name.editModeValue}
                                         onBlur={() => {
@@ -437,7 +569,20 @@ const PageStamp: React.FC = () => {
                                                     .then((responseJson: any) => {
                                                         handleUpdateStampPage(responseJson);
                                                     })
-                                                    .catch(() => {});
+                                                    .catch((responseError: any) => {
+                                                        setStampPageState((prevState: IStampPageState) => {
+                                                            return {
+                                                                ...prevState,
+                                                                response: {
+                                                                    ...prevState.response,
+                                                                    state: Constants.RESPONSE_STATE_ERROR,
+                                                                    errorMessage: Constants.RESPONSE_GET_ERROR_MESSAGE(
+                                                                        responseError?.response?.data?.message,
+                                                                    ),
+                                                                },
+                                                            };
+                                                        });
+                                                    });
                                             }
                                         }}
                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -489,7 +634,21 @@ const PageStamp: React.FC = () => {
                                                         .then((responseJson: any) => {
                                                             handleUpdateStampPage(responseJson);
                                                         })
-                                                        .catch(() => {});
+                                                        .catch((responseError: any) => {
+                                                            setStampPageState((prevState: IStampPageState) => {
+                                                                return {
+                                                                    ...prevState,
+                                                                    response: {
+                                                                        ...prevState.response,
+                                                                        state: Constants.RESPONSE_STATE_ERROR,
+                                                                        errorMessage:
+                                                                            Constants.RESPONSE_GET_ERROR_MESSAGE(
+                                                                                responseError?.response?.data?.message,
+                                                                            ),
+                                                                    },
+                                                                };
+                                                            });
+                                                        });
                                                 }
                                             }
                                         }}
@@ -509,7 +668,7 @@ const PageStamp: React.FC = () => {
                                                         ...prevState.editMode,
                                                         name: {
                                                             ...prevState.editMode.name,
-                                                            isEditMode: true,
+                                                            isEditMode: stampPageState.data.getIsCreatedByMe(),
                                                         },
                                                     },
                                                 };
@@ -517,7 +676,7 @@ const PageStamp: React.FC = () => {
                                         }}
                                         sx={{ height: '60px', overflowY: 'auto' }}
                                     >
-                                        {stampPageState.data.name}
+                                        {stampPageState.data.getName()}
                                     </Typography>
                                 )}
                             </Grid>
@@ -530,7 +689,7 @@ const PageStamp: React.FC = () => {
                                         id="user-edit-bio"
                                         multiline
                                         maxRows={12}
-                                        defaultValue={stampPageState.data.description}
+                                        defaultValue={stampPageState.data.getDescription()}
                                         fullWidth
                                         value={stampPageState.editMode.description.editModeValue}
                                         onBlur={() => {
@@ -544,7 +703,7 @@ const PageStamp: React.FC = () => {
                                                             isEditMode: false,
                                                             ...(isErrorEditModeValueStampDescription
                                                                 ? {
-                                                                      editModeValue: prevState.data.description,
+                                                                      editModeValue: prevState.data.description ?? '',
                                                                   }
                                                                 : {}),
                                                         },
@@ -559,9 +718,14 @@ const PageStamp: React.FC = () => {
                                                     },
                                                     {
                                                         id: idStamp,
-                                                        description: getInputText(
-                                                            stampPageState.editMode.description.editModeValue,
-                                                        ),
+                                                        description:
+                                                            getInputText(
+                                                                stampPageState.editMode.description.editModeValue,
+                                                            ).length === 0
+                                                                ? null
+                                                                : getInputText(
+                                                                      stampPageState.editMode.description.editModeValue,
+                                                                  ),
                                                     },
                                                 )
                                                     .then((responseJson: any) => {
@@ -596,7 +760,8 @@ const PageStamp: React.FC = () => {
                                                                 isEditMode: false,
                                                                 ...(isErrorEditModeValueStampDescription
                                                                     ? {
-                                                                          editModeValue: prevState.data.description,
+                                                                          editModeValue:
+                                                                              prevState.data.description ?? '',
                                                                       }
                                                                     : {}),
                                                             },
@@ -611,9 +776,15 @@ const PageStamp: React.FC = () => {
                                                         },
                                                         {
                                                             id: idStamp,
-                                                            description: getInputText(
-                                                                stampPageState.editMode.description.editModeValue,
-                                                            ),
+                                                            description:
+                                                                getInputText(
+                                                                    stampPageState.editMode.description.editModeValue,
+                                                                ).length === 0
+                                                                    ? null
+                                                                    : getInputText(
+                                                                          stampPageState.editMode.description
+                                                                              .editModeValue,
+                                                                      ),
                                                         },
                                                     )
                                                         .then((responseJson: any) => {
@@ -641,7 +812,7 @@ const PageStamp: React.FC = () => {
                                                         ...prevState.editMode,
                                                         description: {
                                                             ...prevState.editMode.description,
-                                                            isEditMode: true,
+                                                            isEditMode: stampPageState.data.getIsCreatedByMe(),
                                                         },
                                                     },
                                                 };
@@ -649,8 +820,8 @@ const PageStamp: React.FC = () => {
                                         }}
                                         sx={{ whiteSpace: 'pre-wrap' }}
                                     >
-                                        {stampPageState.data.description !== null
-                                            ? stampPageState.data.description
+                                        {stampPageState.data.getDescription() !== null
+                                            ? stampPageState.data.getDescription()
                                             : ' '}
                                     </Typography>
                                 )}
@@ -714,7 +885,20 @@ const PageStamp: React.FC = () => {
                         />
                     </Box>
                     <Box sx={{ padding: '24px 96px 96px 96px', justifyContent: 'center', display: 'flex' }}>
-                        <TaskCardList tasks={taskState.data} />
+                        <TaskCardList
+                            tasks={taskState.data}
+                            isAuthorizedToComplete={true}
+                            isReadOnlyTaskBody={true}
+                            isReadOnlyTaskNotes={true}
+                            isDisplayViewPodLink={true}
+                            isDisplayOptionsStarPinDelete={false}
+                            isAuthorizedToDelete={false}
+                            handleUpdateUponToggleTaskComplete={() => {
+                                handleGetResourceStampPage(`api/stamp/read/stamps/${String(idStamp)}/page`, {
+                                    idUser: MOCK_MY_USER_ID,
+                                });
+                            }}
+                        />
                     </Box>
                 </React.Fragment>
             ) : null}
@@ -746,10 +930,13 @@ const PageStamp: React.FC = () => {
                                     };
                                 });
                             }}
+                            isPodPublic={podCardState.filter.filterIsPublic}
+                            isPodNotPublic={podCardState.filter.filterIsNotPublic}
                             isPodMember={podCardState.filter.filterIsMember}
                             isPodNotMember={podCardState.filter.filterIsNotMember}
                             isPodModerator={podCardState.filter.filterIsModerator}
                             isPodNotModerator={podCardState.filter.filterIsNotModerator}
+                            isUseKeyPodPublic={true}
                             isUseKeyPodMember={true}
                             isUseKeyPodModerator={true}
                         />
@@ -758,7 +945,7 @@ const PageStamp: React.FC = () => {
                         <PodCardList
                             podCards={podCardState.data}
                             isShowCreatePodModal={false}
-                            isLoading={podCardState.isLoading}
+                            isLoading={podCardState.response.state === Constants.RESPONSE_STATE_LOADING}
                             handleChangePaginationPageNumber={() => {}}
                             paginationTotalPages={0}
                         />
@@ -770,6 +957,7 @@ const PageStamp: React.FC = () => {
                     apiPath={`api/stamp/read/stamps/${String(
                         idStamp,
                     )}/numberOfPointsInTasksCompletedOverTimeVisualization`}
+                    refreshSwitchValue={true}
                 />
             ) : null}
         </Box>

@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import AvatarEditor from 'react-avatar-editor';
 import { Box, Modal, Slider, Button, Typography } from '@mui/material';
+import { THEME } from 'src/javascripts/Theme';
 
 const boxStyle = {
     width: '300px',
@@ -101,11 +102,13 @@ const CropperModal: React.FC<ICropperModalProps> = (props: ICropperModalProps) =
 export interface IAvatarImageEditorProps {
     imageUploadHandler: any;
     imageLink: string | null;
+    placeholderImage: any;
+    isReadOnly: boolean;
 }
 
 // Container
 const AvatarImageEditor: React.FC<IAvatarImageEditorProps> = (props: IAvatarImageEditorProps) => {
-    const { imageLink, imageUploadHandler } = props;
+    const { imageLink, imageUploadHandler, placeholderImage, isReadOnly } = props;
     // image src
     const [src, setSrc] = useState<string | null>(null);
     const [isAvatarHover, setAvatarHover] = useState(false);
@@ -116,6 +119,9 @@ const AvatarImageEditor: React.FC<IAvatarImageEditorProps> = (props: IAvatarImag
 
     const handleInputClick = (e: any): void => {
         e.preventDefault();
+        if (isReadOnly) {
+            return;
+        }
         if (inputRef.current !== null) {
             inputRef.current.click();
         }
@@ -141,7 +147,12 @@ const AvatarImageEditor: React.FC<IAvatarImageEditorProps> = (props: IAvatarImag
                 <input type="file" accept="image/*" ref={inputRef} onChange={handleImgChange} />
             </Box>
             <Box
-                sx={{ border: '2px solid black', width: '300px', height: '300px', borderRadius: '50%' }}
+                sx={{
+                    border: `2px solid ${String(THEME.palette.other.formBorderColor)}`,
+                    width: '300px',
+                    height: '300px',
+                    borderRadius: '50%',
+                }}
                 className="img-container"
                 onMouseEnter={(e: any) => {
                     setAvatarHover(true);
@@ -157,13 +168,12 @@ const AvatarImageEditor: React.FC<IAvatarImageEditorProps> = (props: IAvatarImag
                         borderRadius: '50%',
                         width: '300px',
                         height: '300px',
-                        opacity: isAvatarHover ? 0.4 : 1,
-                        cursor: 'pointer',
+                        ...(!isReadOnly ? { opacity: isAvatarHover ? 0.4 : 1, cursor: 'pointer' } : {}),
                     }}
                     alt="avatar-image"
-                    src={imageLink ?? 'https://www.signivis.com/img/custom/avatars/member-avatar-01.png'}
+                    src={imageLink ?? placeholderImage}
                 />
-                {isAvatarHover ? (
+                {isAvatarHover && !isReadOnly ? (
                     <Box
                         sx={{
                             position: 'relative',

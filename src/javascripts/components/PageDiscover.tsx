@@ -4,6 +4,7 @@ import SearchEntities from 'src/javascripts/components/SearchEntities';
 import PodCardList from 'src/javascripts/components/PodCardList';
 import StampCardList from 'src/javascripts/components/StampCardList';
 import CreatePodModal from 'src/javascripts/components/CreatePodModal';
+import CreateStampModalButton from 'src/javascripts/components/CreateStampModalButton';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import { THEME } from 'src/javascripts/Theme';
 import { PAGE_SIZE_POD, PAGE_SIZE_STAMP } from 'src/javascripts/clients/ResourceClientConfig';
@@ -54,22 +55,11 @@ const PageDiscover: React.FC = () => {
     const handleGetResourcePod = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
         ResourceClient.getResource(pathApi, queryParamsObject)
             .then((responseJson: any) => {
-                console.log({ responseJson });
                 setPodCardState((prevState) => {
                     return {
                         ...prevState,
                         data: responseJson.content.map((datapoint: any) => {
-                            const podModel = new PodCardModel(datapoint);
-                            return {
-                                id: podModel.getId(),
-                                name: podModel.getName(),
-                                description: podModel.getDescription(),
-                                imageLink: podModel.getImageLink(),
-                                numberOfMembers: podModel.getNumberOfMembers(),
-                                isPublic: podModel.getIsPublic(),
-                                isMember: podModel.getIsMember(),
-                                isModerator: podModel.getIsModerator(),
-                            };
+                            return new PodCardModel(datapoint);
                         }),
                         isLoading: false,
                         pagination: {
@@ -92,21 +82,11 @@ const PageDiscover: React.FC = () => {
     const handleGetResourceStamp = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
         ResourceClient.getResource(pathApi, queryParamsObject)
             .then((responseJson: any) => {
-                console.log({ responseJson });
                 setStampCardState((prevState) => {
                     return {
                         ...prevState,
                         data: responseJson.content.map((datapoint: any) => {
-                            const stampCardModel = new StampCardModel(datapoint);
-                            return {
-                                id: stampCardModel.getId(),
-                                name: stampCardModel.getName(),
-                                description: stampCardModel.getDescription(),
-                                imageLink: stampCardModel.getImageLink(),
-                                numberOfUsersCollect: stampCardModel.getNumberOfUsersCollect(),
-                                isPublic: stampCardModel.getIsPublic(),
-                                isCollect: stampCardModel.getIsCollect(),
-                            };
+                            return new StampCardModel(datapoint);
                         }),
                         isLoading: false,
                         pagination: {
@@ -159,13 +139,13 @@ const PageDiscover: React.FC = () => {
     return (
         <Box
             sx={{
-                background: THEME.palette.gradient,
+                background: THEME.palette.other.gradient,
                 minHeight: '100vh',
             }}
         >
             <Grid container direction="column">
                 <Grid item sx={{ padding: '0px 96px 24px 96px' }}>
-                    <CreatePodModal />
+                    {searchEntity === 'pod' ? <CreatePodModal /> : <CreateStampModalButton idPod={null} />}
                 </Grid>
                 <Grid item>
                     <SearchEntities

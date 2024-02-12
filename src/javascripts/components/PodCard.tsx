@@ -5,12 +5,13 @@ import PersonIcon from '@mui/icons-material/Person';
 import LockRoundedIcon from '@mui/icons-material/LockRounded';
 import PublicRoundedIcon from '@mui/icons-material/PublicRounded';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import PlaceholderImagePod from 'src/assets/PlaceholderImagePod.png';
 
 export interface IPodCardProps {
     id: string;
     name: string;
-    description: string;
-    imageLink: string;
+    description: string | null;
+    imageLink: string | null;
     isPublic: boolean;
     numberOfMembers: number;
     isMember: boolean;
@@ -44,14 +45,14 @@ const PodCard: React.FC<IPodCardProps> = (props: IPodCardProps) => {
 
                     {isMember ? (
                         <Grid sx={{ marginBottom: '2px' }}>
-                            <Tooltip title={'You are a member of this Pod.'} placement="right">
+                            <Tooltip title={'You are a member.'} placement="right">
                                 <PersonIcon color="disabled" />
                             </Tooltip>
                         </Grid>
                     ) : null}
                     {isModerator ? (
                         <Grid sx={{ marginBottom: '2px' }}>
-                            <Tooltip title={'You are a moderator of this Pod.'} placement="right">
+                            <Tooltip title={'You are a moderator.'} placement="right">
                                 <ManageAccountsIcon color="disabled" />
                             </Tooltip>
                         </Grid>
@@ -70,7 +71,7 @@ const PodCard: React.FC<IPodCardProps> = (props: IPodCardProps) => {
                                 borderRadius: '50%',
                                 borderColor: THEME.palette.grey.A400,
                             }}
-                            image={imageLink}
+                            image={imageLink ?? PlaceholderImagePod}
                             title="podCardCardMedia"
                         />
                     </Box>

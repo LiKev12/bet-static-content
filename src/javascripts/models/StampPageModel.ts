@@ -1,19 +1,50 @@
+import UserBubbleModel from 'src/javascripts/models/UserBubbleModel';
 export default class StampPageModel {
-    id: string;
-    name: string;
-    description: string | null;
-    imageLink: string | null;
-    // TODO: add more properties depending on what data the page needs to display on the UI
+    id: string = '';
+    isCreatedByMe: boolean = false;
+    idUserCreate: string = '';
+    usernameUserCreate: string = '';
+    name: string = '';
+    description: string | null = '';
+    imageLink: string | null = null;
+    userBubblesStampCollect: UserBubbleModel[] = [];
+    userBubblesStampCollectTotalNumber: number = 0;
+    isCollectedByMe: boolean = false;
+    isEligibleToBeCollectedByMe: boolean = false;
 
-    constructor(stampPageModel: any) {
+    constructor(stampPageModel: any, isInitial: boolean = false) {
+        if (isInitial) {
+            return;
+        }
         this.id = stampPageModel.id;
+        this.isCreatedByMe = stampPageModel.isCreatedByMe;
+        this.idUserCreate = stampPageModel.idUserCreate;
+        this.usernameUserCreate = stampPageModel.usernameUserCreate;
         this.name = stampPageModel.name;
         this.description = stampPageModel.description;
         this.imageLink = stampPageModel.imageLink;
+        this.userBubblesStampCollect = stampPageModel.userBubblesStampCollect.map(
+            (userBubbleStampCollect: any) => new UserBubbleModel(userBubbleStampCollect),
+        );
+        this.userBubblesStampCollectTotalNumber = stampPageModel.userBubblesStampCollectTotalNumber;
+        this.isCollectedByMe = stampPageModel.isCollectedByMe;
+        this.isEligibleToBeCollectedByMe = stampPageModel.isEligibleToBeCollectedByMe;
     }
 
     getId(): string {
         return this.id;
+    }
+
+    getIsCreatedByMe(): boolean {
+        return this.isCreatedByMe;
+    }
+
+    getIdUserCreate(): string {
+        return this.idUserCreate;
+    }
+
+    getUsernameUserCreate(): string {
+        return this.usernameUserCreate;
     }
 
     getName(): string {
@@ -26,5 +57,21 @@ export default class StampPageModel {
 
     getImageLink(): string | null {
         return this.imageLink;
+    }
+
+    getUserBubblesStampCollect(): UserBubbleModel[] {
+        return this.userBubblesStampCollect;
+    }
+
+    getUserBubblesStampCollectTotalNumber(): number {
+        return this.userBubblesStampCollectTotalNumber;
+    }
+
+    getIsCollectedByMe(): boolean {
+        return this.isCollectedByMe;
+    }
+
+    getIsEligibleToBeCollectedByMe(): boolean {
+        return this.isEligibleToBeCollectedByMe;
     }
 }

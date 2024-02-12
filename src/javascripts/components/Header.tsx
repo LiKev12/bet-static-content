@@ -2,9 +2,10 @@ import React from 'react';
 
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import { THEME } from 'src/javascripts/Theme';
-import { AppBar, Tab, Tabs, Toolbar } from '@mui/material';
+import { AppBar, Box, Tab, Tabs, Toolbar } from '@mui/material';
 import { styled } from '@mui/system';
 import { Link } from 'react-router-dom';
+import IconButtonOpenNotificationListModal from 'src/javascripts/components/IconButtonOpenNotificationListModal';
 
 function ElevationScroll(props: any): any {
     const { children, window } = props;
@@ -42,7 +43,7 @@ const Header: React.FC<IHeaderProps> = (props: IHeaderProps) => {
     return (
         <React.Fragment>
             <ElevationScroll>
-                <AppBar color="inherit" sx={{ background: THEME.palette.gradient }}>
+                <AppBar color="inherit" sx={{ background: THEME.palette.other.gradient }}>
                     <Toolbar disableGutters>
                         {/* <Button
                             component={Link}
@@ -68,13 +69,11 @@ const Header: React.FC<IHeaderProps> = (props: IHeaderProps) => {
                         >
                             <StyledTab component={Link} to="/" label="Home" />
                             <StyledTab component={Link} to="/me" label="Me" />
-                            <StyledTab
-                                component={Link}
-                                to="/discover"
-                                label="Discover"
-                                style={{ marginRight: '20px' }}
-                            />
+                            <StyledTab component={Link} to="/discover" label="Discover" />
                         </Tabs>
+                        <Box sx={{ marginRight: '48px' }}>
+                            <IconButtonOpenNotificationListModal />
+                        </Box>
                     </Toolbar>
                 </AppBar>
             </ElevationScroll>
@@ -82,7 +81,7 @@ const Header: React.FC<IHeaderProps> = (props: IHeaderProps) => {
                 style={{
                     ...THEME.mixins.toolbar,
                     paddingBottom: '4rem',
-                    background: THEME.palette.gradient,
+                    background: THEME.palette.other.gradient,
                 }}
             />
         </React.Fragment>

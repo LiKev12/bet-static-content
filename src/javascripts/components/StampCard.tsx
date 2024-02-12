@@ -4,13 +4,13 @@ import { THEME } from 'src/javascripts/Theme';
 import CollectionsBookmarkRoundedIcon from '@mui/icons-material/CollectionsBookmarkRounded';
 import PublicRoundedIcon from '@mui/icons-material/PublicRounded';
 import LockRoundedIcon from '@mui/icons-material/LockRounded';
+import PlaceholderImageStamp from 'src/assets/PlaceholderImageStamp.png';
 
 export interface IStampCardProps {
     id: string;
     name: string;
-    description: string;
-    isCollected: boolean;
-    imageLink?: string;
+    description: string | null;
+    imageLink: string | null;
     numberOfUsersCollect: number;
     isPublic: boolean;
     isCollect: boolean;
@@ -62,7 +62,7 @@ const StampCard: React.FC<IStampCardProps> = (props: IStampCardProps) => {
                                 borderRadius: '50%',
                                 borderColor: THEME.palette.grey.A400,
                             }}
-                            image={imageLink}
+                            image={imageLink ?? PlaceholderImageStamp}
                             title="stampCardCardMedia"
                         />
                     </Box>
@@ -98,8 +98,8 @@ const StampCard: React.FC<IStampCardProps> = (props: IStampCardProps) => {
                         sx={{ width: '100%' }}
                     >
                         {numberOfUsersCollect === 1
-                            ? `${numberOfUsersCollect} user collected`
-                            : `${numberOfUsersCollect} users collected`}
+                            ? `${numberOfUsersCollect} User Collected`
+                            : `${numberOfUsersCollect} Users Collected`}
                     </Button>
                 </CardActions>
             </CardContent>
