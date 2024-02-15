@@ -1,10 +1,10 @@
-// const MOCK_MY_USER_ID = '985a92b3-c0f3-486a-8d95-1c2b020ca80d'; // chenpachi
-// const MOCK_MY_USER_ID = 'ef613db3-d5be-4f1c-9a7c-d6c27edfbe45'; // songdj
-// const MOCK_MY_USER_ID = 'd79adbfb-dc53-461f-8e41-5c16e0e64103'; // mittens (amit)
-// const MOCK_MY_USER_ID = '22857ceb-39a0-4569-836f-29dba98c75bc'; // megan_li
-// const MOCK_MY_USER_ID = 'f4e7c3eb-73b7-409b-b553-602a41db3f26'; // bobby
-const MOCK_MY_USER_ID = '7b4bc526-1d01-4b66-b692-a80ccc04dc72'; // jackjack
-// const MOCK_MY_USER_ID = '1842375f-b859-4f4d-8382-3492f85475b1'; // jillcats
+// const MOCK_MY_USER_ID = '985a92b3-c0f3-486a-8d95-1c2b020ca80d'; // chenpachi         (pwd: chenpachipwd)
+// const MOCK_MY_USER_ID = 'ef613db3-d5be-4f1c-9a7c-d6c27edfbe45'; // songdj            (pwd: songdjpwd)
+// const MOCK_MY_USER_ID = 'd79adbfb-dc53-461f-8e41-5c16e0e64103'; // mittens (amit)    (pwd: mittenspwd)
+// const MOCK_MY_USER_ID = '22857ceb-39a0-4569-836f-29dba98c75bc'; // megan_li          (pwd: megan_lipwd)
+// const MOCK_MY_USER_ID = 'f4e7c3eb-73b7-409b-b553-602a41db3f26'; // bobby             (pwd: bobbypwd)
+const MOCK_MY_USER_ID = '7b4bc526-1d01-4b66-b692-a80ccc04dc72'; // jackjack             (pwd: jackjackpwd)
+// const MOCK_MY_USER_ID = '1842375f-b859-4f4d-8382-3492f85475b1'; // jillcats          (pwd: jillcatspwd)
 
 const MOCK_PODS: any = [
     {
