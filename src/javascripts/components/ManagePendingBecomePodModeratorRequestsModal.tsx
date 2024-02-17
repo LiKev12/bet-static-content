@@ -34,7 +34,6 @@ import UserBubbleModel from 'src/javascripts/models/UserBubbleModel';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Constants from 'src/javascripts/Constants';
@@ -144,11 +143,8 @@ const ManagePendingBecomePodModeratorRequestsModal: React.FC<IManageBecomePodMod
         userBubblesProcessed.reverse();
     }
 
-    const handleGetResourceUserBubblesPendingBecomePodModeratorRequest = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetUserBubblesPendingBecomePodModeratorRequest = (): void => {
+        ResourceClient.postResource('api/app/GetUserBubblesPendingBecomePodModeratorRequest', { id: String(idPod) })
             .then((responseJson: any) => {
                 setUserBubblePendingBecomePodModeratorRequestState(
                     (prevState: IUserBubblePendingBecomePodModeratorRequestState) => {
@@ -180,12 +176,7 @@ const ManagePendingBecomePodModeratorRequestsModal: React.FC<IManageBecomePodMod
             });
     };
     useEffect(() => {
-        handleGetResourceUserBubblesPendingBecomePodModeratorRequest(
-            `api/pod/read/pods/${String(idPod)}/userBubblesPendingBecomePodModeratorRequest`,
-            {
-                idUser: MOCK_MY_USER_ID,
-            },
-        );
+        handleGetUserBubblesPendingBecomePodModeratorRequest();
         // eslint-disable-next-line
     }, []);
 
@@ -405,22 +396,11 @@ const ManagePendingBecomePodModeratorRequestsModal: React.FC<IManageBecomePodMod
                                                 isFollowedByMe={userBubble.getIsFollowedByMe()}
                                                 isFollowRequestSentNotYetAccepted={userBubble.getIsFollowRequestSentNotYetAccepted()}
                                                 handleSendFollowRequest={() => {
-                                                    ResourceClient.postResource(
-                                                        'api/user/update/sendFollowUserRequest',
-                                                        { idUser: MOCK_MY_USER_ID },
-                                                        {
-                                                            idUserReceiveFollowRequest: userBubble.getId(),
-                                                        },
-                                                    )
+                                                    ResourceClient.postResource('api/app/SendFollowUserRequest', {
+                                                        id: userBubble.getId(),
+                                                    })
                                                         .then(() => {
-                                                            handleGetResourceUserBubblesPendingBecomePodModeratorRequest(
-                                                                `api/pod/read/pods/${String(
-                                                                    idPod,
-                                                                )}/userBubblesPendingBecomePodModeratorRequest`,
-                                                                {
-                                                                    idUser: MOCK_MY_USER_ID,
-                                                                },
-                                                            );
+                                                            handleGetUserBubblesPendingBecomePodModeratorRequest();
                                                         })
                                                         .catch(() => {});
                                                 }}
@@ -476,16 +456,12 @@ const ManagePendingBecomePodModeratorRequestsModal: React.FC<IManageBecomePodMod
                                         };
                                     },
                                 );
-                                ResourceClient.postResource(
-                                    'api/pod/update/rejectBecomePodModeratorRequests',
-                                    { idUser: MOCK_MY_USER_ID },
-                                    {
-                                        idPod,
-                                        idUsersWithBecomeModeratorRequestRejected: Array.from(
-                                            managePendingBecomePodModeratorRequestsModalState.data.selectedUserIds,
-                                        ),
-                                    },
-                                )
+                                ResourceClient.postResource('api/app/RejectBecomePodModeratorRequests', {
+                                    id: idPod,
+                                    idUsers: Array.from(
+                                        managePendingBecomePodModeratorRequestsModalState.data.selectedUserIds,
+                                    ),
+                                })
                                     .then((responseJson: any) => {
                                         handleUpdateUserBubblePendingBecomePodModeratorRequestState(responseJson);
                                         handleUpdatePodPage();
@@ -546,16 +522,12 @@ const ManagePendingBecomePodModeratorRequestsModal: React.FC<IManageBecomePodMod
                                         };
                                     },
                                 );
-                                ResourceClient.postResource(
-                                    'api/pod/update/approveBecomePodModeratorRequests',
-                                    { idUser: MOCK_MY_USER_ID },
-                                    {
-                                        idPod,
-                                        idUsersWithBecomeModeratorRequestApproved: Array.from(
-                                            managePendingBecomePodModeratorRequestsModalState.data.selectedUserIds,
-                                        ),
-                                    },
-                                )
+                                ResourceClient.postResource('api/app/ApproveBecomePodModeratorRequests', {
+                                    id: idPod,
+                                    idUsers: Array.from(
+                                        managePendingBecomePodModeratorRequestsModalState.data.selectedUserIds,
+                                    ),
+                                })
                                     .then((responseJson: any) => {
                                         handleUpdateUserBubblePendingBecomePodModeratorRequestState(responseJson);
                                         handleUpdatePodPage();

@@ -2,12 +2,10 @@ import React from 'react';
 import { Box, Button, ButtonGroup } from '@mui/material';
 import Constants from 'src/javascripts/Constants';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 
 export interface IReactionSelectorProps {
     handleUpdateCallback: any;
     apiPathSelectReaction: string;
-    apiSelectReactionSourceEntityIdKey: string;
     apiSelectReactionSourceEntityIdValue: string;
     myReaction: string | null;
 }
@@ -17,13 +15,7 @@ export interface IReactionSelectorState {
 }
 
 const ReactionSelector: React.FC<IReactionSelectorProps> = (props: IReactionSelectorProps) => {
-    const {
-        handleUpdateCallback,
-        apiPathSelectReaction,
-        apiSelectReactionSourceEntityIdKey,
-        apiSelectReactionSourceEntityIdValue,
-        myReaction,
-    } = props;
+    const { handleUpdateCallback, apiPathSelectReaction, apiSelectReactionSourceEntityIdValue, myReaction } = props;
 
     return (
         <Box>
@@ -39,14 +31,10 @@ const ReactionSelector: React.FC<IReactionSelectorProps> = (props: IReactionSele
                                 ...(myReaction === reactionType ? { backgroundColor: '#fff59d' } : {}),
                             }}
                             onClick={() => {
-                                ResourceClient.postResource(
-                                    apiPathSelectReaction,
-                                    { idUser: MOCK_MY_USER_ID },
-                                    {
-                                        [apiSelectReactionSourceEntityIdKey]: apiSelectReactionSourceEntityIdValue,
-                                        reactionType: reactionType === myReaction ? null : reactionType,
-                                    },
-                                )
+                                ResourceClient.postResource(apiPathSelectReaction, {
+                                    id: apiSelectReactionSourceEntityIdValue,
+                                    reactionType: reactionType === myReaction ? null : reactionType,
+                                })
                                     .then(() => {
                                         handleUpdateCallback();
                                     })

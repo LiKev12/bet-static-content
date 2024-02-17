@@ -6,7 +6,7 @@ import UserBubbleReactionListModalButton from 'src/javascripts/components/UserBu
 import ReactionSelector from 'src/javascripts/components/ReactionSelector';
 import { getUserListButtonText } from 'src/javascripts/utilities';
 import ReactionsModel from 'src/javascripts/models/ReactionsModel';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
+
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import { THEME } from 'src/javascripts/Theme';
 
@@ -49,13 +49,11 @@ const TaskCommentReplyList: React.FC<ITaskCommentReplyListProps> = (props: ITask
             data: getTaskCommentRepliesReactionsInitialState(taskCommentReplies),
         });
 
-    const handlePostResourceTaskCommentReplyReactions = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
+    const handleGetTaskCommentReplyReactions = (
         requestBodyObject: Record<string, unknown>,
         idTaskCommentReply: string,
     ): void => {
-        ResourceClient.postResource(pathApi, queryParamsObject, requestBodyObject)
+        ResourceClient.postResource('api/app/GetTaskCommentReplyReactions', requestBodyObject)
             .then((responseJson: any) => {
                 setTaskCommentRepliesReactionsState((prevState: ITaskCommentRepliesReactionsState) => {
                     return {
@@ -137,11 +135,7 @@ const TaskCommentReplyList: React.FC<ITaskCommentReplyListProps> = (props: ITask
                                     <Grid item>
                                         <ReactionSelector
                                             handleUpdateCallback={() => {
-                                                handlePostResourceTaskCommentReplyReactions(
-                                                    'api/task/read/taskCommentReplyReactions',
-                                                    {
-                                                        idUser: MOCK_MY_USER_ID,
-                                                    },
+                                                handleGetTaskCommentReplyReactions(
                                                     {
                                                         idTaskCommentReply:
                                                             taskCommentReplyModel.getIdTaskCommentReply(),
@@ -158,8 +152,7 @@ const TaskCommentReplyList: React.FC<ITaskCommentReplyListProps> = (props: ITask
                                                       ].getMyReactionType()
                                                     : null
                                             }
-                                            apiPathSelectReaction={'api/task/update/taskCommentReplyReaction'}
-                                            apiSelectReactionSourceEntityIdKey={'idTaskCommentReply'}
+                                            apiPathSelectReaction={'api/app/UpdateTaskCommentReplyReaction'}
                                             apiSelectReactionSourceEntityIdValue={taskCommentReplyModel.getIdTaskCommentReply()}
                                         />
                                     </Grid>
@@ -183,8 +176,7 @@ const TaskCommentReplyList: React.FC<ITaskCommentReplyListProps> = (props: ITask
                                                 taskCommentReplyModel.getIdTaskCommentReply()
                                             ].getUserBubblesReaction()}
                                             sortByTimestampLabel="time of reaction"
-                                            apiPath={`api/task/read/taskCommentReplyReactions`}
-                                            apiReactionSourceEntityIdKey={'idTaskCommentReply'}
+                                            apiPath={'api/app/GetTaskCommentReplyReactions'}
                                             apiReactionSourceEntityIdValue={taskCommentReplyModel.getIdTaskCommentReply()}
                                             modalTitle="Reactions"
                                         />

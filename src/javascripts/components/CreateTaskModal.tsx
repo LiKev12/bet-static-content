@@ -15,7 +15,6 @@ import {
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 
 import Constants from 'src/javascripts/Constants';
 import { getInputText, getInputInteger } from 'src/javascripts/utilities';
@@ -312,24 +311,20 @@ const CreateTaskModal: React.FC<ICreateTaskModalProps> = (props: ICreateTaskModa
                                 },
                             };
                         });
-                        ResourceClient.postResource(
-                            'api/task/create/task',
-                            { idUser: MOCK_MY_USER_ID },
-                            {
-                                name: getInputText(createTaskModalState.data.name.value),
-                                numberOfPoints: getInputInteger(String(createTaskModalState.data.numberOfPoints.value)),
-                                ...(createTaskModalState.data.description.value.length > 0
-                                    ? { description: getInputText(createTaskModalState.data.description.value) }
-                                    : {}),
-                                ...(createTaskModalState.data.datetimeTarget.value !== null
-                                    ? {
-                                          datetimeTarget:
-                                              createTaskModalState.data.datetimeTarget.value.format('YYYY/MM/DD'),
-                                      }
-                                    : {}),
-                                ...(idPod !== null ? { idPod } : {}),
-                            },
-                        )
+                        ResourceClient.postResource('api/app/CreateTask', {
+                            name: getInputText(createTaskModalState.data.name.value),
+                            numberOfPoints: getInputInteger(String(createTaskModalState.data.numberOfPoints.value)),
+                            ...(getInputText(createTaskModalState.data.description.value).length > 0
+                                ? { description: getInputText(createTaskModalState.data.description.value) }
+                                : {}),
+                            ...(createTaskModalState.data.datetimeTarget.value !== null
+                                ? {
+                                      datetimeTarget:
+                                          createTaskModalState.data.datetimeTarget.value.format('YYYY/MM/DD'),
+                                  }
+                                : {}),
+                            ...(idPod !== null ? { idPod } : {}),
+                        })
                             .then(() => {
                                 setCreateTaskModalState((prevState: ICreateTaskModalState) => {
                                     return {

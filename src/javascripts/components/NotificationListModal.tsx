@@ -32,7 +32,6 @@ import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
 import PlaceholderImagePod from 'src/assets/PlaceholderImagePod.png';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import CheckIcon from '@mui/icons-material/Check';
@@ -108,12 +107,8 @@ const NotificationListModal: React.FC<INotificationListModalProps> = (props: INo
         notificationsProcessed.reverse();
     }
 
-    const handleGetResourceNotifications = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-        requestBodyObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.postResource(pathApi, queryParamsObject, requestBodyObject)
+    const handleGetResourceNotifications = (): void => {
+        ResourceClient.postResource('api/app/GetNotifications', {})
             .then((responseJson: any) => {
                 setNotificationListModalState((prevState: INotificationListModalState) => {
                     return {
@@ -135,13 +130,7 @@ const NotificationListModal: React.FC<INotificationListModalProps> = (props: INo
             });
     };
     useEffect(() => {
-        handleGetResourceNotifications(
-            'api/user/read/notifications',
-            {
-                idUser: MOCK_MY_USER_ID,
-            },
-            {},
-        );
+        handleGetResourceNotifications();
         // eslint-disable-next-line
     }, []);
     const debouncedHandleChangeFilterText = _.debounce((event: React.ChangeEvent<HTMLInputElement>): void => {
@@ -285,35 +274,18 @@ const NotificationListModal: React.FC<INotificationListModalProps> = (props: INo
                                                     <IconButton
                                                         onClick={() => {
                                                             ResourceClient.postResource(
-                                                                'api/user/update/acceptFollowUserRequests',
+                                                                'api/app/AcceptFollowUserRequests',
                                                                 {
-                                                                    idUser: MOCK_MY_USER_ID,
-                                                                },
-                                                                {
-                                                                    idUsersWithFollowRequestAccepted: [
-                                                                        notification.getIdLinkPage(),
-                                                                    ],
+                                                                    idUsers: [notification.getIdLinkPage()],
                                                                 },
                                                             )
                                                                 .then(() => {})
                                                                 .catch(() => {});
-                                                            ResourceClient.postResource(
-                                                                'api/user/update/dismissNotification',
-                                                                {
-                                                                    idUser: MOCK_MY_USER_ID,
-                                                                },
-                                                                {
-                                                                    idNotification: notification.getId(),
-                                                                },
-                                                            )
+                                                            ResourceClient.postResource('api/app/DismissNotification', {
+                                                                id: notification.getId(),
+                                                            })
                                                                 .then(() => {
-                                                                    handleGetResourceNotifications(
-                                                                        'api/user/read/notifications',
-                                                                        {
-                                                                            idUser: MOCK_MY_USER_ID,
-                                                                        },
-                                                                        {},
-                                                                    );
+                                                                    handleGetResourceNotifications();
                                                                 })
                                                                 .catch(() => {});
                                                         }}
@@ -323,35 +295,18 @@ const NotificationListModal: React.FC<INotificationListModalProps> = (props: INo
                                                     <IconButton
                                                         onClick={() => {
                                                             ResourceClient.postResource(
-                                                                'api/user/update/declineFollowUserRequests',
+                                                                'api/app/DeclineFollowUserRequests',
                                                                 {
-                                                                    idUser: MOCK_MY_USER_ID,
-                                                                },
-                                                                {
-                                                                    idUsersWithFollowRequestDeclined: [
-                                                                        notification.getIdLinkPage(),
-                                                                    ],
+                                                                    idUsers: [notification.getIdLinkPage()],
                                                                 },
                                                             )
                                                                 .then(() => {})
                                                                 .catch(() => {});
-                                                            ResourceClient.postResource(
-                                                                'api/user/update/dismissNotification',
-                                                                {
-                                                                    idUser: MOCK_MY_USER_ID,
-                                                                },
-                                                                {
-                                                                    idNotification: notification.getId(),
-                                                                },
-                                                            )
+                                                            ResourceClient.postResource('api/app/DismissNotification', {
+                                                                id: notification.getId(),
+                                                            })
                                                                 .then(() => {
-                                                                    handleGetResourceNotifications(
-                                                                        'api/user/read/notifications',
-                                                                        {
-                                                                            idUser: MOCK_MY_USER_ID,
-                                                                        },
-                                                                        {},
-                                                                    );
+                                                                    handleGetResourceNotifications();
                                                                 })
                                                                 .catch(() => {});
                                                         }}
@@ -403,34 +358,16 @@ const NotificationListModal: React.FC<INotificationListModalProps> = (props: INo
                                                 <ButtonGroup>
                                                     <IconButton
                                                         onClick={() => {
-                                                            ResourceClient.postResource(
-                                                                'api/pod/update/acceptJoinPodInvite',
-                                                                {
-                                                                    idUser: MOCK_MY_USER_ID,
-                                                                },
-                                                                {
-                                                                    idPod: notification.getIdLinkPage(),
-                                                                },
-                                                            )
+                                                            ResourceClient.postResource('api/app/AcceptJoinPodInvite', {
+                                                                id: notification.getIdLinkPage(),
+                                                            })
                                                                 .then(() => {})
                                                                 .catch(() => {});
-                                                            ResourceClient.postResource(
-                                                                'api/user/update/dismissNotification',
-                                                                {
-                                                                    idUser: MOCK_MY_USER_ID,
-                                                                },
-                                                                {
-                                                                    idNotification: notification.getId(),
-                                                                },
-                                                            )
+                                                            ResourceClient.postResource('api/app/DismissNotification', {
+                                                                id: notification.getId(),
+                                                            })
                                                                 .then(() => {
-                                                                    handleGetResourceNotifications(
-                                                                        'api/user/read/notifications',
-                                                                        {
-                                                                            idUser: MOCK_MY_USER_ID,
-                                                                        },
-                                                                        {},
-                                                                    );
+                                                                    handleGetResourceNotifications();
                                                                 })
                                                                 .catch(() => {});
                                                         }}
@@ -440,33 +377,18 @@ const NotificationListModal: React.FC<INotificationListModalProps> = (props: INo
                                                     <IconButton
                                                         onClick={() => {
                                                             ResourceClient.postResource(
-                                                                'api/pod/update/declineJoinPodInvite',
+                                                                'api/app/DeclineJoinPodInvite',
                                                                 {
-                                                                    idUser: MOCK_MY_USER_ID,
-                                                                },
-                                                                {
-                                                                    idPod: notification.getIdLinkPage(),
+                                                                    id: notification.getIdLinkPage(),
                                                                 },
                                                             )
                                                                 .then(() => {})
                                                                 .catch(() => {});
-                                                            ResourceClient.postResource(
-                                                                'api/user/update/dismissNotification',
-                                                                {
-                                                                    idUser: MOCK_MY_USER_ID,
-                                                                },
-                                                                {
-                                                                    idNotification: notification.getId(),
-                                                                },
-                                                            )
+                                                            ResourceClient.postResource('api/app/DismissNotification', {
+                                                                id: notification.getId(),
+                                                            })
                                                                 .then(() => {
-                                                                    handleGetResourceNotifications(
-                                                                        'api/user/read/notifications',
-                                                                        {
-                                                                            idUser: MOCK_MY_USER_ID,
-                                                                        },
-                                                                        {},
-                                                                    );
+                                                                    handleGetResourceNotifications();
                                                                 })
                                                                 .catch(() => {});
                                                         }}

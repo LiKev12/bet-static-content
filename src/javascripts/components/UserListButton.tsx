@@ -10,6 +10,7 @@ export interface IUserListButtonProps {
     userBubbles: UserBubbleModel[];
     sortByTimestampLabel: string;
     apiPath: string;
+    apiPayload: any;
     modalTitle: string;
     isUseDateTimeDateAndTime: boolean;
 }
@@ -17,7 +18,7 @@ export interface IUserListButtonProps {
 const MAX_USER_BUBBLES_VISIBLE = 3;
 
 const UserListButton: React.FC<IUserListButtonProps> = (props: IUserListButtonProps) => {
-    const { labelText, userBubbles, apiPath, modalTitle, isUseDateTimeDateAndTime } = props;
+    const { labelText, userBubbles, apiPath, apiPayload, modalTitle, isUseDateTimeDateAndTime } = props;
     const [isModalOpen, setModalOpen] = useState(false);
 
     const userBubblesProcessed: UserBubbleModel[] = [];
@@ -68,6 +69,7 @@ const UserListButton: React.FC<IUserListButtonProps> = (props: IUserListButtonPr
                     }}
                     sortByTimestampLabel={props.sortByTimestampLabel}
                     apiPath={apiPath}
+                    apiPayload={apiPayload}
                     modalTitle={modalTitle}
                     isUseDateTimeDateAndTime={isUseDateTimeDateAndTime}
                 />

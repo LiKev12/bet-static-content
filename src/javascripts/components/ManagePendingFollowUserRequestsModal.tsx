@@ -34,7 +34,6 @@ import UserBubbleModel from 'src/javascripts/models/UserBubbleModel';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Constants from 'src/javascripts/Constants';
@@ -142,11 +141,8 @@ const ManagePendingFollowUserRequestsModal: React.FC<IManageBecomePodModeratorRe
         userBubblesProcessed.reverse();
     }
 
-    const handleGetResourceUserBubblesPendingFollowUserRequest = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetUserBubblesPendingFollowUserRequest = (): void => {
+        ResourceClient.postResource('api/app/GetUserBubblesPendingFollowUserRequest', {})
             .then((responseJson: any) => {
                 setUserBubblePendingFollowUserRequestState((prevState: IUserBubblePendingFollowUserRequestState) => {
                     return {
@@ -174,9 +170,7 @@ const ManagePendingFollowUserRequestsModal: React.FC<IManageBecomePodModeratorRe
             });
     };
     useEffect(() => {
-        handleGetResourceUserBubblesPendingFollowUserRequest(`api/user/read/userBubblesPendingFollowUserRequest`, {
-            idUser: MOCK_MY_USER_ID,
-        });
+        handleGetUserBubblesPendingFollowUserRequest();
         // eslint-disable-next-line
     }, []);
 
@@ -388,20 +382,11 @@ const ManagePendingFollowUserRequestsModal: React.FC<IManageBecomePodModeratorRe
                                                 isFollowedByMe={userBubble.getIsFollowedByMe()}
                                                 isFollowRequestSentNotYetAccepted={userBubble.getIsFollowRequestSentNotYetAccepted()}
                                                 handleSendFollowRequest={() => {
-                                                    ResourceClient.postResource(
-                                                        'api/user/update/sendFollowUserRequest',
-                                                        { idUser: MOCK_MY_USER_ID },
-                                                        {
-                                                            idUserReceiveFollowRequest: userBubble.getId(),
-                                                        },
-                                                    )
+                                                    ResourceClient.postResource('api/app/SendFollowUserRequest', {
+                                                        id: userBubble.getId(),
+                                                    })
                                                         .then(() => {
-                                                            handleGetResourceUserBubblesPendingFollowUserRequest(
-                                                                `api/user/read/userBubblesPendingFollowUserRequest`,
-                                                                {
-                                                                    idUser: MOCK_MY_USER_ID,
-                                                                },
-                                                            );
+                                                            handleGetUserBubblesPendingFollowUserRequest();
                                                         })
                                                         .catch(() => {});
                                                 }}
@@ -456,15 +441,9 @@ const ManagePendingFollowUserRequestsModal: React.FC<IManageBecomePodModeratorRe
                                         };
                                     },
                                 );
-                                ResourceClient.postResource(
-                                    'api/user/update/declineFollowUserRequests',
-                                    { idUser: MOCK_MY_USER_ID },
-                                    {
-                                        idUsersWithFollowRequestDeclined: Array.from(
-                                            managePendingFollowUserRequestsModalState.data.selectedUserIds,
-                                        ),
-                                    },
-                                )
+                                ResourceClient.postResource('api/app/DeclineFollowUserRequests', {
+                                    idUsers: Array.from(managePendingFollowUserRequestsModalState.data.selectedUserIds),
+                                })
                                     .then((responseJson: any) => {
                                         handleUpdateUserBubblePendingFollowUserRequestState(responseJson);
                                         handleUpdateUserPage();
@@ -525,15 +504,9 @@ const ManagePendingFollowUserRequestsModal: React.FC<IManageBecomePodModeratorRe
                                         };
                                     },
                                 );
-                                ResourceClient.postResource(
-                                    'api/user/update/acceptFollowUserRequests',
-                                    { idUser: MOCK_MY_USER_ID },
-                                    {
-                                        idUsersWithFollowRequestAccepted: Array.from(
-                                            managePendingFollowUserRequestsModalState.data.selectedUserIds,
-                                        ),
-                                    },
-                                )
+                                ResourceClient.postResource('api/app/AcceptFollowUserRequests', {
+                                    idUsers: Array.from(managePendingFollowUserRequestsModalState.data.selectedUserIds),
+                                })
                                     .then((responseJson: any) => {
                                         handleUpdateUserBubblePendingFollowUserRequestState(responseJson);
                                         handleUpdateUserPage();

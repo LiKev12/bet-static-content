@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { Box, CircularProgress, Grid } from '@mui/material';
 import NumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChart from 'src/javascripts/components/NumberOfPointsInTasksCompletedOverTimeVisualizationHeatmapChart';
 import NumberOfPointsInTasksCompletedOverTimeVisualizationLineChart from 'src/javascripts/components/NumberOfPointsInTasksCompletedOverTimeVisualizationLineChart';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import NumberOfPointsInTasksCompletedOverTimeVisualizationModel from 'src/javascripts/models/NumberOfPointsInTasksCompletedOverTimeVisualizationModel';
 
 export interface IPointsDisplayProps {
     apiPath: string;
+    apiPayload: any;
     refreshSwitchValue: boolean; // short of refactoring to redux, we need to toggle this to refresh upon completing a personal task, as that is the only page which requires manually refresh (other pages, like Pod, have the viz tucked away in a separate tab from tasks, which loads anew each time)
 }
 
@@ -19,7 +19,7 @@ export interface INumberOfPointsInTasksCompletedOverTimeVisualizationStateType {
 const NumberOfPointsInTasksCompletedOverTimeVisualization: React.FC<IPointsDisplayProps> = (
     props: IPointsDisplayProps,
 ) => {
-    const { apiPath, refreshSwitchValue } = props;
+    const { apiPath, apiPayload, refreshSwitchValue } = props;
     const [
         numberOfPointsInTasksCompletedOverTimeVisualizationState,
         setNumberOfPointsInTasksCompletedOverTimeVisualizationState,
@@ -28,11 +28,8 @@ const NumberOfPointsInTasksCompletedOverTimeVisualization: React.FC<IPointsDispl
         isLoading: true,
         responseError: null,
     });
-    const handleGetResouorceNumberOfPointsInTasksCompletedOverTimeVisualization = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    useEffect(() => {
+        ResourceClient.postResource(apiPath, apiPayload)
             .then((responseJson: any) => {
                 setNumberOfPointsInTasksCompletedOverTimeVisualizationState((prevState: any) => {
                     const numberOfPointsInTasksCompletedOverTimeVisualizationModel =
@@ -48,17 +45,12 @@ const NumberOfPointsInTasksCompletedOverTimeVisualization: React.FC<IPointsDispl
                 setNumberOfPointsInTasksCompletedOverTimeVisualizationState((prevState: any) => {
                     return {
                         ...prevState,
-                        isLoading: true,
                         responseError,
+                        isLoading: false,
                     };
                 });
             });
-    };
-    useEffect(() => {
-        handleGetResouorceNumberOfPointsInTasksCompletedOverTimeVisualization(apiPath, {
-            idUser: MOCK_MY_USER_ID,
-        });
-    }, [apiPath, refreshSwitchValue]);
+    }, [refreshSwitchValue, apiPath, apiPayload]);
 
     return !numberOfPointsInTasksCompletedOverTimeVisualizationState.isLoading ? (
         <Box

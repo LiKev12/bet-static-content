@@ -8,7 +8,7 @@ import FilterStamps from 'src/javascripts/components/FilterStamps';
 import TaskCardList from 'src/javascripts/components/TaskCardList';
 import StampCardList from 'src/javascripts/components/StampCardList';
 import AvatarImageEditor from 'src/javascripts/components/AvatarImageEditor';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
+
 import UserListButton from 'src/javascripts/components/UserListButton';
 import IconButtonJoinPod from 'src/javascripts/components/IconButtonJoinPod';
 import CreateStampModalButton from 'src/javascripts/components/CreateStampModalButton';
@@ -163,8 +163,8 @@ const PagePod: React.FC = () => {
         },
     });
 
-    const handleGetResourcePodPage = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetPodPage = (): void => {
+        ResourceClient.postResource('api/GetPodPage', { id: String(idPod) })
             .then((responseJson: any) => {
                 setPodPageState((prevState: IPodPageState) => {
                     const podPageModel = new PodPageModel(responseJson);
@@ -209,16 +209,13 @@ const PagePod: React.FC = () => {
                 });
             });
     };
-    const handleGetResourceTasksAssociatedWithPod = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetTasksAssociatedWithPod = (requestBodyObject: Record<string, unknown>): void => {
+        ResourceClient.postResource('api/app/GetTasksAssociatedWithPod', requestBodyObject)
             .then((responseJson: any) => {
                 setTaskState((prevState: ITaskState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new TaskModel(datapoint);
                         }),
                         response: {
@@ -247,16 +244,13 @@ const PagePod: React.FC = () => {
             });
     };
 
-    const handleGetResourceStampsAssociatedWithPod = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetStampCardsAssociatedWithPod = (requestBodyObject: Record<string, unknown>): void => {
+        ResourceClient.postResource('api/app/GetStampCardsAssociatedWithPod', requestBodyObject)
             .then((responseJson: any) => {
                 setStampCardState((prevState: IStampCardState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new StampCardModel(datapoint);
                         }),
                         response: {
@@ -315,14 +309,11 @@ const PagePod: React.FC = () => {
         500,
     );
     useEffect(() => {
-        handleGetResourcePodPage(`api/pod/read/pods/${String(idPod)}/page`, {
-            idUser: MOCK_MY_USER_ID,
-        });
+        handleGetPodPage();
         // eslint-disable-next-line
     }, []);
     useEffect(() => {
-        handleGetResourceTasksAssociatedWithPod(`api/pod/read/pods/${String(idPod)}/tasks`, {
-            idUser: MOCK_MY_USER_ID,
+        handleGetTasksAssociatedWithPod({
             filterNameOrDescription: taskState.filter.filterNameOrDescription,
             filterIsComplete: taskState.filter.filterIsComplete,
             filterIsNotComplete: taskState.filter.filterIsNotComplete,
@@ -334,8 +325,7 @@ const PagePod: React.FC = () => {
         // eslint-disable-next-line
     }, [taskState.filter, tabIdx]);
     useEffect(() => {
-        handleGetResourceStampsAssociatedWithPod(`api/pod/read/pods/${String(idPod)}/stamps`, {
-            idUser: MOCK_MY_USER_ID,
+        handleGetStampCardsAssociatedWithPod({
             filterNameOrDescription: stampCardState.filter.filterNameOrDescription,
             filterIsCollect: stampCardState.filter.filterIsCollect,
             filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
@@ -377,14 +367,10 @@ const PagePod: React.FC = () => {
                     <Grid item sx={{ padding: '24px' }}>
                         <AvatarImageEditor
                             imageUploadHandler={(imageAsBase64String: string) => {
-                                ResourceClient.postResource(
-                                    'api/pod/update/pod',
-                                    { idUser: MOCK_MY_USER_ID },
-                                    {
-                                        id: idPod,
-                                        imageAsBase64String: getInputText(imageAsBase64String),
-                                    },
-                                )
+                                ResourceClient.postResource('api/app/UpdatePod', {
+                                    id: idPod,
+                                    imageAsBase64String: getInputText(imageAsBase64String),
+                                })
                                     .then((responseJson: any) => {
                                         handleUpdatePodPage(responseJson);
                                     })
@@ -407,17 +393,11 @@ const PagePod: React.FC = () => {
                             {!podPageState.data.getIsPodMember() ? (
                                 <IconButtonJoinPod
                                     handleJoinPod={() => {
-                                        ResourceClient.postResource(
-                                            'api/pod/update/joinPod',
-                                            { idUser: MOCK_MY_USER_ID },
-                                            {
-                                                idPod,
-                                            },
-                                        )
+                                        ResourceClient.postResource('api/app/JoinPod', {
+                                            id: String(idPod),
+                                        })
                                             .then(() => {
-                                                handleGetResourcePodPage(`api/pod/read/pods/${String(idPod)}/page`, {
-                                                    idUser: MOCK_MY_USER_ID,
-                                                });
+                                                handleGetPodPage();
                                             })
                                             .catch(() => {});
                                     }}
@@ -492,20 +472,11 @@ const PagePod: React.FC = () => {
                                     <IconButtonSendBecomePodModeratorRequest
                                         isSentBecomePodModeratorRequest={podPageState.data.getIsSentBecomePodModeratorRequest()}
                                         handleSendBecomePodModeratorRequest={() => {
-                                            ResourceClient.postResource(
-                                                'api/pod/update/sendBecomePodModeratorRequest',
-                                                { idUser: MOCK_MY_USER_ID },
-                                                {
-                                                    idPod,
-                                                },
-                                            )
+                                            ResourceClient.postResource('api/app/SendBecomePodModeratorRequest', {
+                                                id: String(idPod),
+                                            })
                                                 .then(() => {
-                                                    handleGetResourcePodPage(
-                                                        `api/pod/read/pods/${String(idPod)}/page`,
-                                                        {
-                                                            idUser: MOCK_MY_USER_ID,
-                                                        },
-                                                    );
+                                                    handleGetPodPage();
                                                 })
                                                 .catch(() => {});
                                         }}
@@ -523,9 +494,7 @@ const PagePod: React.FC = () => {
                                         idPod={idPod ?? ''}
                                         numberOfPendingBecomeModeratorRequests={podPageState.data.getNumberOfPendingBecomeModeratorRequests()}
                                         handleUpdatePodPage={() => {
-                                            handleGetResourcePodPage(`api/pod/read/pods/${String(idPod)}/page`, {
-                                                idUser: MOCK_MY_USER_ID,
-                                            });
+                                            handleGetPodPage();
                                         }}
                                     />
                                     <Divider
@@ -538,17 +507,11 @@ const PagePod: React.FC = () => {
                             {podPageState.data.getIsPodMember() ? (
                                 <IconButtonLeavePod
                                     handleLeavePod={() => {
-                                        ResourceClient.postResource(
-                                            'api/pod/update/leavePod',
-                                            { idUser: MOCK_MY_USER_ID },
-                                            {
-                                                idPod,
-                                            },
-                                        )
+                                        ResourceClient.postResource('api/app/LeavePod', {
+                                            id: String(idPod),
+                                        })
                                             .then(() => {
-                                                handleGetResourcePodPage(`api/pod/read/pods/${String(idPod)}/page`, {
-                                                    idUser: MOCK_MY_USER_ID,
-                                                });
+                                                handleGetPodPage();
                                             })
                                             .catch(() => {});
                                     }}
@@ -567,7 +530,8 @@ const PagePod: React.FC = () => {
                                         )}
                                         userBubbles={podPageState.data.getUserBubblesPodMember()}
                                         sortByTimestampLabel="time become member"
-                                        apiPath={`api/pod/read/pods/${String(idPod)}/userBubblesPodMember`}
+                                        apiPath={'api/app/GetUserBubblesPodMember'}
+                                        apiPayload={{ id: String(idPod) }}
                                         modalTitle="Pod Members"
                                         isUseDateTimeDateAndTime={false}
                                     />
@@ -586,7 +550,8 @@ const PagePod: React.FC = () => {
                                         )}
                                         userBubbles={podPageState.data.getUserBubblesPodModerator()}
                                         sortByTimestampLabel="time become moderator"
-                                        apiPath={`api/pod/read/pods/${String(idPod)}/userBubblesPodModerator`}
+                                        apiPath={'api/app/GetUserBubblesPodModerator'}
+                                        apiPayload={{ id: String(idPod) }}
                                         modalTitle="Pod Moderators"
                                         isUseDateTimeDateAndTime={false}
                                     />
@@ -603,19 +568,15 @@ const PagePod: React.FC = () => {
                                 <CreateTaskModalButton
                                     idPod={idPod ?? null}
                                     handleUpdate={() => {
-                                        handleGetResourceTasksAssociatedWithPod(
-                                            `api/pod/read/pods/${String(idPod)}/tasks`,
-                                            {
-                                                idUser: MOCK_MY_USER_ID,
-                                                filterNameOrDescription: taskState.filter.filterNameOrDescription,
-                                                filterIsComplete: taskState.filter.filterIsComplete,
-                                                filterIsNotComplete: taskState.filter.filterIsNotComplete,
-                                                filterIsStar: taskState.filter.filterIsStar,
-                                                filterIsNotStar: taskState.filter.filterIsNotStar,
-                                                filterIsPin: taskState.filter.filterIsPin,
-                                                filterIsNotPin: taskState.filter.filterIsNotPin,
-                                            },
-                                        );
+                                        handleGetTasksAssociatedWithPod({
+                                            filterNameOrDescription: taskState.filter.filterNameOrDescription,
+                                            filterIsComplete: taskState.filter.filterIsComplete,
+                                            filterIsNotComplete: taskState.filter.filterIsNotComplete,
+                                            filterIsStar: taskState.filter.filterIsStar,
+                                            filterIsNotStar: taskState.filter.filterIsNotStar,
+                                            filterIsPin: taskState.filter.filterIsPin,
+                                            filterIsNotPin: taskState.filter.filterIsNotPin,
+                                        });
                                     }}
                                 />
                             </Box>
@@ -649,16 +610,10 @@ const PagePod: React.FC = () => {
                                                 };
                                             });
                                             if (!isErrorEditModeValuePodName) {
-                                                ResourceClient.postResource(
-                                                    'api/pod/update/pod',
-                                                    {
-                                                        idUser: MOCK_MY_USER_ID,
-                                                    },
-                                                    {
-                                                        id: idPod,
-                                                        name: getInputText(podPageState.editMode.name.editModeValue),
-                                                    },
-                                                )
+                                                ResourceClient.postResource('api/app/UpdatePod', {
+                                                    id: idPod,
+                                                    name: getInputText(podPageState.editMode.name.editModeValue),
+                                                })
                                                     .then((responseJson: any) => {
                                                         handleUpdatePodPage(responseJson);
                                                     })
@@ -712,18 +667,10 @@ const PagePod: React.FC = () => {
                                                     };
                                                 });
                                                 if (!isErrorEditModeValuePodName) {
-                                                    ResourceClient.postResource(
-                                                        'api/pod/update/pod',
-                                                        {
-                                                            idUser: MOCK_MY_USER_ID,
-                                                        },
-                                                        {
-                                                            id: idPod,
-                                                            name: getInputText(
-                                                                podPageState.editMode.name.editModeValue,
-                                                            ),
-                                                        },
-                                                    )
+                                                    ResourceClient.postResource('api/app/UpdatePod', {
+                                                        id: idPod,
+                                                        name: getInputText(podPageState.editMode.name.editModeValue),
+                                                    })
                                                         .then((responseJson: any) => {
                                                             handleUpdatePodPage(responseJson);
                                                         })
@@ -811,23 +758,16 @@ const PagePod: React.FC = () => {
                                                 };
                                             });
                                             if (!isErrorEditModeValuePodDescription) {
-                                                ResourceClient.postResource(
-                                                    'api/pod/update/pod',
-                                                    {
-                                                        idUser: MOCK_MY_USER_ID,
-                                                    },
-                                                    {
-                                                        id: idPod,
-                                                        description:
-                                                            getInputText(
-                                                                podPageState.editMode.description.editModeValue,
-                                                            ).length === 0
-                                                                ? null
-                                                                : getInputText(
-                                                                      podPageState.editMode.description.editModeValue,
-                                                                  ),
-                                                    },
-                                                )
+                                                ResourceClient.postResource('api/app/UpdatePod', {
+                                                    id: idPod,
+                                                    description:
+                                                        getInputText(podPageState.editMode.description.editModeValue)
+                                                            .length === 0
+                                                            ? null
+                                                            : getInputText(
+                                                                  podPageState.editMode.description.editModeValue,
+                                                              ),
+                                                })
                                                     .then((responseJson: any) => {
                                                         handleUpdatePodPage(responseJson);
                                                     })
@@ -869,24 +809,17 @@ const PagePod: React.FC = () => {
                                                     };
                                                 });
                                                 if (!isErrorEditModeValuePodDescription) {
-                                                    ResourceClient.postResource(
-                                                        'api/pod/update/pod',
-                                                        {
-                                                            idUser: MOCK_MY_USER_ID,
-                                                        },
-                                                        {
-                                                            id: idPod,
-                                                            description:
-                                                                getInputText(
-                                                                    podPageState.editMode.description.editModeValue,
-                                                                ).length === 0
-                                                                    ? null
-                                                                    : getInputText(
-                                                                          podPageState.editMode.description
-                                                                              .editModeValue,
-                                                                      ),
-                                                        },
-                                                    )
+                                                    ResourceClient.postResource('api/app/UpdatePod', {
+                                                        id: idPod,
+                                                        description:
+                                                            getInputText(
+                                                                podPageState.editMode.description.editModeValue,
+                                                            ).length === 0
+                                                                ? null
+                                                                : getInputText(
+                                                                      podPageState.editMode.description.editModeValue,
+                                                                  ),
+                                                    })
                                                         .then((responseJson: any) => {
                                                             handleUpdatePodPage(responseJson);
                                                         })
@@ -1043,7 +976,8 @@ const PagePod: React.FC = () => {
             ) : null}
             {tabIdxToDisplayMap[tabIdx] === 'progress' ? (
                 <NumberOfPointsInTasksCompletedOverTimeVisualization
-                    apiPath={`api/pod/read/pods/${String(idPod)}/numberOfPointsInTasksCompletedOverTimeVisualization`}
+                    apiPath={'api/app/GetNumberOfPointsInTasksCompletedOverTimeVisualizationAssociatedWithPod'}
+                    apiPayload={{ id: idPod }}
                     refreshSwitchValue={true}
                 />
             ) : null}

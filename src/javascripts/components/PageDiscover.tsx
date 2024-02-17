@@ -10,7 +10,6 @@ import { THEME } from 'src/javascripts/Theme';
 import { PAGE_SIZE_POD, PAGE_SIZE_STAMP } from 'src/javascripts/clients/ResourceClientConfig';
 import PodCardModel from 'src/javascripts/models/PodCardModel';
 import StampCardModel from 'src/javascripts/models/StampCardModel';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 
 const DEFAULT_SEARCH_ENTITY = 'pod';
 const SEARCH_ENTITY_CHOICES = ['pod', 'stamp'];
@@ -52,13 +51,13 @@ const PageDiscover: React.FC = () => {
         },
     });
 
-    const handleGetResourcePod = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetPodCardsDiscover = (requestBodyObject: Record<string, unknown>): void => {
+        ResourceClient.postResource('api/app/GetPodCardsDiscover', requestBodyObject)
             .then((responseJson: any) => {
                 setPodCardState((prevState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new PodCardModel(datapoint);
                         }),
                         isLoading: false,
@@ -79,13 +78,13 @@ const PageDiscover: React.FC = () => {
                 });
             });
     };
-    const handleGetResourceStamp = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetStampCardsDiscover = (requestBodyObject: Record<string, unknown>): void => {
+        ResourceClient.postResource('api/app/GetStampCardsDiscover', requestBodyObject)
             .then((responseJson: any) => {
                 setStampCardState((prevState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new StampCardModel(datapoint);
                         }),
                         isLoading: false,
@@ -107,32 +106,26 @@ const PageDiscover: React.FC = () => {
             });
     };
     useEffect(() => {
-        handleGetResourcePod('api/pod/read/discover/pods', getRequestParamsPod());
-        handleGetResourceStamp('api/stamp/read/discover/stamps', getRequestParamsStamp());
+        handleGetPodCardsDiscover(getRequestParamsPod());
+        handleGetStampCardsDiscover(getRequestParamsStamp());
         // eslint-disable-next-line
     }, []);
 
     const getRequestParamsPod = (): any => {
         return {
-            idUser: MOCK_MY_USER_ID,
             filterNameOrDescription: searchText,
             filterIsMember: podCardState.filter.filterIsMember,
             filterIsNotMember: podCardState.filter.filterIsNotMember,
             filterIsModerator: podCardState.filter.filterIsModerator,
             filterIsNotModerator: podCardState.filter.filterIsNotModerator,
-            page: podCardState.pagination.pageNumber,
-            size: podCardState.pagination.pageSize,
         };
     };
 
     const getRequestParamsStamp = (): any => {
         return {
-            idUser: MOCK_MY_USER_ID,
             filterNameOrDescription: searchText,
             filterIsCollect: stampCardState.filter.filterIsCollect,
             filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
-            page: podCardState.pagination.pageNumber,
-            size: podCardState.pagination.pageSize,
         };
     };
 
@@ -157,9 +150,9 @@ const PageDiscover: React.FC = () => {
                         }}
                         handleSearch={() => {
                             if (searchEntity === 'pod') {
-                                handleGetResourcePod('api/pod/read/discover/pods', getRequestParamsPod());
+                                handleGetPodCardsDiscover(getRequestParamsPod());
                             } else if (searchEntity === 'stamp') {
-                                handleGetResourceStamp('api/stamp/read/discover/stamps', getRequestParamsStamp());
+                                handleGetStampCardsDiscover(getRequestParamsStamp());
                             }
                         }}
                         entityChoices={SEARCH_ENTITY_CHOICES}

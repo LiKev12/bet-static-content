@@ -22,7 +22,7 @@ import ReactionSelector from 'src/javascripts/components/ReactionSelector';
 import TaskCommentReplyList from 'src/javascripts/components/TaskCommentReplyList';
 import { getUserListButtonText, getInputText } from 'src/javascripts/utilities';
 import Constants from 'src/javascripts/Constants';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
+
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ImageIcon from '@mui/icons-material/Image';
@@ -128,12 +128,7 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
         getInputText(taskCommentListState.commentTextOrCommentTextReplyValue).length >
         Constants.TASK_COMMENT_TASK_REPLY_MAX_LENGTH_CHARACTERS;
 
-    const handlePostResourceTaskCommentReplies = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-        requestBodyObject: Record<string, unknown>,
-        idTaskComment: string,
-    ): void => {
+    const handleGetTaskCommentReplies = (requestBodyObject: Record<string, unknown>, idTaskComment: string): void => {
         setTaskCommentRepliesState((prevState: ITaskCommentRepliesState) => {
             return {
                 ...prevState,
@@ -144,7 +139,7 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                 },
             };
         });
-        ResourceClient.postResource(pathApi, queryParamsObject, requestBodyObject)
+        ResourceClient.postResource('api/app/GetTaskCommentReplies', requestBodyObject)
             .then((responseJson: any) => {
                 setTaskCommentRepliesState((prevState: ITaskCommentRepliesState) => {
                     return {
@@ -180,13 +175,8 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
             });
     };
 
-    const handlePostResourceTaskCommentReactions = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-        requestBodyObject: Record<string, unknown>,
-        idTaskComment: string,
-    ): void => {
-        ResourceClient.postResource(pathApi, queryParamsObject, requestBodyObject)
+    const handleGetTaskCommentReactions = (requestBodyObject: Record<string, unknown>, idTaskComment: string): void => {
+        ResourceClient.postResource('api/app/GetTaskCommentReactions', requestBodyObject)
             .then((responseJson: any) => {
                 setTaskCommentsReactionsState((prevState: ITaskCommentsReactionsState) => {
                     return {
@@ -198,12 +188,10 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
             .catch(() => {});
     };
 
-    const handlePostResourceTaskComments = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-        requestBodyObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.postResource(pathApi, queryParamsObject, requestBodyObject)
+    const handleGetTaskComments = (): void => {
+        ResourceClient.postResource('api/app/GetTaskComments', {
+            id: idTask,
+        })
             .then((responseJson: any) => {
                 setTaskCommentsState((prevState: ITaskCommentsState) => {
                     return {
@@ -348,11 +336,7 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                     <Grid item>
                                                         <ReactionSelector
                                                             handleUpdateCallback={() => {
-                                                                handlePostResourceTaskCommentReactions(
-                                                                    'api/task/read/taskCommentReactions',
-                                                                    {
-                                                                        idUser: MOCK_MY_USER_ID,
-                                                                    },
+                                                                handleGetTaskCommentReactions(
                                                                     {
                                                                         idTaskComment:
                                                                             taskCommentModel.getIdTaskComment(),
@@ -369,10 +353,7 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                                       ].getMyReactionType()
                                                                     : null
                                                             }
-                                                            apiPathSelectReaction={
-                                                                'api/task/update/taskCommentReaction'
-                                                            }
-                                                            apiSelectReactionSourceEntityIdKey={'idTaskComment'}
+                                                            apiPathSelectReaction={'api/app/UpdateTaskCommentReaction'}
                                                             apiSelectReactionSourceEntityIdValue={taskCommentModel.getIdTaskComment()}
                                                         />
                                                     </Grid>
@@ -408,8 +389,7 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                                     : []
                                                             }
                                                             sortByTimestampLabel="time of reaction"
-                                                            apiPath={`api/task/read/taskCommentReactions`}
-                                                            apiReactionSourceEntityIdKey={'idTaskComment'}
+                                                            apiPath={'api/app/GetTaskCommentReactions'}
                                                             apiReactionSourceEntityIdValue={taskCommentModel.getIdTaskComment()}
                                                             modalTitle="Reactions"
                                                         />
@@ -421,11 +401,7 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                     <Accordion
                                                         onChange={(event: React.SyntheticEvent, expanded: boolean) => {
                                                             if (expanded) {
-                                                                handlePostResourceTaskCommentReplies(
-                                                                    'api/task/read/taskCommentReplies',
-                                                                    {
-                                                                        idUser: MOCK_MY_USER_ID,
-                                                                    },
+                                                                handleGetTaskCommentReplies(
                                                                     {
                                                                         idTaskComment:
                                                                             taskCommentModel.getIdTaskComment(),
@@ -518,14 +494,10 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                             <Grid item sx={{ marginRight: 'auto' }}>
                                 <Button
                                     onClick={() => {
-                                        ResourceClient.postResource(
-                                            'api/task/create/taskComment',
-                                            { idUser: MOCK_MY_USER_ID },
-                                            {
-                                                idTask,
-                                                commentText: taskCommentListState.commentTextOrCommentTextReplyValue,
-                                            },
-                                        )
+                                        ResourceClient.postResource('api/app/CreateTaskComment', {
+                                            id: idTask,
+                                            text: taskCommentListState.commentTextOrCommentTextReplyValue,
+                                        })
                                             .then(() => {
                                                 setTaskCommentListState((prevState: ITaskCommentListState) => {
                                                     return {
@@ -534,15 +506,7 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                         isShowTaskCommentRepliesSet: new Set(),
                                                     };
                                                 });
-                                                handlePostResourceTaskComments(
-                                                    'api/task/read/taskComments',
-                                                    {
-                                                        idUser: MOCK_MY_USER_ID,
-                                                    },
-                                                    {
-                                                        idTask,
-                                                    },
-                                                );
+                                                handleGetTaskComments();
                                             })
                                             .catch(() => {});
                                     }}
@@ -569,16 +533,10 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                             fileReader.onload = (function (file) {
                                                 return function (e) {
                                                     if (this.result !== null && String(this.result).length > 0) {
-                                                        ResourceClient.postResource(
-                                                            'api/task/create/taskComment',
-                                                            { idUser: MOCK_MY_USER_ID },
-                                                            {
-                                                                idTask,
-                                                                commentImageAsBase64String: getInputText(
-                                                                    String(this.result),
-                                                                ),
-                                                            },
-                                                        )
+                                                        ResourceClient.postResource('api/app/CreateTaskComment', {
+                                                            id: idTask,
+                                                            imageAsBase64String: getInputText(String(this.result)),
+                                                        })
                                                             .then((responseJson: any) => {
                                                                 setTaskCommentListState(
                                                                     (prevState: ITaskCommentListState) => {
@@ -589,15 +547,7 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                                         };
                                                                     },
                                                                 );
-                                                                handlePostResourceTaskComments(
-                                                                    'api/task/read/taskComments',
-                                                                    {
-                                                                        idUser: MOCK_MY_USER_ID,
-                                                                    },
-                                                                    {
-                                                                        idTask,
-                                                                    },
-                                                                );
+                                                                handleGetTaskComments();
                                                             })
                                                             .catch(() => {});
                                                     }
@@ -614,15 +564,10 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                             <Grid item sx={{ marginRight: 'auto' }}>
                                 <Button
                                     onClick={() => {
-                                        ResourceClient.postResource(
-                                            'api/task/create/taskCommentReply',
-                                            { idUser: MOCK_MY_USER_ID },
-                                            {
-                                                idTaskComment: taskCommentListState.selectedCommentId,
-                                                commentReplyText:
-                                                    taskCommentListState.commentTextOrCommentTextReplyValue,
-                                            },
-                                        )
+                                        ResourceClient.postResource('api/app/CreateTaskCommentReply', {
+                                            id: taskCommentListState.selectedCommentId,
+                                            text: taskCommentListState.commentTextOrCommentTextReplyValue,
+                                        })
                                             .then(() => {
                                                 setTaskCommentListState((prevState: ITaskCommentListState) => {
                                                     return {
@@ -631,15 +576,7 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                         isShowTaskCommentRepliesSet: new Set(),
                                                     };
                                                 });
-                                                handlePostResourceTaskComments(
-                                                    'api/task/read/taskComments',
-                                                    {
-                                                        idUser: MOCK_MY_USER_ID,
-                                                    },
-                                                    {
-                                                        idTask,
-                                                    },
-                                                );
+                                                handleGetTaskComments();
                                             })
                                             .catch(() => {});
                                     }}
@@ -662,16 +599,10 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                             fileReader.onload = (function (file) {
                                                 return function (e) {
                                                     if (this.result !== null && String(this.result).length > 0) {
-                                                        ResourceClient.postResource(
-                                                            'api/task/create/taskCommentReply',
-                                                            { idUser: MOCK_MY_USER_ID },
-                                                            {
-                                                                idTaskComment: taskCommentListState.selectedCommentId,
-                                                                commentReplyImageAsBase64String: getInputText(
-                                                                    String(this.result),
-                                                                ),
-                                                            },
-                                                        )
+                                                        ResourceClient.postResource('api/app/CreateTaskCommentReply', {
+                                                            id: taskCommentListState.selectedCommentId,
+                                                            imageAsBase64String: getInputText(String(this.result)),
+                                                        })
                                                             .then((responseJson: any) => {
                                                                 setTaskCommentListState(
                                                                     (prevState: ITaskCommentListState) => {
@@ -682,15 +613,7 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                                         };
                                                                     },
                                                                 );
-                                                                handlePostResourceTaskComments(
-                                                                    'api/task/read/taskComments',
-                                                                    {
-                                                                        idUser: MOCK_MY_USER_ID,
-                                                                    },
-                                                                    {
-                                                                        idTask,
-                                                                    },
-                                                                );
+                                                                handleGetTaskComments();
                                                             })
                                                             .catch(() => {});
                                                     }

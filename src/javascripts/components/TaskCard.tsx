@@ -34,7 +34,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteIcon from '@mui/icons-material/Delete';
 import UserListButton from 'src/javascripts/components/UserListButton';
 import TaskCommentList from 'src/javascripts/components/TaskCommentList';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
+
 import { getInputText, getInputInteger, getUserListButtonText } from 'src/javascripts/utilities';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -209,15 +209,11 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                 },
             };
         });
-        ResourceClient.postResource(
-            'api/task/update/task',
-            { idUser: MOCK_MY_USER_ID },
-            {
-                id: task.getId(),
-                datetimeTarget:
-                    editModeValue === undefined || editModeValue === null ? null : editModeValue.format('YYYY/MM/DD'),
-            },
-        )
+        ResourceClient.postResource('api/app/UpdateTask', {
+            id: task.getId(),
+            datetimeTarget:
+                editModeValue === undefined || editModeValue === null ? null : editModeValue.format('YYYY/MM/DD'),
+        })
             .then((responseJson: any) => {
                 handleUpdateTask(responseJson);
                 setTaskCardState((prevState: any) => {
@@ -236,11 +232,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
             .catch(() => {});
     };
 
-    const handlePostResourceTaskComments = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-        requestBodyObject: Record<string, unknown>,
-    ): void => {
+    const handleGetTaskComments = (): void => {
         setTaskCommentsState((prevState: ITaskCommentsState) => {
             return {
                 ...prevState,
@@ -251,7 +243,9 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                 },
             };
         });
-        ResourceClient.postResource(pathApi, queryParamsObject, requestBodyObject)
+        ResourceClient.postResource('api/app/GetTaskComments', {
+            id: task.getId(),
+        })
             .then((responseJson: any) => {
                 setTaskCommentsState((prevState: ITaskCommentsState) => {
                     return {
@@ -280,11 +274,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
             });
     };
 
-    const handlePostResourceTaskReactions = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-        requestBodyObject: Record<string, unknown>,
-    ): void => {
+    const handleGetTaskReactions = (): void => {
         setTaskReactionsState((prevState: ITaskReactionsState) => {
             return {
                 ...prevState,
@@ -295,7 +285,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                 },
             };
         });
-        ResourceClient.postResource(pathApi, queryParamsObject, requestBodyObject)
+        ResourceClient.postResource('api/app/GetTaskReactions', { id: task.getId(), numberOfReactionsLimit: 3 })
             .then((responseJson: any) => {
                 setTaskReactionsState((prevState: ITaskReactionsState) => {
                     return {
@@ -356,14 +346,10 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                             <Grid item sx={{ paddingRight: '8px', paddingTop: '8px' }}>
                                 <IconButton
                                     onClick={() => {
-                                        ResourceClient.postResource(
-                                            'api/task/update/task',
-                                            { idUser: MOCK_MY_USER_ID },
-                                            {
-                                                id: task.getId(),
-                                                isComplete: !taskCardState.data.getIsComplete(),
-                                            },
-                                        )
+                                        ResourceClient.postResource('api/app/UpdateTask', {
+                                            id: task.getId(),
+                                            isComplete: !taskCardState.data.getIsComplete(),
+                                        })
                                             .then((responseJson: any) => {
                                                 handleUpdateTask(responseJson);
                                                 handleUpdateUponToggleTaskComplete();
@@ -412,21 +398,16 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                         };
                                                     });
                                                     if (!isErrorEditModeValueName) {
-                                                        ResourceClient.postResource(
-                                                            'api/task/update/task',
-                                                            { idUser: MOCK_MY_USER_ID },
-                                                            {
-                                                                id: task.getId(),
-                                                                name:
-                                                                    getInputText(
-                                                                        taskCardState.editMode.name.editModeValue,
-                                                                    ).length === 0
-                                                                        ? null
-                                                                        : getInputText(
-                                                                              taskCardState.editMode.name.editModeValue,
-                                                                          ),
-                                                            },
-                                                        )
+                                                        ResourceClient.postResource('api/app/UpdateTask', {
+                                                            id: task.getId(),
+                                                            name:
+                                                                getInputText(taskCardState.editMode.name.editModeValue)
+                                                                    .length === 0
+                                                                    ? null
+                                                                    : getInputText(
+                                                                          taskCardState.editMode.name.editModeValue,
+                                                                      ),
+                                                        })
                                                             .then((responseJson: any) => {
                                                                 handleUpdateTask(responseJson);
                                                             })
@@ -471,22 +452,17 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                             };
                                                         });
                                                         if (!isErrorEditModeValueName) {
-                                                            ResourceClient.postResource(
-                                                                'api/task/update/task',
-                                                                { idUser: MOCK_MY_USER_ID },
-                                                                {
-                                                                    id: task.getId(),
-                                                                    name:
-                                                                        getInputText(
-                                                                            taskCardState.editMode.name.editModeValue,
-                                                                        ).length === 0
-                                                                            ? null
-                                                                            : getInputText(
-                                                                                  taskCardState.editMode.name
-                                                                                      .editModeValue,
-                                                                              ),
-                                                                },
-                                                            )
+                                                            ResourceClient.postResource('api/app/UpdateTask', {
+                                                                id: task.getId(),
+                                                                name:
+                                                                    getInputText(
+                                                                        taskCardState.editMode.name.editModeValue,
+                                                                    ).length === 0
+                                                                        ? null
+                                                                        : getInputText(
+                                                                              taskCardState.editMode.name.editModeValue,
+                                                                          ),
+                                                            })
                                                                 .then((responseJson: any) => {
                                                                     handleUpdateTask(responseJson);
                                                                 })
@@ -553,8 +529,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                     });
                                                     if (!isErrorEditModeValueDescription) {
                                                         ResourceClient.postResource(
-                                                            'api/task/update/task',
-                                                            { idUser: MOCK_MY_USER_ID },
+                                                            'api/app/UpdateTask',
+
                                                             {
                                                                 id: task.getId(),
                                                                 description:
@@ -614,23 +590,19 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                             };
                                                         });
                                                         if (!isErrorEditModeValueDescription) {
-                                                            ResourceClient.postResource(
-                                                                'api/task/update/task',
-                                                                { idUser: MOCK_MY_USER_ID },
-                                                                {
-                                                                    id: task.getId(),
-                                                                    description:
-                                                                        getInputText(
-                                                                            taskCardState.editMode.description
-                                                                                .editModeValue,
-                                                                        ).length === 0
-                                                                            ? null
-                                                                            : getInputText(
-                                                                                  taskCardState.editMode.description
-                                                                                      .editModeValue,
-                                                                              ),
-                                                                },
-                                                            )
+                                                            ResourceClient.postResource('api/app/UpdateTask', {
+                                                                id: task.getId(),
+                                                                description:
+                                                                    getInputText(
+                                                                        taskCardState.editMode.description
+                                                                            .editModeValue,
+                                                                    ).length === 0
+                                                                        ? null
+                                                                        : getInputText(
+                                                                              taskCardState.editMode.description
+                                                                                  .editModeValue,
+                                                                          ),
+                                                            })
                                                                 .then((responseJson: any) => {
                                                                     handleUpdateTask(responseJson);
                                                                 })
@@ -751,8 +723,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                             });
                                             if (!isErrorEditModeValueNumberOfPoints) {
                                                 ResourceClient.postResource(
-                                                    'api/task/update/task',
-                                                    { idUser: MOCK_MY_USER_ID },
+                                                    'api/app/UpdateTask',
+
                                                     {
                                                         id: task.getId(),
                                                         numberOfPoints: getInputInteger(
@@ -787,8 +759,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                 });
                                                 if (!isErrorEditModeValueNumberOfPoints) {
                                                     ResourceClient.postResource(
-                                                        'api/task/update/task',
-                                                        { idUser: MOCK_MY_USER_ID },
+                                                        'api/app/UpdateTask',
+
                                                         {
                                                             id: task.getId(),
                                                             numberOfPoints: getInputInteger(
@@ -888,8 +860,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                     return function (e) {
                                                         if (this.result !== null && String(this.result).length > 0) {
                                                             ResourceClient.postResource(
-                                                                'api/task/update/task',
-                                                                { idUser: MOCK_MY_USER_ID },
+                                                                'api/app/UpdateTask',
+
                                                                 {
                                                                     id: task.getId(),
                                                                     imageAsBase64String: getInputText(
@@ -921,8 +893,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                 sx={{ textTransform: 'none', padding: '0px' }}
                                                 onClick={() => {
                                                     ResourceClient.postResource(
-                                                        'api/task/update/task',
-                                                        { idUser: MOCK_MY_USER_ID },
+                                                        'api/app/UpdateTask',
+
                                                         {
                                                             id: task.getId(),
                                                             imageAsBase64String: null,
@@ -953,8 +925,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                         <IconButton
                                             onClick={() => {
                                                 ResourceClient.postResource(
-                                                    'api/task/update/task',
-                                                    { idUser: MOCK_MY_USER_ID },
+                                                    'api/app/UpdateTask',
+
                                                     {
                                                         id: task.getId(),
                                                         isStar: !taskCardState.data.getIsStar(),
@@ -986,8 +958,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                         <IconButton
                                             onClick={() => {
                                                 ResourceClient.postResource(
-                                                    'api/task/update/task',
-                                                    { idUser: MOCK_MY_USER_ID },
+                                                    'api/app/UpdateTask',
+
                                                     {
                                                         id: task.getId(),
                                                         isPin: !taskCardState.data.getIsPin(),
@@ -1122,9 +1094,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                             )}
                                             userBubbles={taskCardState.data.getUserBubblesTaskComplete() ?? []}
                                             sortByTimestampLabel="time completed"
-                                            apiPath={`api/task/read/tasks/${String(
-                                                task.getId(),
-                                            )}/userBubblesTaskComplete`}
+                                            apiPath={'api/app/GetUserBubblesTaskComplete'}
+                                            apiPayload={{ id: taskCardState.data.getId() }}
                                             modalTitle="Users Completed Task"
                                             isUseDateTimeDateAndTime={true}
                                         />
@@ -1209,8 +1180,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                                 });
                                                                 if (!isErrorEditModeValueNoteText) {
                                                                     ResourceClient.postResource(
-                                                                        'api/task/update/task',
-                                                                        { idUser: MOCK_MY_USER_ID },
+                                                                        'api/app/UpdateTask',
+
                                                                         {
                                                                             id: task.getId(),
                                                                             noteText:
@@ -1272,8 +1243,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                                     });
                                                                     if (!isErrorEditModeValueNoteText) {
                                                                         ResourceClient.postResource(
-                                                                            'api/task/update/task',
-                                                                            { idUser: MOCK_MY_USER_ID },
+                                                                            'api/app/UpdateTask',
+
                                                                             {
                                                                                 id: task.getId(),
                                                                                 noteText:
@@ -1381,8 +1352,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                                             String(this.result).length > 0
                                                                         ) {
                                                                             ResourceClient.postResource(
-                                                                                'api/task/update/task',
-                                                                                { idUser: MOCK_MY_USER_ID },
+                                                                                'api/app/UpdateTask',
+
                                                                                 {
                                                                                     id: task.getId(),
                                                                                     noteImageAsBase64String:
@@ -1415,8 +1386,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                                 sx={{ textTransform: 'none', padding: '0px' }}
                                                                 onClick={() => {
                                                                     ResourceClient.postResource(
-                                                                        'api/task/update/task',
-                                                                        { idUser: MOCK_MY_USER_ID },
+                                                                        'api/app/UpdateTask',
+
                                                                         {
                                                                             id: task.getId(),
                                                                             noteImageAsBase64String: null,
@@ -1497,25 +1468,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                 <Accordion
                                     onChange={(event: React.SyntheticEvent, expanded: boolean) => {
                                         if (expanded) {
-                                            handlePostResourceTaskComments(
-                                                'api/task/read/taskComments',
-                                                {
-                                                    idUser: MOCK_MY_USER_ID,
-                                                },
-                                                {
-                                                    idTask: task.getId(),
-                                                },
-                                            );
-                                            handlePostResourceTaskReactions(
-                                                'api/task/read/taskReactions',
-                                                {
-                                                    idUser: MOCK_MY_USER_ID,
-                                                },
-                                                {
-                                                    idTask: task.getId(),
-                                                    numberOfReactionsLimit: 3,
-                                                },
-                                            );
+                                            handleGetTaskComments();
+                                            handleGetTaskReactions();
                                         } else {
                                             setTaskCommentsState((prevState: ITaskCommentsState) => {
                                                 return {
@@ -1551,20 +1505,10 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                     <Grid item>
                                                         <ReactionSelector
                                                             handleUpdateCallback={() => {
-                                                                handlePostResourceTaskReactions(
-                                                                    'api/task/read/taskReactions',
-                                                                    {
-                                                                        idUser: MOCK_MY_USER_ID,
-                                                                    },
-                                                                    {
-                                                                        idTask: task.getId(),
-                                                                        numberOfReactionsLimit: 3,
-                                                                    },
-                                                                );
+                                                                handleGetTaskReactions();
                                                             }}
                                                             myReaction={taskReactionsState.data.getMyReactionType()}
-                                                            apiPathSelectReaction={'api/task/update/taskReaction'}
-                                                            apiSelectReactionSourceEntityIdKey={'idTask'}
+                                                            apiPathSelectReaction={'api/app/UpdateTaskReaction'}
                                                             apiSelectReactionSourceEntityIdValue={task.getId()}
                                                         />
                                                     </Grid>
@@ -1581,8 +1525,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                             )}
                                                             userBubbles={taskReactionsState.data.getUserBubblesReaction()}
                                                             sortByTimestampLabel="time of reaction"
-                                                            apiPath={`api/task/read/taskReactions`}
-                                                            apiReactionSourceEntityIdKey={'idTask'}
+                                                            apiPath={'api/app/GetTaskReactions'}
                                                             apiReactionSourceEntityIdValue={task.getId()}
                                                             modalTitle="Reactions"
                                                         />
@@ -1692,8 +1635,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                         <Button
                             onClick={() => {
                                 ResourceClient.postResource(
-                                    'api/task/delete/task',
-                                    { idUser: MOCK_MY_USER_ID },
+                                    'api/app/DeleteTask',
+
                                     {
                                         id: task.getId(),
                                     },

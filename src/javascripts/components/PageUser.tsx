@@ -19,7 +19,7 @@ import TaskModel from 'src/javascripts/models/TaskModel';
 import StampCardModel from 'src/javascripts/models/StampCardModel';
 import PodCardModel from 'src/javascripts/models/PodCardModel';
 import Constants from 'src/javascripts/Constants';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
+
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
 import AlertDialog from 'src/javascripts/components/AlertDialog';
 import IconButtonFollowUser from 'src/javascripts/components/IconButtonFollowUser';
@@ -205,8 +205,8 @@ const PageUser: React.FC = () => {
             totalNumberOfPages: 1,
         },
     });
-    const handleGetResourceUserPage = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetUserPage = (): void => {
+        ResourceClient.postResource('api/app/GetUserPage', {})
             .then((responseJson: any) => {
                 setUserPageState((prevState: IUserPageState) => {
                     const userPageModel = new UserPageModel(responseJson);
@@ -252,16 +252,13 @@ const PageUser: React.FC = () => {
                 });
             });
     };
-    const handleGetResourceTasksPinnedAssociatedWithUser = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetPinnedTasksAssociatedWithUser = (requestBodyObject: Record<string, unknown>): void => {
+        ResourceClient.postResource('api/app/GetPinnedTasksAssociatedWithUser', requestBodyObject)
             .then((responseJson: any) => {
                 setTaskState((prevState: ITaskState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new TaskModel(datapoint);
                         }),
                         response: {
@@ -288,16 +285,13 @@ const PageUser: React.FC = () => {
                 });
             });
     };
-    const handleGetResourcePodsAssociatedWithUser = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetPodCardsAssociatedWithUser = (requestBodyObject: Record<string, unknown>): void => {
+        ResourceClient.postResource('api/app/GetPodCardsAssociatedWithUser', requestBodyObject)
             .then((responseJson: any) => {
                 setPodCardState((prevState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new PodCardModel(datapoint);
                         }),
                         response: {
@@ -324,16 +318,13 @@ const PageUser: React.FC = () => {
                 });
             });
     };
-    const handleGetResourceStampsAssociatedWithUser = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetStampCardsAssociatedWithUser = (requestBodyObject: Record<string, unknown>): void => {
+        ResourceClient.postResource('api/app/GetStampCardsAssociatedWithUser', requestBodyObject)
             .then((responseJson: any) => {
                 setStampCardState((prevState: IStampCardState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new StampCardModel(datapoint);
                         }),
                         response: {
@@ -397,14 +388,11 @@ const PageUser: React.FC = () => {
         500,
     );
     useEffect(() => {
-        handleGetResourceUserPage(`api/user/read/users/${String(idUser)}/userPage`, {
-            idUser: MOCK_MY_USER_ID,
-        });
+        handleGetUserPage();
         // eslint-disable-next-line
     }, []);
     useEffect(() => {
-        handleGetResourceTasksPinnedAssociatedWithUser(`api/user/read/users/${String(idUser)}/tasksPinned`, {
-            idUser: MOCK_MY_USER_ID,
+        handleGetPinnedTasksAssociatedWithUser({
             filterNameOrDescription: taskState.filter.filterNameOrDescription,
             filterIsComplete: taskState.filter.filterIsComplete,
             filterIsNotComplete: taskState.filter.filterIsNotComplete,
@@ -416,8 +404,7 @@ const PageUser: React.FC = () => {
         // eslint-disable-next-line
     }, [taskState.filter]);
     useEffect(() => {
-        handleGetResourcePodsAssociatedWithUser(`api/user/read/users/${String(idUser)}/pods`, {
-            idUser: MOCK_MY_USER_ID,
+        handleGetPodCardsAssociatedWithUser({
             filterNameOrDescription: podCardState.filter.filterNameOrDescription,
             filterIsPublic: podCardState.filter.filterIsPublic,
             filterIsNotPublic: podCardState.filter.filterIsNotPublic,
@@ -425,14 +412,11 @@ const PageUser: React.FC = () => {
             filterIsNotMember: podCardState.filter.filterIsNotMember,
             filterIsModerator: podCardState.filter.filterIsModerator,
             filterIsNotModerator: podCardState.filter.filterIsNotModerator,
-            page: podCardState.pagination.pageNumber,
-            size: podCardState.pagination.pageSize,
         });
         // eslint-disable-next-line
     }, [podCardState.filter]);
     useEffect(() => {
-        handleGetResourceStampsAssociatedWithUser(`api/user/read/users/${String(idUser)}/stamps`, {
-            idUser: MOCK_MY_USER_ID,
+        handleGetStampCardsAssociatedWithUser({
             filterNameOrDescription: stampCardState.filter.filterNameOrDescription,
             filterIsCollect: stampCardState.filter.filterIsCollect,
             filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
@@ -477,14 +461,10 @@ const PageUser: React.FC = () => {
                     <Grid item sx={{ padding: '24px' }}>
                         <AvatarImageEditor
                             imageUploadHandler={(imageAsBase64String: string) => {
-                                ResourceClient.postResource(
-                                    'api/user/update/userPage',
-                                    { idUser },
-                                    {
-                                        id: idUser,
-                                        imageAsBase64String: getInputText(imageAsBase64String),
-                                    },
-                                )
+                                ResourceClient.postResource('api/app/UpdateUserPage', {
+                                    id: idUser,
+                                    imageAsBase64String: getInputText(imageAsBase64String),
+                                })
                                     .then((responseJson: any) => {
                                         handleUpdateUserPage(responseJson);
                                     })
@@ -527,16 +507,10 @@ const PageUser: React.FC = () => {
                                             };
                                         });
                                         if (!isErrorEditModeValueUserName) {
-                                            ResourceClient.postResource(
-                                                'api/user/update/userPage',
-                                                {
-                                                    idUser,
-                                                },
-                                                {
-                                                    id: idUser,
-                                                    name: getInputText(userPageState.editMode.name.editModeValue),
-                                                },
-                                            )
+                                            ResourceClient.postResource('api/app/UpdateUserPage', {
+                                                id: idUser,
+                                                name: getInputText(userPageState.editMode.name.editModeValue),
+                                            })
                                                 .then((responseJson: any) => {
                                                     handleUpdateUserPage(responseJson);
                                                 })
@@ -577,16 +551,10 @@ const PageUser: React.FC = () => {
                                                 };
                                             });
                                             if (!isErrorEditModeValueUserName) {
-                                                ResourceClient.postResource(
-                                                    'api/user/update/userPage',
-                                                    {
-                                                        idUser,
-                                                    },
-                                                    {
-                                                        id: idUser,
-                                                        name: getInputText(userPageState.editMode.name.editModeValue),
-                                                    },
-                                                )
+                                                ResourceClient.postResource('api/app/UpdateUserPage', {
+                                                    id: idUser,
+                                                    name: getInputText(userPageState.editMode.name.editModeValue),
+                                                })
                                                     .then((responseJson: any) => {
                                                         handleUpdateUserPage(responseJson);
                                                     })
@@ -637,20 +605,11 @@ const PageUser: React.FC = () => {
                                         isFollowedByMe={userPageState.data.getIsFollowedByMe()}
                                         isFollowRequestSentNotYetAccepted={userPageState.data.getIsFollowRequestSentNotYetAccepted()}
                                         handleSendFollowRequest={() => {
-                                            ResourceClient.postResource(
-                                                'api/user/update/sendFollowUserRequest',
-                                                { idUser: MOCK_MY_USER_ID },
-                                                {
-                                                    idUserReceiveFollowRequest: idUser,
-                                                },
-                                            )
+                                            ResourceClient.postResource('api/app/SendFollowUserRequest', {
+                                                id: idUser,
+                                            })
                                                 .then(() => {
-                                                    handleGetResourceUserPage(
-                                                        `api/user/read/users/${String(idUser)}/userPage`,
-                                                        {
-                                                            idUser: MOCK_MY_USER_ID,
-                                                        },
-                                                    );
+                                                    handleGetUserPage();
                                                 })
                                                 .catch(() => {});
                                         }}
@@ -667,20 +626,11 @@ const PageUser: React.FC = () => {
                                     isFollowedByMe={userPageState.data.getIsFollowedByMe()}
                                     isFollowRequestSentNotYetAccepted={userPageState.data.getIsFollowRequestSentNotYetAccepted()}
                                     handleSendFollowRequest={() => {
-                                        ResourceClient.postResource(
-                                            'api/user/update/sendFollowUserRequest',
-                                            { idUser: MOCK_MY_USER_ID },
-                                            {
-                                                idUserReceiveFollowRequest: idUser,
-                                            },
-                                        )
+                                        ResourceClient.postResource('api/app/SendFollowUserRequest', {
+                                            id: idUser,
+                                        })
                                             .then(() => {
-                                                handleGetResourceUserPage(
-                                                    `api/user/read/users/${String(idUser)}/userPage`,
-                                                    {
-                                                        idUser: MOCK_MY_USER_ID,
-                                                    },
-                                                );
+                                                handleGetUserPage();
                                             })
                                             .catch(() => {});
                                     }}
@@ -690,9 +640,7 @@ const PageUser: React.FC = () => {
                                 <IconButtonManagePendingFollowUserRequestsModal
                                     numberOfPendingFollowUserRequests={userPageState.data.getNumberOfPendingFollowUserRequests()}
                                     handleUpdateUserPage={() => {
-                                        handleGetResourceUserPage(`api/user/read/users/${String(idUser)}/userPage`, {
-                                            idUser: MOCK_MY_USER_ID,
-                                        });
+                                        handleGetUserPage();
                                     }}
                                 />
                             ) : null}
@@ -708,7 +656,8 @@ const PageUser: React.FC = () => {
                                         )}
                                         userBubbles={userPageState.data.getUserBubblesFollower()}
                                         sortByTimestampLabel="time of follow"
-                                        apiPath={`api/user/read/users/${String(idUser)}/userBubblesFollower`}
+                                        apiPath={'api/app/GetUserBubblesFollower'}
+                                        apiPayload={{ id: String(idUser) }}
                                         modalTitle="Followers"
                                         isUseDateTimeDateAndTime={false}
                                     />
@@ -724,7 +673,8 @@ const PageUser: React.FC = () => {
                                         )}
                                         userBubbles={userPageState.data.getUserBubblesFollowing()}
                                         sortByTimestampLabel="time of follow"
-                                        apiPath={`api/user/read/users/${String(idUser)}/userBubblesFollowing`}
+                                        apiPath={'api/app/GetUserBubblesFollowing'}
+                                        apiPayload={{ id: String(idUser) }}
                                         modalTitle="Following"
                                         isUseDateTimeDateAndTime={false}
                                     />
@@ -760,18 +710,12 @@ const PageUser: React.FC = () => {
                                                 };
                                             });
                                             if (!isErrorEditModeValueUserUsername) {
-                                                ResourceClient.postResource(
-                                                    'api/user/update/userPage',
-                                                    {
-                                                        idUser,
-                                                    },
-                                                    {
-                                                        id: idUser,
-                                                        username: getInputText(
-                                                            userPageState.editMode.username.editModeValue,
-                                                        ),
-                                                    },
-                                                )
+                                                ResourceClient.postResource('api/app/UpdateUserPage', {
+                                                    id: idUser,
+                                                    username: getInputText(
+                                                        userPageState.editMode.username.editModeValue,
+                                                    ),
+                                                })
                                                     .then((responseJson: any) => {
                                                         handleUpdateUserPage(responseJson);
                                                     })
@@ -825,18 +769,12 @@ const PageUser: React.FC = () => {
                                                     };
                                                 });
                                                 if (!isErrorEditModeValueUserUsername) {
-                                                    ResourceClient.postResource(
-                                                        'api/user/update/userPage',
-                                                        {
-                                                            idUser,
-                                                        },
-                                                        {
-                                                            id: idUser,
-                                                            username: getInputText(
-                                                                userPageState.editMode.username.editModeValue,
-                                                            ),
-                                                        },
-                                                    )
+                                                    ResourceClient.postResource('api/app/UpdateUserPage', {
+                                                        id: idUser,
+                                                        username: getInputText(
+                                                            userPageState.editMode.username.editModeValue,
+                                                        ),
+                                                    })
                                                         .then((responseJson: any) => {
                                                             handleUpdateUserPage(responseJson);
                                                         })
@@ -917,22 +855,14 @@ const PageUser: React.FC = () => {
                                                 };
                                             });
                                             if (!isErrorEditModeValueUserBio) {
-                                                ResourceClient.postResource(
-                                                    'api/user/update/userPage',
-                                                    {
-                                                        idUser,
-                                                    },
-                                                    {
-                                                        id: idUser,
-                                                        bio:
-                                                            getInputText(userPageState.editMode.bio.editModeValue)
-                                                                .length === 0
-                                                                ? null
-                                                                : getInputText(
-                                                                      userPageState.editMode.bio.editModeValue,
-                                                                  ),
-                                                    },
-                                                )
+                                                ResourceClient.postResource('api/app/UpdateUserPage', {
+                                                    id: idUser,
+                                                    bio:
+                                                        getInputText(userPageState.editMode.bio.editModeValue)
+                                                            .length === 0
+                                                            ? null
+                                                            : getInputText(userPageState.editMode.bio.editModeValue),
+                                                })
                                                     .then((responseJson: any) => {
                                                         handleUpdateUserPage(responseJson);
                                                     })
@@ -973,22 +903,16 @@ const PageUser: React.FC = () => {
                                                     };
                                                 });
                                                 if (!isErrorEditModeValueUserBio) {
-                                                    ResourceClient.postResource(
-                                                        'api/user/update/userPage',
-                                                        {
-                                                            idUser,
-                                                        },
-                                                        {
-                                                            id: idUser,
-                                                            bio:
-                                                                getInputText(userPageState.editMode.bio.editModeValue)
-                                                                    .length === 0
-                                                                    ? null
-                                                                    : getInputText(
-                                                                          userPageState.editMode.bio.editModeValue,
-                                                                      ),
-                                                        },
-                                                    )
+                                                    ResourceClient.postResource('api/app/UpdateUserPage', {
+                                                        id: idUser,
+                                                        bio:
+                                                            getInputText(userPageState.editMode.bio.editModeValue)
+                                                                .length === 0
+                                                                ? null
+                                                                : getInputText(
+                                                                      userPageState.editMode.bio.editModeValue,
+                                                                  ),
+                                                    })
                                                         .then((responseJson: any) => {
                                                             handleUpdateUserPage(responseJson);
                                                         })

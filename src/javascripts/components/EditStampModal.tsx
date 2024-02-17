@@ -29,7 +29,6 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { THEME } from 'src/javascripts/Theme';
 import Constants from 'src/javascripts/Constants';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import TaskModel from 'src/javascripts/models/TaskModel';
 import PlaceholderImagePod from 'src/assets/PlaceholderImagePod.png';
 
@@ -113,13 +112,21 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
         },
     });
 
-    const handleGetResourcePodCards = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetPodCardsAssociatedWithUser = (): void => {
+        ResourceClient.postResource('api/app/GetPodCardsAssociatedWithUser', {
+            filterNameOrDescription: '',
+            filterIsPublic: true,
+            filterIsNotPublic: true,
+            filterIsMember: true,
+            filterIsNotMember: true,
+            filterIsModerator: true,
+            filterIsNotModerator: true,
+        })
             .then((responseJson: any) => {
                 setPodCardState((prevState: IPodCardState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new PodCardModel(datapoint);
                         }),
                         response: {
@@ -145,16 +152,13 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
             });
     };
 
-    const handleGetResourceTasksAssociatedWithPod = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetTasksAssociatedWithPod = (): void => {
+        ResourceClient.postResource('api/app/GetTasksAssociatedWithPod', { id: editStampModalState.selectedPodId })
             .then((responseJson: any) => {
                 setTaskState((prevState: ITaskState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new TaskModel(datapoint);
                         }),
                         response: {
@@ -180,18 +184,15 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
             });
     };
 
-    const handleGetResourceTasksAssociatedWithStamp = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetTasksAssociatedWithStamp = (requestBodyObject: Record<string, unknown>): void => {
+        ResourceClient.postResource('api/app/GetTasksAssociatedWithStamp', requestBodyObject)
             .then((responseJson: any) => {
                 setEditStampModalState((prevState) => {
                     return {
                         ...prevState,
                         data: {
                             selectedTaskIds: new Set(
-                                responseJson.content.map((datapoint: any) => {
+                                responseJson.map((datapoint: any) => {
                                     return new TaskModel(datapoint).getId();
                                 }),
                             ),
@@ -213,15 +214,12 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
             });
     };
     useEffect(() => {
-        handleGetResourcePodCards(`api/user/read/users/${MOCK_MY_USER_ID}/pods`, {
-            idUser: MOCK_MY_USER_ID,
-        });
+        handleGetPodCardsAssociatedWithUser();
         // eslint-disable-next-line
     }, []);
 
     useEffect(() => {
-        handleGetResourceTasksAssociatedWithStamp(`api/stamp/read/stamps/${String(idStamp)}/tasks`, {
-            idUser: MOCK_MY_USER_ID,
+        handleGetTasksAssociatedWithStamp({
             filterNameOrDescription: '',
             filterIsComplete: true,
             filterIsNotComplete: true,
@@ -229,30 +227,37 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
             filterIsNotStar: true,
             filterIsPin: true,
             filterIsNotPin: true,
-            page: 0,
-            size: 20,
         });
         // eslint-disable-next-line
     }, []);
 
     useEffect(() => {
-        setTaskState((prevState: ITaskState) => {
-            return {
-                ...prevState,
-                data: [],
-                response: {
-                    ...prevState.response,
-                    state: Constants.RESPONSE_STATE_LOADING,
-                    errorMessage: null,
-                },
-            };
-        });
-        handleGetResourceTasksAssociatedWithPod(
-            `api/pod/read/pods/${String(editStampModalState.selectedPodId)}/tasks`,
-            {
-                idUser: MOCK_MY_USER_ID,
-            },
-        );
+        if (editStampModalState.selectedPodId === null) {
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    data: [],
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                };
+            });
+        } else {
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    data: [],
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_LOADING,
+                        errorMessage: null,
+                    },
+                };
+            });
+            handleGetTasksAssociatedWithPod();
+        }
         // eslint-disable-next-line
     }, [editStampModalState.selectedPodId]);
 
@@ -529,14 +534,10 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                                     },
                                 };
                             });
-                            ResourceClient.postResource(
-                                'api/stamp/update/stamp',
-                                { idUser: MOCK_MY_USER_ID },
-                                {
-                                    id: idStamp,
-                                    idTasks: Array.from(editStampModalState.data.selectedTaskIds),
-                                },
-                            )
+                            ResourceClient.postResource('api/app/UpdateStamp', {
+                                id: idStamp,
+                                idTasks: Array.from(editStampModalState.data.selectedTaskIds),
+                            })
                                 .then((responseJson: any) => {
                                     setEditStampModalState((prevState: any) => {
                                         return {

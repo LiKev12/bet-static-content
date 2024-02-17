@@ -34,7 +34,6 @@ import UserBubbleModel from 'src/javascripts/models/UserBubbleModel';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import Constants from 'src/javascripts/Constants';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -136,11 +135,8 @@ const AddPodModeratorsModal: React.FC<IAddPodModeratorsModalProps> = (props: IAd
         userBubblesProcessed.reverse();
     }
 
-    const handleGetResourceUserBubblesAddPodModerator = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetUserBubblesAddPodModerator = (): void => {
+        ResourceClient.postResource('api/app/GetUserBubblesAddPodModerator', { id: String(idPod) })
             .then((responseJson: any) => {
                 setUserBubbleAddPodModeratorState((prevState: IUserBubbleAddPodModeratorState) => {
                     return {
@@ -168,9 +164,7 @@ const AddPodModeratorsModal: React.FC<IAddPodModeratorsModalProps> = (props: IAd
             });
     };
     useEffect(() => {
-        handleGetResourceUserBubblesAddPodModerator(`api/pod/read/pods/${String(idPod)}/userBubblesAddPodModerator`, {
-            idUser: MOCK_MY_USER_ID,
-        });
+        handleGetUserBubblesAddPodModerator();
         // eslint-disable-next-line
     }, []);
 
@@ -375,22 +369,11 @@ const AddPodModeratorsModal: React.FC<IAddPodModeratorsModalProps> = (props: IAd
                                                 isFollowedByMe={userBubble.getIsFollowedByMe()}
                                                 isFollowRequestSentNotYetAccepted={userBubble.getIsFollowRequestSentNotYetAccepted()}
                                                 handleSendFollowRequest={() => {
-                                                    ResourceClient.postResource(
-                                                        'api/user/update/sendFollowUserRequest',
-                                                        { idUser: MOCK_MY_USER_ID },
-                                                        {
-                                                            idUserReceiveFollowRequest: userBubble.getId(),
-                                                        },
-                                                    )
+                                                    ResourceClient.postResource('api/app/SendFollowUserRequest', {
+                                                        id: userBubble.getId(),
+                                                    })
                                                         .then(() => {
-                                                            handleGetResourceUserBubblesAddPodModerator(
-                                                                `api/pod/read/pods/${String(
-                                                                    idPod,
-                                                                )}/userBubblesAddPodModerator`,
-                                                                {
-                                                                    idUser: MOCK_MY_USER_ID,
-                                                                },
-                                                            );
+                                                            handleGetUserBubblesAddPodModerator();
                                                         })
                                                         .catch(() => {});
                                                 }}
@@ -424,14 +407,10 @@ const AddPodModeratorsModal: React.FC<IAddPodModeratorsModalProps> = (props: IAd
                                 },
                             };
                         });
-                        ResourceClient.postResource(
-                            'api/pod/update/addPodModerators',
-                            { idUser: MOCK_MY_USER_ID },
-                            {
-                                idPod,
-                                idUsersToBecomeModerator: Array.from(addPodModeratorsModalState.data.selectedUserIds),
-                            },
-                        )
+                        ResourceClient.postResource('api/app/AddPodModerators', {
+                            id: idPod,
+                            idUsers: Array.from(addPodModeratorsModalState.data.selectedUserIds),
+                        })
                             .then((responseJson: any) => {
                                 handleUpdateUserBubbleAddPodModeratorState(responseJson);
                             })

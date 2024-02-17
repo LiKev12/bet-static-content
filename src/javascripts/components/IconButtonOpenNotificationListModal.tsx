@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { IconButton, Tooltip } from '@mui/material';
 import NotificationListModal from 'src/javascripts/components/NotificationListModal';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import Badge from '@mui/material/Badge';
 import { styled } from '@mui/material/styles';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
@@ -26,13 +25,7 @@ const IconButtonOpenNotificationListModal: React.FC = () => {
         });
 
     const handleGetResourceNotificationsUnseenCount = (): void => {
-        ResourceClient.postResource(
-            'api/user/read/notificationsCountUnseen',
-            {
-                idUser: MOCK_MY_USER_ID,
-            },
-            {},
-        )
+        ResourceClient.postResource('api/app/GetNotificationsUnseenCount', {})
             .then((responseJson: any) => {
                 setIconButtonOpenNotificationListModalState((prevState: IIconButtonOpenNotificationListModalState) => {
                     return {
@@ -68,13 +61,7 @@ const IconButtonOpenNotificationListModal: React.FC = () => {
                 <NotificationListModal
                     handleClose={() => {
                         setModalOpen(false);
-                        ResourceClient.postResource(
-                            'api/user/update/markAllNotificationsAsSeen',
-                            {
-                                idUser: MOCK_MY_USER_ID,
-                            },
-                            {},
-                        )
+                        ResourceClient.postResource('api/app/MarkAllNotificationsAsSeen', {})
                             .then(() => {
                                 handleGetResourceNotificationsUnseenCount();
                             })

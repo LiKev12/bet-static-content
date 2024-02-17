@@ -10,7 +10,6 @@ export interface IUserBubbleReactionListModalButtonProps {
     userBubbles: UserBubbleReactionModel[];
     sortByTimestampLabel: string;
     apiPath: string;
-    apiReactionSourceEntityIdKey: string;
     apiReactionSourceEntityIdValue: string;
     modalTitle: string;
 }
@@ -20,14 +19,7 @@ const MAX_USER_BUBBLES_VISIBLE = 3;
 const UserBubbleReactionListModalButton: React.FC<IUserBubbleReactionListModalButtonProps> = (
     props: IUserBubbleReactionListModalButtonProps,
 ) => {
-    const {
-        labelText,
-        userBubbles,
-        apiPath,
-        apiReactionSourceEntityIdKey,
-        apiReactionSourceEntityIdValue,
-        modalTitle,
-    } = props;
+    const { labelText, userBubbles, apiPath, apiReactionSourceEntityIdValue, modalTitle } = props;
     const [isModalOpen, setModalOpen] = useState(false);
     const userBubblesProcessed: UserBubbleReactionModel[] = [];
     for (let i = Math.min(MAX_USER_BUBBLES_VISIBLE, userBubbles.length) - 1; i >= 0; i--) {
@@ -78,7 +70,6 @@ const UserBubbleReactionListModalButton: React.FC<IUserBubbleReactionListModalBu
                     }}
                     sortByTimestampLabel={props.sortByTimestampLabel}
                     apiPath={apiPath}
-                    apiReactionSourceEntityIdKey={apiReactionSourceEntityIdKey}
                     apiReactionSourceEntityIdValue={apiReactionSourceEntityIdValue}
                     modalTitle={modalTitle}
                 />

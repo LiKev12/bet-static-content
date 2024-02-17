@@ -4,7 +4,7 @@ import { Box, Card, Grid, Typography } from '@mui/material';
 import { THEME } from 'src/javascripts/Theme';
 import TaskCardList from 'src/javascripts/components/TaskCardList';
 import CreateTaskModalButton from 'src/javascripts/components/CreateTaskModalButton';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
+
 import NumberOfPointsInTasksCompletedOverTimeVisualization from 'src/javascripts/components/NumberOfPointsInTasksCompletedOverTimeVisualization';
 import FilterTasks from 'src/javascripts/components/FilterTasks';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
@@ -82,8 +82,9 @@ const PagePersonal: React.FC = () => {
     };
     const debouncedHandleChangeFilterNameOrDescription = _.debounce(handleChangeFilterNameOrDescription, 500);
 
-    const handleGetResourcePagePersonal = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetPersonalPage = (): void => {
+        // ResourceClient.postResource('api/app/GetPersonalPage', {})
+        ResourceClient.getResource('api/user/read/personal/personalPage', {})
             .then((responseJson: any) => {
                 setPagePersonalState((prevState: IPagePersonalState) => {
                     return {
@@ -106,13 +107,13 @@ const PagePersonal: React.FC = () => {
             });
     };
 
-    const handleGetResourceTasksPersonal = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetTasksPersonal = (requestBodyObject: Record<string, unknown>): void => {
+        ResourceClient.postResource('api/app/GetTasksPersonal', requestBodyObject)
             .then((responseJson: any) => {
                 setTaskState((prevState: ITaskState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new TaskModel(datapoint);
                         }),
                         isLoading: false,
@@ -138,8 +139,7 @@ const PagePersonal: React.FC = () => {
     };
 
     useEffect(() => {
-        handleGetResourceTasksPersonal('api/task/read/personal/tasks', {
-            idUser: MOCK_MY_USER_ID,
+        handleGetTasksPersonal({
             filterNameOrDescription: taskState.filter.filterNameOrDescription,
             filterIsComplete: taskState.filter.filterIsComplete,
             filterIsNotComplete: taskState.filter.filterIsNotComplete,
@@ -151,9 +151,7 @@ const PagePersonal: React.FC = () => {
     }, [taskState.filter]);
 
     useEffect(() => {
-        handleGetResourcePagePersonal('api/user/read/personal/personalPage', {
-            idUser: MOCK_MY_USER_ID,
-        });
+        handleGetPersonalPage();
         // eslint-disable-next-line
     }, []);
 
@@ -262,8 +260,7 @@ const PagePersonal: React.FC = () => {
                         <CreateTaskModalButton
                             idPod={null}
                             handleUpdate={() => {
-                                handleGetResourceTasksPersonal('api/task/read/personal/tasks', {
-                                    idUser: MOCK_MY_USER_ID,
+                                handleGetTasksPersonal({
                                     filterNameOrDescription: taskState.filter.filterNameOrDescription,
                                     filterIsComplete: taskState.filter.filterIsComplete,
                                     filterIsNotComplete: taskState.filter.filterIsNotComplete,
@@ -321,9 +318,7 @@ const PagePersonal: React.FC = () => {
                         isDisplayOptionsStarPinDelete={true}
                         isAuthorizedToDelete={true}
                         handleUpdateUponToggleTaskComplete={() => {
-                            handleGetResourcePagePersonal('api/user/read/personal/personalPage', {
-                                idUser: MOCK_MY_USER_ID,
-                            });
+                            handleGetPersonalPage();
                             setPagePersonalState((prevState: IPagePersonalState) => {
                                 return {
                                     ...prevState,
@@ -335,7 +330,8 @@ const PagePersonal: React.FC = () => {
                 </Grid>
                 <Grid item sx={{ marginLeft: 'auto', marginRight: 'auto' }}>
                     <NumberOfPointsInTasksCompletedOverTimeVisualization
-                        apiPath={'api/task/read/personal/numberOfPointsInTasksCompletedOverTimeVisualization'}
+                        apiPath={'api/app/GetNumberOfPointsInTasksCompletedOverTimeVisualizationPersonal'}
+                        apiPayload={{}}
                         refreshSwitchValue={pagePersonalState.refreshVisualizationSwitchValue}
                     />
                 </Grid>

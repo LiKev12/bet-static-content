@@ -30,7 +30,7 @@ import UserBubbleReactionModel from 'src/javascripts/models/UserBubbleReactionMo
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
+
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import IconButtonFollowUser from 'src/javascripts/components/IconButtonFollowUser';
@@ -40,7 +40,6 @@ export interface IUserBubbleReactionListModalProps {
     handleClose: any;
     sortByTimestampLabel: string;
     apiPath: string;
-    apiReactionSourceEntityIdKey: string;
     apiReactionSourceEntityIdValue: string;
     modalTitle: string;
 }
@@ -81,7 +80,7 @@ const SORT_BY_DIRECTION = {
 const UserBubbleReactionListModal: React.FC<IUserBubbleReactionListModalProps> = (
     props: IUserBubbleReactionListModalProps,
 ) => {
-    const { handleClose, apiPath, apiReactionSourceEntityIdKey, apiReactionSourceEntityIdValue } = props;
+    const { handleClose, apiPath, apiReactionSourceEntityIdValue } = props;
     const [userBubbleReactionListModalState, setUserBubbleReactionListModalState] =
         useState<IUserBubbleReactionListModalState>({
             data: [],
@@ -121,16 +120,10 @@ const UserBubbleReactionListModal: React.FC<IUserBubbleReactionListModalProps> =
     }
 
     const handlePostResourceUserBubblesReaction = (): void => {
-        ResourceClient.postResource(
-            apiPath,
-            {
-                idUser: MOCK_MY_USER_ID,
-            },
-            {
-                [apiReactionSourceEntityIdKey]: apiReactionSourceEntityIdValue,
-                numberOfReactionsLimit: -1,
-            },
-        )
+        ResourceClient.postResource(apiPath, {
+            id: apiReactionSourceEntityIdValue,
+            numberOfReactionsLimit: -1,
+        })
             .then((responseJson: any) => {
                 setUserBubbleReactionListModalState((prevState: IUserBubbleReactionListModalState) => {
                     return {
@@ -301,10 +294,9 @@ const UserBubbleReactionListModal: React.FC<IUserBubbleReactionListModalProps> =
                                                         isFollowRequestSentNotYetAccepted={userBubble.getIsFollowRequestSentNotYetAccepted()}
                                                         handleSendFollowRequest={() => {
                                                             ResourceClient.postResource(
-                                                                'api/user/update/sendFollowUserRequest',
-                                                                { idUser: MOCK_MY_USER_ID },
+                                                                'api/app/SendFollowUserRequest',
                                                                 {
-                                                                    idUserReceiveFollowRequest: userBubble.getId(),
+                                                                    id: userBubble.getId(),
                                                                 },
                                                             )
                                                                 .then(() => {

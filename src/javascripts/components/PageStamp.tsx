@@ -8,7 +8,7 @@ import FilterPods from 'src/javascripts/components/FilterPods';
 import TaskCardList from 'src/javascripts/components/TaskCardList';
 import PodCardList from 'src/javascripts/components/PodCardList';
 import AvatarImageEditor from 'src/javascripts/components/AvatarImageEditor';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
+
 import UserListButton from 'src/javascripts/components/UserListButton';
 import EditStampModalButton from 'src/javascripts/components/EditStampModalButton';
 import { getInputText, getUserListButtonText } from 'src/javascripts/utilities';
@@ -162,8 +162,10 @@ const PageStamp: React.FC = () => {
             errorMessage: null,
         },
     });
-    const handleGetResourceStampPage = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetStampPage = (): void => {
+        ResourceClient.postResource('api/app/GetStampPage', {
+            id: String(idStamp),
+        })
             .then((responseJson: any) => {
                 setStampPageState((prevState: IStampPageState) => {
                     const stampPageModel = new StampPageModel(responseJson);
@@ -208,16 +210,13 @@ const PageStamp: React.FC = () => {
                 });
             });
     };
-    const handleGetResourceTasksAssociatedWithStamp = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetTasksAssociatedWithStamp = (requestBodyObject: Record<string, unknown>): void => {
+        ResourceClient.postResource('api/app/GetTasksAssociatedWithStamp', requestBodyObject)
             .then((responseJson: any) => {
                 setTaskState((prevState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new TaskModel(datapoint);
                         }),
                         response: {
@@ -246,16 +245,13 @@ const PageStamp: React.FC = () => {
             });
     };
 
-    const handleGetResourcePodsAssociatedWithStamp = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetPodCardsAssociatedWithStamp = (requestBodyObject: Record<string, unknown>): void => {
+        ResourceClient.postResource('api/app/GetPodCardsAssociatedWithStamp', requestBodyObject)
             .then((responseJson: any) => {
                 setPodCardState((prevState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new PodCardModel(datapoint);
                         }),
                         response: {
@@ -312,14 +308,11 @@ const PageStamp: React.FC = () => {
         500,
     );
     useEffect(() => {
-        handleGetResourceStampPage(`api/stamp/read/stamps/${String(idStamp)}/page`, {
-            idUser: MOCK_MY_USER_ID,
-        });
+        handleGetStampPage();
         // eslint-disable-next-line
     }, []);
     useEffect(() => {
-        handleGetResourceTasksAssociatedWithStamp(`api/stamp/read/stamps/${String(idStamp)}/tasks`, {
-            idUser: MOCK_MY_USER_ID,
+        handleGetTasksAssociatedWithStamp({
             filterNameOrDescription: taskState.filter.filterNameOrDescription,
             filterIsComplete: taskState.filter.filterIsComplete,
             filterIsNotComplete: taskState.filter.filterIsNotComplete,
@@ -327,14 +320,11 @@ const PageStamp: React.FC = () => {
             filterIsNotStar: taskState.filter.filterIsNotStar,
             filterIsPin: taskState.filter.filterIsPin,
             filterIsNotPin: taskState.filter.filterIsNotPin,
-            page: taskState.pagination.pageNumber,
-            size: taskState.pagination.pageSize,
         });
         // eslint-disable-next-line
     }, [taskState.filter, tabIdx]);
     useEffect(() => {
-        handleGetResourcePodsAssociatedWithStamp(`api/stamp/read/stamps/${String(idStamp)}/pods`, {
-            idUser: MOCK_MY_USER_ID,
+        handleGetPodCardsAssociatedWithStamp({
             filterNameOrDescription: podCardState.filter.filterNameOrDescription,
             filterIsPublic: podCardState.filter.filterIsPublic,
             filterIsNotPublic: podCardState.filter.filterIsNotPublic,
@@ -342,8 +332,6 @@ const PageStamp: React.FC = () => {
             filterIsNotMember: podCardState.filter.filterIsNotMember,
             filterIsModerator: podCardState.filter.filterIsModerator,
             filterIsNotModerator: podCardState.filter.filterIsNotModerator,
-            page: podCardState.pagination.pageNumber,
-            size: podCardState.pagination.pageSize,
         });
         // eslint-disable-next-line
     }, [podCardState.filter, tabIdx]);
@@ -382,14 +370,10 @@ const PageStamp: React.FC = () => {
                     <Grid item sx={{ padding: '24px' }}>
                         <AvatarImageEditor
                             imageUploadHandler={(imageAsBase64String: string) => {
-                                ResourceClient.postResource(
-                                    'api/stamp/update/stamp',
-                                    { idUser: MOCK_MY_USER_ID },
-                                    {
-                                        id: idStamp,
-                                        imageAsBase64String: getInputText(imageAsBase64String),
-                                    },
-                                )
+                                ResourceClient.postResource('api/app/UpdateStamp', {
+                                    id: idStamp,
+                                    imageAsBase64String: getInputText(imageAsBase64String),
+                                })
                                     .then((responseJson: any) => {
                                         handleUpdateStampPage(responseJson);
                                     })
@@ -442,22 +426,11 @@ const PageStamp: React.FC = () => {
                                         edge="end"
                                         aria-label="icon-button-collect-stamp-eligible"
                                         onClick={() => {
-                                            ResourceClient.postResource(
-                                                'api/stamp/update/collectStamp',
-                                                {
-                                                    idUser: MOCK_MY_USER_ID,
-                                                },
-                                                {
-                                                    idStamp,
-                                                },
-                                            )
+                                            ResourceClient.postResource('api/app/CollectStamp', {
+                                                id: String(idStamp),
+                                            })
                                                 .then(() => {
-                                                    handleGetResourceStampPage(
-                                                        `api/stamp/read/stamps/${String(idStamp)}/page`,
-                                                        {
-                                                            idUser: MOCK_MY_USER_ID,
-                                                        },
-                                                    );
+                                                    handleGetStampPage();
                                                 })
                                                 .catch((responseError: any) => {
                                                     setStampPageState((prevState: IStampPageState) => {
@@ -514,7 +487,8 @@ const PageStamp: React.FC = () => {
                                             )}
                                             userBubbles={stampPageState.data.getUserBubblesStampCollect()}
                                             sortByTimestampLabel="time collect stamp"
-                                            apiPath={`api/stamp/read/stamps/${String(idStamp)}/userBubblesStampCollect`}
+                                            apiPath={'api/app/GetUserBubblesStampCollect'}
+                                            apiPayload={{ id: String(idStamp) }}
                                             modalTitle="Users Collected Stamp"
                                             isUseDateTimeDateAndTime={false}
                                         />
@@ -556,16 +530,10 @@ const PageStamp: React.FC = () => {
                                                 };
                                             });
                                             if (!isErrorEditModeValueStampName) {
-                                                ResourceClient.postResource(
-                                                    'api/stamp/update/stamp',
-                                                    {
-                                                        idUser: MOCK_MY_USER_ID,
-                                                    },
-                                                    {
-                                                        id: idStamp,
-                                                        name: getInputText(stampPageState.editMode.name.editModeValue),
-                                                    },
-                                                )
+                                                ResourceClient.postResource('api/app/UpdateStamp', {
+                                                    id: idStamp,
+                                                    name: getInputText(stampPageState.editMode.name.editModeValue),
+                                                })
                                                     .then((responseJson: any) => {
                                                         handleUpdateStampPage(responseJson);
                                                     })
@@ -619,18 +587,10 @@ const PageStamp: React.FC = () => {
                                                     };
                                                 });
                                                 if (!isErrorEditModeValueStampName) {
-                                                    ResourceClient.postResource(
-                                                        'api/stamp/update/stamp',
-                                                        {
-                                                            idUser: MOCK_MY_USER_ID,
-                                                        },
-                                                        {
-                                                            id: idStamp,
-                                                            name: getInputText(
-                                                                stampPageState.editMode.name.editModeValue,
-                                                            ),
-                                                        },
-                                                    )
+                                                    ResourceClient.postResource('api/app/UpdateStamp', {
+                                                        id: idStamp,
+                                                        name: getInputText(stampPageState.editMode.name.editModeValue),
+                                                    })
                                                         .then((responseJson: any) => {
                                                             handleUpdateStampPage(responseJson);
                                                         })
@@ -711,23 +671,16 @@ const PageStamp: React.FC = () => {
                                                 };
                                             });
                                             if (!isErrorEditModeValueStampDescription) {
-                                                ResourceClient.postResource(
-                                                    'api/stamp/update/stamp',
-                                                    {
-                                                        idUser: MOCK_MY_USER_ID,
-                                                    },
-                                                    {
-                                                        id: idStamp,
-                                                        description:
-                                                            getInputText(
-                                                                stampPageState.editMode.description.editModeValue,
-                                                            ).length === 0
-                                                                ? null
-                                                                : getInputText(
-                                                                      stampPageState.editMode.description.editModeValue,
-                                                                  ),
-                                                    },
-                                                )
+                                                ResourceClient.postResource('api/app/UpdateStamp', {
+                                                    id: idStamp,
+                                                    description:
+                                                        getInputText(stampPageState.editMode.description.editModeValue)
+                                                            .length === 0
+                                                            ? null
+                                                            : getInputText(
+                                                                  stampPageState.editMode.description.editModeValue,
+                                                              ),
+                                                })
                                                     .then((responseJson: any) => {
                                                         handleUpdateStampPage(responseJson);
                                                     })
@@ -769,24 +722,17 @@ const PageStamp: React.FC = () => {
                                                     };
                                                 });
                                                 if (!isErrorEditModeValueStampDescription) {
-                                                    ResourceClient.postResource(
-                                                        'api/stamp/update/stamp',
-                                                        {
-                                                            idUser: MOCK_MY_USER_ID,
-                                                        },
-                                                        {
-                                                            id: idStamp,
-                                                            description:
-                                                                getInputText(
-                                                                    stampPageState.editMode.description.editModeValue,
-                                                                ).length === 0
-                                                                    ? null
-                                                                    : getInputText(
-                                                                          stampPageState.editMode.description
-                                                                              .editModeValue,
-                                                                      ),
-                                                        },
-                                                    )
+                                                    ResourceClient.postResource('api/app/UpdateStamp', {
+                                                        id: idStamp,
+                                                        description:
+                                                            getInputText(
+                                                                stampPageState.editMode.description.editModeValue,
+                                                            ).length === 0
+                                                                ? null
+                                                                : getInputText(
+                                                                      stampPageState.editMode.description.editModeValue,
+                                                                  ),
+                                                    })
                                                         .then((responseJson: any) => {
                                                             handleUpdateStampPage(responseJson);
                                                         })
@@ -894,9 +840,7 @@ const PageStamp: React.FC = () => {
                             isDisplayOptionsStarPinDelete={false}
                             isAuthorizedToDelete={false}
                             handleUpdateUponToggleTaskComplete={() => {
-                                handleGetResourceStampPage(`api/stamp/read/stamps/${String(idStamp)}/page`, {
-                                    idUser: MOCK_MY_USER_ID,
-                                });
+                                handleGetStampPage();
                             }}
                         />
                     </Box>
@@ -954,9 +898,8 @@ const PageStamp: React.FC = () => {
             ) : null}
             {tabIdxToDisplayMap[tabIdx] === 'progress' ? (
                 <NumberOfPointsInTasksCompletedOverTimeVisualization
-                    apiPath={`api/stamp/read/stamps/${String(
-                        idStamp,
-                    )}/numberOfPointsInTasksCompletedOverTimeVisualization`}
+                    apiPath={'api/app/GetNumberOfPointsInTasksCompletedOverTimeVisualizationAssociatedWithStamp'}
+                    apiPayload={{ id: idStamp }}
                     refreshSwitchValue={true}
                 />
             ) : null}

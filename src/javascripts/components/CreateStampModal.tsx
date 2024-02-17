@@ -29,7 +29,6 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { THEME } from 'src/javascripts/Theme';
 import Constants from 'src/javascripts/Constants';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import { getInputText } from 'src/javascripts/utilities';
 import TaskModel from 'src/javascripts/models/TaskModel';
 import PlaceholderImagePod from 'src/assets/PlaceholderImagePod.png';
@@ -125,13 +124,21 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
         },
     });
 
-    const handleGetResourcePodCards = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetPodCardsAssociatedWithUser = (): void => {
+        ResourceClient.postResource('api/app/GetPodCardsAssociatedWithUser', {
+            filterNameOrDescription: '',
+            filterIsPublic: true,
+            filterIsNotPublic: true,
+            filterIsMember: true,
+            filterIsNotMember: true,
+            filterIsModerator: true,
+            filterIsNotModerator: true,
+        })
             .then((responseJson: any) => {
                 setPodCardState((prevState: IPodCardState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new PodCardModel(datapoint);
                         }),
                         response: {
@@ -157,16 +164,13 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
             });
     };
 
-    const handleGetResourceTasksAssociatedWithPod = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetTasksAssociatedWithPod = (): void => {
+        ResourceClient.postResource('api/app/GetTasksAssociatedWithPod', { id: createStampModalState.selectedPodId })
             .then((responseJson: any) => {
                 setTaskState((prevState: ITaskState) => {
                     return {
                         ...prevState,
-                        data: responseJson.content.map((datapoint: any) => {
+                        data: responseJson.map((datapoint: any) => {
                             return new TaskModel(datapoint);
                         }),
                         response: {
@@ -192,9 +196,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
             });
     };
     useEffect(() => {
-        handleGetResourcePodCards(`api/user/read/users/${MOCK_MY_USER_ID}/pods`, {
-            idUser: MOCK_MY_USER_ID,
-        });
+        handleGetPodCardsAssociatedWithUser();
         // eslint-disable-next-line
     }, []);
 
@@ -223,12 +225,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                     },
                 };
             });
-            handleGetResourceTasksAssociatedWithPod(
-                `api/pod/read/pods/${String(createStampModalState.selectedPodId)}/tasks`,
-                {
-                    idUser: MOCK_MY_USER_ID,
-                },
-            );
+            handleGetTasksAssociatedWithPod();
         }
         // eslint-disable-next-line
     }, [createStampModalState.selectedPodId]);
@@ -626,18 +623,13 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                                     },
                                 };
                             });
-                            ResourceClient.postResource(
-                                'api/stamp/create/stamp',
-                                { idUser: MOCK_MY_USER_ID },
-                                {
-                                    name: getInputText(createStampModalState.data.name),
-                                    description:
-                                        getInputText(createStampModalState.data.description).length === 0
-                                            ? null
-                                            : getInputText(createStampModalState.data.description),
-                                    idTasks: Array.from(createStampModalState.data.selectedTaskIds),
-                                },
-                            )
+                            ResourceClient.postResource('api/app/CreateStamp', {
+                                name: getInputText(createStampModalState.data.name),
+                                idTasks: Array.from(createStampModalState.data.selectedTaskIds),
+                                ...(getInputText(createStampModalState.data.description).length === 0
+                                    ? {}
+                                    : { description: getInputText(createStampModalState.data.description) }),
+                            })
                                 .then((responseJson: any) => {
                                     setCreateStampModalState((prevState: any) => {
                                         return {

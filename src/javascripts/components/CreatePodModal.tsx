@@ -22,7 +22,6 @@ import {
 import { getInputText } from 'src/javascripts/utilities';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Constants from 'src/javascripts/Constants';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import { Link } from 'react-router-dom';
 export interface ICreatePodModalState {
@@ -244,18 +243,13 @@ const CreatePodModal: React.FC = () => {
                                     },
                                 };
                             });
-                            ResourceClient.postResource(
-                                'api/pod/create/pod',
-                                { idUser: MOCK_MY_USER_ID },
-                                {
-                                    name: getInputText(createPodModalState.data.name),
-                                    isPublic: createPodModalState.data.isPublic,
-                                    description:
-                                        getInputText(createPodModalState.data.description).length === 0
-                                            ? null
-                                            : getInputText(createPodModalState.data.description),
-                                },
-                            )
+                            ResourceClient.postResource('api/app/CreatePod', {
+                                name: getInputText(createPodModalState.data.name),
+                                isPublic: createPodModalState.data.isPublic,
+                                ...(getInputText(createPodModalState.data.description).length === 0
+                                    ? {}
+                                    : { description: getInputText(createPodModalState.data.description) }),
+                            })
                                 .then((responseJson: any) => {
                                     setCreatePodModalState((prevState: any) => {
                                         return {

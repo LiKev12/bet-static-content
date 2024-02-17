@@ -30,7 +30,7 @@ import UserBubbleModel from 'src/javascripts/models/UserBubbleModel';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
+
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import IconButtonFollowUser from 'src/javascripts/components/IconButtonFollowUser';
@@ -39,6 +39,7 @@ export interface IUserListModalProps {
     handleClose: any;
     sortByTimestampLabel: string;
     apiPath: string;
+    apiPayload: any;
     modalTitle: string;
     isUseDateTimeDateAndTime: boolean;
 }
@@ -74,7 +75,7 @@ const SORT_BY_DIRECTION = {
 };
 
 const UserListModal: React.FC<IUserListModalProps> = (props: IUserListModalProps) => {
-    const { handleClose, apiPath, isUseDateTimeDateAndTime } = props;
+    const { handleClose, apiPath, apiPayload, isUseDateTimeDateAndTime } = props;
     const [userListModalState, setUserListModalState] = useState<IUserListModalState>({
         data: [],
         isLoading: true,
@@ -112,8 +113,8 @@ const UserListModal: React.FC<IUserListModalProps> = (props: IUserListModalProps
         userBubblesProcessed.reverse();
     }
 
-    const handleGetResourceUserBubbles = (pathApi: string, queryParamsObject: Record<string, unknown>): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetUserBubbles = (): void => {
+        ResourceClient.postResource(apiPath, apiPayload)
             .then((responseJson: any) => {
                 setUserListModalState((prevState: IUserListModalState) => {
                     return {
@@ -135,9 +136,7 @@ const UserListModal: React.FC<IUserListModalProps> = (props: IUserListModalProps
             });
     };
     useEffect(() => {
-        handleGetResourceUserBubbles(apiPath, {
-            idUser: MOCK_MY_USER_ID,
-        });
+        handleGetUserBubbles();
         // eslint-disable-next-line
     }, []);
     const debouncedHandleChangeFilterText = _.debounce((event: React.ChangeEvent<HTMLInputElement>): void => {
@@ -266,16 +265,13 @@ const UserListModal: React.FC<IUserListModalProps> = (props: IUserListModalProps
                                                         isFollowRequestSentNotYetAccepted={userBubble.getIsFollowRequestSentNotYetAccepted()}
                                                         handleSendFollowRequest={() => {
                                                             ResourceClient.postResource(
-                                                                'api/user/update/sendFollowUserRequest',
-                                                                { idUser: MOCK_MY_USER_ID },
+                                                                'api/app/SendFollowUserRequest',
                                                                 {
-                                                                    idUserReceiveFollowRequest: userBubble.getId(),
+                                                                    id: userBubble.getId(),
                                                                 },
                                                             )
                                                                 .then(() => {
-                                                                    handleGetResourceUserBubbles(apiPath, {
-                                                                        idUser: MOCK_MY_USER_ID,
-                                                                    });
+                                                                    handleGetUserBubbles();
                                                                 })
                                                                 .catch(() => {});
                                                         }}

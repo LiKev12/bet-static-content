@@ -34,7 +34,6 @@ import UserBubbleModel from 'src/javascripts/models/UserBubbleModel';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-import { MOCK_MY_USER_ID } from 'src/javascripts/mocks/Mocks';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Constants from 'src/javascripts/Constants';
@@ -136,11 +135,8 @@ const InviteUsersJoinPodModal: React.FC<IInviteUsersJoinPodModalProps> = (props:
         userBubblesProcessed.reverse();
     }
 
-    const handleGetResourceUserBubblesInviteJoinPod = (
-        pathApi: string,
-        queryParamsObject: Record<string, unknown>,
-    ): void => {
-        ResourceClient.getResource(pathApi, queryParamsObject)
+    const handleGetUserBubblesInviteJoinPod = (): void => {
+        ResourceClient.postResource('api/app/GetUserBubblesInviteJoinPod', { id: String(idPod) })
             .then((responseJson: any) => {
                 setUserBubbleInviteJoinPodState((prevState: IUserBubbleInviteJoinPodState) => {
                     return {
@@ -168,9 +164,7 @@ const InviteUsersJoinPodModal: React.FC<IInviteUsersJoinPodModalProps> = (props:
             });
     };
     useEffect(() => {
-        handleGetResourceUserBubblesInviteJoinPod(`api/pod/read/pods/${String(idPod)}/userBubblesInviteJoinPod`, {
-            idUser: MOCK_MY_USER_ID,
-        });
+        handleGetUserBubblesInviteJoinPod();
         // eslint-disable-next-line
     }, []);
 
@@ -376,22 +370,11 @@ const InviteUsersJoinPodModal: React.FC<IInviteUsersJoinPodModalProps> = (props:
                                                 isFollowedByMe={userBubble.getIsFollowedByMe()}
                                                 isFollowRequestSentNotYetAccepted={userBubble.getIsFollowRequestSentNotYetAccepted()}
                                                 handleSendFollowRequest={() => {
-                                                    ResourceClient.postResource(
-                                                        'api/user/update/sendFollowUserRequest',
-                                                        { idUser: MOCK_MY_USER_ID },
-                                                        {
-                                                            idUserReceiveFollowRequest: userBubble.getId(),
-                                                        },
-                                                    )
+                                                    ResourceClient.postResource('api/app/SendFollowUserRequest', {
+                                                        id: userBubble.getId(),
+                                                    })
                                                         .then(() => {
-                                                            handleGetResourceUserBubblesInviteJoinPod(
-                                                                `api/pod/read/pods/${String(
-                                                                    idPod,
-                                                                )}/userBubblesInviteJoinPod`,
-                                                                {
-                                                                    idUser: MOCK_MY_USER_ID,
-                                                                },
-                                                            );
+                                                            handleGetUserBubblesInviteJoinPod();
                                                         })
                                                         .catch(() => {});
                                                 }}
@@ -425,14 +408,10 @@ const InviteUsersJoinPodModal: React.FC<IInviteUsersJoinPodModalProps> = (props:
                                 },
                             };
                         });
-                        ResourceClient.postResource(
-                            'api/pod/update/sendJoinPodInvite',
-                            { idUser: MOCK_MY_USER_ID },
-                            {
-                                idPod,
-                                idUsersReceiveInvite: Array.from(inviteUsersJoinPodModalState.data.selectedUserIds),
-                            },
-                        )
+                        ResourceClient.postResource('api/app/SendJoinPodInvite', {
+                            id: String(idPod),
+                            idUsers: Array.from(inviteUsersJoinPodModalState.data.selectedUserIds),
+                        })
                             .then((responseJson: any) => {
                                 handleUpdateUserBubbleInviteJoinPodState(responseJson);
                             })

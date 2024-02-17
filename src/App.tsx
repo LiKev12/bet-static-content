@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ThemeProvider } from '@mui/material/styles';
-
+import { Provider } from 'react-redux';
 import { THEME } from 'src/javascripts/Theme';
 import Header from 'src/javascripts/components/Header';
 import { Route, Routes } from 'react-router-dom';
@@ -11,10 +11,7 @@ import PagePod from 'src/javascripts/components/PagePod';
 import PageStamp from 'src/javascripts/components/PageStamp';
 import PageDiscover from 'src/javascripts/components/PageDiscover';
 import PageUser from 'src/javascripts/components/PageUser';
-// import LoginWidget from 'src/javascripts/components/thirdParty/LoginWidget';
-// import { oktaConfig } from 'src/javascripts/config/OktaConfig';
-// import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
-// import { Security, LoginCallback } from '@okta/okta-react';
+import store from 'src/javascripts/store';
 
 function App(): any {
     const [activeTabIdx, setActiveTabIdx] = useState(0);
@@ -34,26 +31,28 @@ function App(): any {
     //     );
     // };
     return (
-        <ThemeProvider theme={THEME}>
-            {/* <Security oktaAuth={oktaAuth} restoreOriginalUri={restoreOriginalUri} onAuthRequired={customAuthHandler}> */}
-            <Header activeTabIdx={activeTabIdx} setActiveTabIdx={setActiveTabIdx} />
-            <Routes>
-                {/* TODO: remove */}
-                {/* <Route path="/login" element={<LoginWidget config={oktaConfig} />} />
+        <Provider store={store}>
+            <ThemeProvider theme={THEME}>
+                {/* <Security oktaAuth={oktaAuth} restoreOriginalUri={restoreOriginalUri} onAuthRequired={customAuthHandler}> */}
+                <Header activeTabIdx={activeTabIdx} setActiveTabIdx={setActiveTabIdx} />
+                <Routes>
+                    {/* TODO: remove */}
+                    {/* <Route path="/login" element={<LoginWidget config={oktaConfig} />} />
                     <Route path="/login/callback" element={<LoginCallback />} /> */}
-                <Route path="/" element={<PageHome />} />
-                <Route path="/about" element={<div>About</div>} />
-                <Route path="/contact" element={<div>Contact</div>} />
-                {/** need auth */}
-                <Route path="/me" element={<PagePersonal />} />
-                <Route path="/profiles/:id" element={<PageUser />} />
-                <Route path="/discover" element={<PageDiscover />} />
-                <Route path="/pods/:id" element={<PagePod />} />
-                <Route path="/stamps/:id" element={<PageStamp />} />
-                <Route path="*" element={<PageNotFound />} />
-            </Routes>
-            {/* </Security> */}
-        </ThemeProvider>
+                    <Route path="/" element={<PageHome />} />
+                    <Route path="/about" element={<div>About</div>} />
+                    <Route path="/contact" element={<div>Contact</div>} />
+                    {/** need auth */}
+                    <Route path="/me" element={<PagePersonal />} />
+                    <Route path="/profiles/:id" element={<PageUser />} />
+                    <Route path="/discover" element={<PageDiscover />} />
+                    <Route path="/pods/:id" element={<PagePod />} />
+                    <Route path="/stamps/:id" element={<PageStamp />} />
+                    <Route path="*" element={<PageNotFound />} />
+                </Routes>
+                {/* </Security> */}
+            </ThemeProvider>
+        </Provider>
     );
 }
 
