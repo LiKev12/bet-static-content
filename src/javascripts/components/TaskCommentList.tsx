@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
     Accordion,
     AccordionSummary,
@@ -31,7 +32,9 @@ import ReactionsModel from 'src/javascripts/models/ReactionsModel';
 import TaskCommentReplyModel from 'src/javascripts/models/TaskCommentReplyModel';
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
 import { THEME } from 'src/javascripts/Theme';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 
+import type { IRootState } from 'src/javascripts/store';
 export interface ITaskCommentListProps {
     taskComments: TaskCommentModel[];
     idTask: string;
@@ -97,6 +100,8 @@ const getTaskCommentsNumberOfRepliesState = (taskComments: TaskCommentModel[]): 
 
 const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentListProps) => {
     const { taskComments, idTask } = props;
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [taskCommentListState, setTaskCommentListState] = useState<ITaskCommentListState>({
         isShowTaskCommentRepliesSet: new Set(),
         commentTextOrCommentTextReplyValue: '',
@@ -128,7 +133,10 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
         getInputText(taskCommentListState.commentTextOrCommentTextReplyValue).length >
         Constants.TASK_COMMENT_TASK_REPLY_MAX_LENGTH_CHARACTERS;
 
-    const handleGetTaskCommentReplies = (requestBodyObject: Record<string, unknown>, idTaskComment: string): void => {
+    const handleGetTaskCommentReplies = async (
+        requestBodyObject: Record<string, unknown>,
+        idTaskComment: string,
+    ): Promise<any> => {
         setTaskCommentRepliesState((prevState: ITaskCommentRepliesState) => {
             return {
                 ...prevState,
@@ -139,89 +147,101 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                 },
             };
         });
-        ResourceClient.postResource('api/app/GetTaskCommentReplies', requestBodyObject)
-            .then((responseJson: any) => {
-                setTaskCommentRepliesState((prevState: ITaskCommentRepliesState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => new TaskCommentReplyModel(datapoint)),
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                    };
-                });
-                setTaskCommentListState((prevState: ITaskCommentListState) => {
-                    const isShowTaskCommentRepliesSet = prevState.isShowTaskCommentRepliesSet;
-                    isShowTaskCommentRepliesSet.add(idTaskComment);
-                    return {
-                        ...prevState,
-                        isShowTaskCommentRepliesSet,
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setTaskCommentRepliesState((prevState: ITaskCommentRepliesState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetTaskCommentReplies',
+                requestBodyObject,
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setTaskCommentRepliesState((prevState: ITaskCommentRepliesState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => new TaskCommentReplyModel(datapoint)),
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                };
             });
+            setTaskCommentListState((prevState: ITaskCommentListState) => {
+                const isShowTaskCommentRepliesSet = prevState.isShowTaskCommentRepliesSet;
+                isShowTaskCommentRepliesSet.add(idTaskComment);
+                return {
+                    ...prevState,
+                    isShowTaskCommentRepliesSet,
+                };
+            });
+        } catch (e: any) {
+            setTaskCommentRepliesState((prevState: ITaskCommentRepliesState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
 
-    const handleGetTaskCommentReactions = (requestBodyObject: Record<string, unknown>, idTaskComment: string): void => {
-        ResourceClient.postResource('api/app/GetTaskCommentReactions', requestBodyObject)
-            .then((responseJson: any) => {
-                setTaskCommentsReactionsState((prevState: ITaskCommentsReactionsState) => {
-                    return {
-                        ...prevState,
-                        data: { ...prevState.data, [idTaskComment]: new ReactionsModel(responseJson) },
-                    };
-                });
-            })
-            .catch(() => {});
+    const handleGetTaskCommentReactions = async (
+        requestBodyObject: Record<string, unknown>,
+        idTaskComment: string,
+    ): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetTaskCommentReactions',
+                requestBodyObject,
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setTaskCommentsReactionsState((prevState: ITaskCommentsReactionsState) => {
+                return {
+                    ...prevState,
+                    data: { ...prevState.data, [idTaskComment]: new ReactionsModel(response.data) },
+                };
+            });
+        } catch (e: any) {}
     };
 
-    const handleGetTaskComments = (): void => {
-        ResourceClient.postResource('api/app/GetTaskComments', {
-            id: idTask,
-        })
-            .then((responseJson: any) => {
-                setTaskCommentsState((prevState: ITaskCommentsState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => new TaskCommentModel(datapoint)),
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                    };
-                });
-                setTaskCommentsNumberOfRepliesState({
-                    data: getTaskCommentsNumberOfRepliesState(
-                        responseJson.map((datapoint: any) => new TaskCommentModel(datapoint)),
-                    ),
-                });
-            })
-            .catch((responseError: any) => {
-                setTaskCommentsState((prevState: ITaskCommentsState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+    const handleGetTaskComments = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetTaskComments',
+                {
+                    id: idTask,
+                },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setTaskCommentsState((prevState: ITaskCommentsState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => new TaskCommentModel(datapoint)),
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                };
             });
+            setTaskCommentsNumberOfRepliesState({
+                data: getTaskCommentsNumberOfRepliesState(
+                    response.data.map((datapoint: any) => new TaskCommentModel(datapoint)),
+                ),
+            });
+        } catch (e: any) {
+            setTaskCommentsState((prevState: ITaskCommentsState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
     return (
         <Box>
@@ -335,8 +355,8 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                 >
                                                     <Grid item>
                                                         <ReactionSelector
-                                                            handleUpdateCallback={() => {
-                                                                handleGetTaskCommentReactions(
+                                                            handleUpdateCallback={async () => {
+                                                                void handleGetTaskCommentReactions(
                                                                     {
                                                                         idTaskComment:
                                                                             taskCommentModel.getIdTaskComment(),
@@ -401,10 +421,9 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                     <Accordion
                                                         onChange={(event: React.SyntheticEvent, expanded: boolean) => {
                                                             if (expanded) {
-                                                                handleGetTaskCommentReplies(
+                                                                void handleGetTaskCommentReplies(
                                                                     {
-                                                                        idTaskComment:
-                                                                            taskCommentModel.getIdTaskComment(),
+                                                                        id: taskCommentModel.getIdTaskComment(),
                                                                     },
                                                                     taskCommentModel.getIdTaskComment(),
                                                                 );
@@ -493,22 +512,26 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                         <Grid container direction="row">
                             <Grid item sx={{ marginRight: 'auto' }}>
                                 <Button
-                                    onClick={() => {
-                                        ResourceClient.postResource('api/app/CreateTaskComment', {
-                                            id: idTask,
-                                            text: taskCommentListState.commentTextOrCommentTextReplyValue,
-                                        })
-                                            .then(() => {
-                                                setTaskCommentListState((prevState: ITaskCommentListState) => {
-                                                    return {
-                                                        ...prevState,
-                                                        commentTextOrCommentTextReplyValue: '',
-                                                        isShowTaskCommentRepliesSet: new Set(),
-                                                    };
-                                                });
-                                                handleGetTaskComments();
-                                            })
-                                            .catch(() => {});
+                                    /* eslint-disable @typescript-eslint/no-misused-promises */
+                                    onClick={async () => {
+                                        try {
+                                            await ResourceClient.postResource(
+                                                'api/app/CreateTaskComment',
+                                                {
+                                                    id: idTask,
+                                                    text: taskCommentListState.commentTextOrCommentTextReplyValue,
+                                                },
+                                                sliceAuthenticationStateData.getJwtToken(),
+                                            );
+                                            setTaskCommentListState((prevState: ITaskCommentListState) => {
+                                                return {
+                                                    ...prevState,
+                                                    commentTextOrCommentTextReplyValue: '',
+                                                    isShowTaskCommentRepliesSet: new Set(),
+                                                };
+                                            });
+                                            void handleGetTaskComments();
+                                        } catch (e: any) {}
                                     }}
                                     disabled={
                                         isErrorTaskCommentOrTaskCommentReply ||
@@ -531,25 +554,30 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                             const file = e.target.files[0];
                                             const fileReader = new FileReader();
                                             fileReader.onload = (function (file) {
-                                                return function (e) {
+                                                return async function (e) {
                                                     if (this.result !== null && String(this.result).length > 0) {
-                                                        ResourceClient.postResource('api/app/CreateTaskComment', {
-                                                            id: idTask,
-                                                            imageAsBase64String: getInputText(String(this.result)),
-                                                        })
-                                                            .then((responseJson: any) => {
-                                                                setTaskCommentListState(
-                                                                    (prevState: ITaskCommentListState) => {
-                                                                        return {
-                                                                            ...prevState,
-                                                                            commentTextOrCommentTextReplyValue: '',
-                                                                            isShowTaskCommentRepliesSet: new Set(),
-                                                                        };
-                                                                    },
-                                                                );
-                                                                handleGetTaskComments();
-                                                            })
-                                                            .catch(() => {});
+                                                        try {
+                                                            await ResourceClient.postResource(
+                                                                'api/app/CreateTaskComment',
+                                                                {
+                                                                    id: idTask,
+                                                                    imageAsBase64String: getInputText(
+                                                                        String(this.result),
+                                                                    ),
+                                                                },
+                                                                sliceAuthenticationStateData.getJwtToken(),
+                                                            );
+                                                            setTaskCommentListState(
+                                                                (prevState: ITaskCommentListState) => {
+                                                                    return {
+                                                                        ...prevState,
+                                                                        commentTextOrCommentTextReplyValue: '',
+                                                                        isShowTaskCommentRepliesSet: new Set(),
+                                                                    };
+                                                                },
+                                                            );
+                                                            void handleGetTaskComments();
+                                                        } catch (e: any) {}
                                                     }
                                                 };
                                             })(file);
@@ -563,25 +591,32 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                         <Grid container direction="row">
                             <Grid item sx={{ marginRight: 'auto' }}>
                                 <Button
-                                    onClick={() => {
-                                        ResourceClient.postResource('api/app/CreateTaskCommentReply', {
-                                            id: taskCommentListState.selectedCommentId,
-                                            text: taskCommentListState.commentTextOrCommentTextReplyValue,
-                                        })
-                                            .then(() => {
-                                                setTaskCommentListState((prevState: ITaskCommentListState) => {
-                                                    return {
-                                                        ...prevState,
-                                                        commentTextOrCommentTextReplyValue: '',
-                                                        isShowTaskCommentRepliesSet: new Set(),
-                                                    };
-                                                });
-                                                handleGetTaskComments();
-                                            })
-                                            .catch(() => {});
+                                    onClick={async () => {
+                                        try {
+                                            await ResourceClient.postResource(
+                                                'api/app/CreateTaskCommentReply',
+                                                {
+                                                    id: taskCommentListState.selectedCommentId,
+                                                    text: taskCommentListState.commentTextOrCommentTextReplyValue,
+                                                },
+                                                sliceAuthenticationStateData.getJwtToken(),
+                                            );
+                                            setTaskCommentListState((prevState: ITaskCommentListState) => {
+                                                return {
+                                                    ...prevState,
+                                                    commentTextOrCommentTextReplyValue: '',
+                                                    isShowTaskCommentRepliesSet: new Set(),
+                                                };
+                                            });
+                                            void handleGetTaskComments();
+                                        } catch (e: any) {}
                                     }}
-                                    disabled={isErrorTaskCommentOrTaskCommentReply}
                                     variant="contained"
+                                    disabled={
+                                        isErrorTaskCommentOrTaskCommentReply ||
+                                        getInputText(taskCommentListState.commentTextOrCommentTextReplyValue).length ===
+                                            0
+                                    }
                                 >
                                     Reply to comment
                                 </Button>
@@ -597,25 +632,30 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                             const file = e.target.files[0];
                                             const fileReader = new FileReader();
                                             fileReader.onload = (function (file) {
-                                                return function (e) {
+                                                return async function (e) {
                                                     if (this.result !== null && String(this.result).length > 0) {
-                                                        ResourceClient.postResource('api/app/CreateTaskCommentReply', {
-                                                            id: taskCommentListState.selectedCommentId,
-                                                            imageAsBase64String: getInputText(String(this.result)),
-                                                        })
-                                                            .then((responseJson: any) => {
-                                                                setTaskCommentListState(
-                                                                    (prevState: ITaskCommentListState) => {
-                                                                        return {
-                                                                            ...prevState,
-                                                                            commentTextOrCommentTextReplyValue: '',
-                                                                            isShowTaskCommentRepliesSet: new Set(),
-                                                                        };
-                                                                    },
-                                                                );
-                                                                handleGetTaskComments();
-                                                            })
-                                                            .catch(() => {});
+                                                        try {
+                                                            await ResourceClient.postResource(
+                                                                'api/app/CreateTaskCommentReply',
+                                                                {
+                                                                    id: taskCommentListState.selectedCommentId,
+                                                                    imageAsBase64String: getInputText(
+                                                                        String(this.result),
+                                                                    ),
+                                                                },
+                                                                sliceAuthenticationStateData.getJwtToken(),
+                                                            );
+                                                            setTaskCommentListState(
+                                                                (prevState: ITaskCommentListState) => {
+                                                                    return {
+                                                                        ...prevState,
+                                                                        commentTextOrCommentTextReplyValue: '',
+                                                                        isShowTaskCommentRepliesSet: new Set(),
+                                                                    };
+                                                                },
+                                                            );
+                                                            void handleGetTaskComments();
+                                                        } catch (e: any) {}
                                                     }
                                                 };
                                             })(file);

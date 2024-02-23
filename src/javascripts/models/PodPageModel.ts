@@ -13,8 +13,8 @@ export default class PodPageModel {
     userBubblesPodModerator: UserBubbleModel[] = [];
     userBubblesPodModeratorTotalNumber: number = 0;
 
-    constructor(podPageModel: any, isInitial: boolean = false) {
-        if (isInitial) {
+    constructor(podPageModel: any) {
+        if (podPageModel === null) {
             return;
         }
         this.id = podPageModel.id;

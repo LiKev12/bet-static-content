@@ -12,8 +12,8 @@ export default class StampPageModel {
     isCollectedByMe: boolean = false;
     isEligibleToBeCollectedByMe: boolean = false;
 
-    constructor(stampPageModel: any, isInitial: boolean = false) {
-        if (isInitial) {
+    constructor(stampPageModel: any) {
+        if (stampPageModel === null) {
             return;
         }
         this.id = stampPageModel.id;

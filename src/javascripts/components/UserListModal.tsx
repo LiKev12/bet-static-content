@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import _ from 'lodash';
 import {
     Box,
@@ -30,11 +31,12 @@ import UserBubbleModel from 'src/javascripts/models/UserBubbleModel';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import IconButtonFollowUser from 'src/javascripts/components/IconButtonFollowUser';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 
+import type { IRootState } from 'src/javascripts/store';
 export interface IUserListModalProps {
     handleClose: any;
     sortByTimestampLabel: string;
@@ -76,6 +78,8 @@ const SORT_BY_DIRECTION = {
 
 const UserListModal: React.FC<IUserListModalProps> = (props: IUserListModalProps) => {
     const { handleClose, apiPath, apiPayload, isUseDateTimeDateAndTime } = props;
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [userListModalState, setUserListModalState] = useState<IUserListModalState>({
         data: [],
         isLoading: true,
@@ -113,30 +117,33 @@ const UserListModal: React.FC<IUserListModalProps> = (props: IUserListModalProps
         userBubblesProcessed.reverse();
     }
 
-    const handleGetUserBubbles = (): void => {
-        ResourceClient.postResource(apiPath, apiPayload)
-            .then((responseJson: any) => {
-                setUserListModalState((prevState: IUserListModalState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => new UserBubbleModel(datapoint)),
-                        isLoading: false,
-                        responseError: null,
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setUserListModalState((prevState: IUserListModalState) => {
-                    return {
-                        ...prevState,
-                        isLoading: false,
-                        responseError,
-                    };
-                });
+    const handleGetUserBubbles = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                apiPath,
+                apiPayload,
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setUserListModalState((prevState: IUserListModalState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => new UserBubbleModel(datapoint)),
+                    isLoading: false,
+                    responseError: null,
+                };
             });
+        } catch (e: any) {
+            setUserListModalState((prevState: IUserListModalState) => {
+                return {
+                    ...prevState,
+                    isLoading: false,
+                    responseError: e?.response?.data?.message,
+                };
+            });
+        }
     };
     useEffect(() => {
-        handleGetUserBubbles();
+        void handleGetUserBubbles();
         // eslint-disable-next-line
     }, []);
     const debouncedHandleChangeFilterText = _.debounce((event: React.ChangeEvent<HTMLInputElement>): void => {
@@ -263,17 +270,17 @@ const UserListModal: React.FC<IUserListModalProps> = (props: IUserListModalProps
                                                         isMe={userBubble.getIsMe()}
                                                         isFollowedByMe={userBubble.getIsFollowedByMe()}
                                                         isFollowRequestSentNotYetAccepted={userBubble.getIsFollowRequestSentNotYetAccepted()}
-                                                        handleSendFollowRequest={() => {
-                                                            ResourceClient.postResource(
-                                                                'api/app/SendFollowUserRequest',
-                                                                {
-                                                                    id: userBubble.getId(),
-                                                                },
-                                                            )
-                                                                .then(() => {
-                                                                    handleGetUserBubbles();
-                                                                })
-                                                                .catch(() => {});
+                                                        handleSendFollowRequest={async () => {
+                                                            try {
+                                                                await ResourceClient.postResource(
+                                                                    'api/app/SendFollowUserRequest',
+                                                                    {
+                                                                        id: userBubble.getId(),
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                void handleGetUserBubbles();
+                                                            } catch (e: any) {}
                                                         }}
                                                     />
                                                 </React.Fragment>

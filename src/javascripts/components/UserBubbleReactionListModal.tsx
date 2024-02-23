@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import _ from 'lodash';
 import {
     Box,
@@ -30,11 +31,13 @@ import UserBubbleReactionModel from 'src/javascripts/models/UserBubbleReactionMo
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
-
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import IconButtonFollowUser from 'src/javascripts/components/IconButtonFollowUser';
 import Constants from 'src/javascripts/Constants';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+
+import type { IRootState } from 'src/javascripts/store';
 
 export interface IUserBubbleReactionListModalProps {
     handleClose: any;
@@ -81,6 +84,8 @@ const UserBubbleReactionListModal: React.FC<IUserBubbleReactionListModalProps> =
     props: IUserBubbleReactionListModalProps,
 ) => {
     const { handleClose, apiPath, apiReactionSourceEntityIdValue } = props;
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [userBubbleReactionListModalState, setUserBubbleReactionListModalState] =
         useState<IUserBubbleReactionListModalState>({
             data: [],
@@ -119,35 +124,38 @@ const UserBubbleReactionListModal: React.FC<IUserBubbleReactionListModalProps> =
         userBubblesProcessed.reverse();
     }
 
-    const handlePostResourceUserBubblesReaction = (): void => {
-        ResourceClient.postResource(apiPath, {
-            id: apiReactionSourceEntityIdValue,
-            numberOfReactionsLimit: -1,
-        })
-            .then((responseJson: any) => {
-                setUserBubbleReactionListModalState((prevState: IUserBubbleReactionListModalState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.userBubblesReaction.map(
-                            (datapoint: any) => new UserBubbleReactionModel(datapoint),
-                        ),
-                        isLoading: false,
-                        responseError: null,
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setUserBubbleReactionListModalState((prevState: IUserBubbleReactionListModalState) => {
-                    return {
-                        ...prevState,
-                        isLoading: false,
-                        responseError,
-                    };
-                });
+    const handlePostResourceUserBubblesReaction = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                apiPath,
+                {
+                    id: apiReactionSourceEntityIdValue,
+                    numberOfReactionsLimit: -1,
+                },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setUserBubbleReactionListModalState((prevState: IUserBubbleReactionListModalState) => {
+                return {
+                    ...prevState,
+                    data: response.data.userBubblesReaction.map(
+                        (datapoint: any) => new UserBubbleReactionModel(datapoint),
+                    ),
+                    isLoading: false,
+                    responseError: null,
+                };
             });
+        } catch (e: any) {
+            setUserBubbleReactionListModalState((prevState: IUserBubbleReactionListModalState) => {
+                return {
+                    ...prevState,
+                    isLoading: false,
+                    responseError: e?.response?.data?.message,
+                };
+            });
+        }
     };
     useEffect(() => {
-        handlePostResourceUserBubblesReaction();
+        void handlePostResourceUserBubblesReaction();
         // eslint-disable-next-line
     }, []);
     const debouncedHandleChangeFilterText = _.debounce((event: React.ChangeEvent<HTMLInputElement>): void => {
@@ -292,17 +300,17 @@ const UserBubbleReactionListModal: React.FC<IUserBubbleReactionListModalProps> =
                                                         isMe={userBubble.getIsMe()}
                                                         isFollowedByMe={userBubble.getIsFollowedByMe()}
                                                         isFollowRequestSentNotYetAccepted={userBubble.getIsFollowRequestSentNotYetAccepted()}
-                                                        handleSendFollowRequest={() => {
-                                                            ResourceClient.postResource(
-                                                                'api/app/SendFollowUserRequest',
-                                                                {
-                                                                    id: userBubble.getId(),
-                                                                },
-                                                            )
-                                                                .then(() => {
-                                                                    handlePostResourceUserBubblesReaction();
-                                                                })
-                                                                .catch(() => {});
+                                                        handleSendFollowRequest={async () => {
+                                                            try {
+                                                                await ResourceClient.postResource(
+                                                                    'api/app/SendFollowUserRequest',
+                                                                    {
+                                                                        id: userBubble.getId(),
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                void handlePostResourceUserBubblesReaction();
+                                                            } catch (e: any) {}
                                                         }}
                                                     />
                                                 </React.Fragment>

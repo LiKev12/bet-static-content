@@ -13,8 +13,8 @@ export default class UserPageModel {
     isFollowedByMe: boolean = false;
     isFollowRequestSentNotYetAccepted: boolean = false;
     numberOfPendingFollowUserRequests: number = 0;
-    constructor(userPageModel: any, isInitial: boolean = false) {
-        if (isInitial) {
+    constructor(userPageModel: any) {
+        if (userPageModel === null) {
             return;
         }
         this.id = userPageModel.id;

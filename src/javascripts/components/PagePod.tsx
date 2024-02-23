@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import _ from 'lodash';
 import { useParams } from 'react-router-dom';
 import { Box, Divider, Grid, Typography, Tab, Tabs, TextField, IconButton, Tooltip } from '@mui/material';
@@ -25,12 +26,19 @@ import TaskModel from 'src/javascripts/models/TaskModel';
 import StampCardModel from 'src/javascripts/models/StampCardModel';
 import { PAGE_SIZE_STAMP, PAGE_SIZE_TASK } from 'src/javascripts/clients/ResourceClientConfig';
 import PodPageModel from 'src/javascripts/models/PodPageModel';
+import ResponseModel from 'src/javascripts/models/ResponseModel';
+import NumberOfPointsInTasksCompletedOverTimeVisualizationModel from 'src/javascripts/models/NumberOfPointsInTasksCompletedOverTimeVisualizationModel';
 import Constants from 'src/javascripts/Constants';
 import PlaceholderImagePod from 'src/assets/PlaceholderImagePod.png';
-import AlertDialog from 'src/javascripts/components/AlertDialog';
 import PersonIcon from '@mui/icons-material/Person';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+import { slicePagePodActions } from 'src/javascripts/store/SlicePagePod';
+import { sliceVisualizationActions } from 'src/javascripts/store/SliceVisualization';
+import { sliceStampCardsAssociatedWithPodActions } from 'src/javascripts/store/SliceStampCardsAssociatedWithPod';
+import { slicePaginationPageNumberActions } from 'src/javascripts/store/SlicePaginationPageNumber';
 
+import type { IRootState } from 'src/javascripts/store';
 const tabIdxToDisplayMap: any = {
     0: 'task',
     1: 'stamp',
@@ -38,11 +46,6 @@ const tabIdxToDisplayMap: any = {
 };
 
 export interface IPodPageState {
-    data: PodPageModel;
-    response: {
-        state: string;
-        errorMessage: string | null;
-    };
     editMode: {
         name: {
             isEditMode: boolean;
@@ -98,6 +101,24 @@ export interface IStampCardState {
 }
 const PagePod: React.FC = () => {
     const { id: idPod } = useParams();
+    const dispatch = useDispatch();
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
+    const slicePagePodState = useSelector((state: IRootState) => state.pagePod);
+    const slicePagePodStateData = new PodPageModel(slicePagePodState.data);
+    const slicePagePodStateResponse = new ResponseModel(slicePagePodState.response);
+    const sliceVisualizationState = useSelector((state: IRootState) => state.visualization);
+    const sliceVisualizationStateData = new NumberOfPointsInTasksCompletedOverTimeVisualizationModel(
+        sliceVisualizationState.data,
+    );
+    const sliceVisualizationStateResponse = new ResponseModel(sliceVisualizationState.response);
+    const sliceStampCardsAssociatedWithPodState = useSelector((state: IRootState) => state.stampCardsAssociatedWithPod);
+    const sliceStampCardsAssociatedWithPodStateData = sliceStampCardsAssociatedWithPodState.data.map(
+        (d: any) => new StampCardModel(d),
+    );
+    const sliceStampCardsAssociatedWithPodStateResponse = new ResponseModel(
+        sliceStampCardsAssociatedWithPodState.response,
+    );
     const [tabIdx, setTabIdx] = useState(0);
     const [podPageState, setPodPageState] = useState<IPodPageState>({
         editMode: {
@@ -113,11 +134,6 @@ const PagePod: React.FC = () => {
                 isEditMode: false,
                 editModeValue: '', // TODO what to show during loading? maybe blank imageLink?
             },
-        },
-        data: new PodPageModel(null, true),
-        response: {
-            state: Constants.RESPONSE_STATE_LOADING,
-            errorMessage: null,
         },
     });
 
@@ -163,129 +179,105 @@ const PagePod: React.FC = () => {
         },
     });
 
-    const handleGetPodPage = (): void => {
-        ResourceClient.postResource('api/GetPodPage', { id: String(idPod) })
-            .then((responseJson: any) => {
-                setPodPageState((prevState: IPodPageState) => {
-                    const podPageModel = new PodPageModel(responseJson);
-                    return {
-                        ...prevState,
-                        editMode: {
-                            ...prevState.editMode,
-                            name: {
-                                ...prevState.editMode.name,
-                                editModeValue: podPageModel.getName(),
-                            },
-                            description: {
-                                ...prevState.editMode.description,
-                                editModeValue: String(
-                                    podPageModel.getDescription() !== null ? podPageModel.getDescription() : '',
-                                ),
-                            },
-                            imageLink: {
-                                ...prevState.editMode.imageLink,
-                                editModeValue: podPageModel.getImageLink(),
-                            },
+    const setPodPageStateData = async (): Promise<any> => {
+        try {
+            dispatch(slicePagePodActions.setStateResponseLoading());
+            const response = await ResourceClient.postResource(
+                'api/app/GetPodPage',
+                { id: String(idPod) },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            dispatch(slicePagePodActions.setStateData(response.data));
+            setPodPageState((prevState: IPodPageState) => {
+                const podPageModel = new PodPageModel(response.data);
+                return {
+                    ...prevState,
+                    editMode: {
+                        ...prevState.editMode,
+                        name: {
+                            ...prevState.editMode.name,
+                            editModeValue: podPageModel.getName(),
                         },
-                        data: podPageModel,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
+                        description: {
+                            ...prevState.editMode.description,
+                            editModeValue: String(
+                                podPageModel.getDescription() !== null ? podPageModel.getDescription() : '',
+                            ),
                         },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setPodPageState((prevState: IPodPageState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
+                        imageLink: {
+                            ...prevState.editMode.imageLink,
+                            editModeValue: podPageModel.getImageLink(),
                         },
-                    };
-                });
+                    },
+                };
             });
+        } catch (e: any) {
+            dispatch(slicePagePodActions.setStateResponseError(e?.response?.data?.message));
+        }
     };
-    const handleGetTasksAssociatedWithPod = (requestBodyObject: Record<string, unknown>): void => {
-        ResourceClient.postResource('api/app/GetTasksAssociatedWithPod', requestBodyObject)
-            .then((responseJson: any) => {
-                setTaskState((prevState: ITaskState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => {
-                            return new TaskModel(datapoint);
-                        }),
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                        pagination: {
-                            ...prevState.pagination,
-                            totalNumberOfPages: responseJson.totalPages,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setTaskState((prevState: ITaskState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+    const handleGetTasksAssociatedWithPod = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetTasksAssociatedWithPod',
+                requestBodyObject,
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => {
+                        return new TaskModel(datapoint);
+                    }),
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                    pagination: {
+                        ...prevState.pagination,
+                        totalNumberOfPages: response.data.totalPages,
+                    },
+                };
             });
+        } catch (e: any) {
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
 
-    const handleGetStampCardsAssociatedWithPod = (requestBodyObject: Record<string, unknown>): void => {
-        ResourceClient.postResource('api/app/GetStampCardsAssociatedWithPod', requestBodyObject)
-            .then((responseJson: any) => {
-                setStampCardState((prevState: IStampCardState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => {
-                            return new StampCardModel(datapoint);
-                        }),
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                        pagination: {
-                            ...prevState.pagination,
-                            totalNumberOfPages: responseJson.totalPages,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setStampCardState((prevState: IStampCardState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
-            });
+    const handleGetStampCardsAssociatedWithPod = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
+        try {
+            dispatch(slicePaginationPageNumberActions.setStateData(1));
+            const response = await ResourceClient.postResource(
+                'api/app/GetStampCardsAssociatedWithPod',
+                requestBodyObject,
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            dispatch(sliceStampCardsAssociatedWithPodActions.setStateData(response.data));
+        } catch (e: any) {
+            dispatch(sliceStampCardsAssociatedWithPodActions.setStateResponseError(e?.response?.data?.message));
+        }
     };
 
-    const handleUpdatePodPage = (responseJson: any): void => {
-        setPodPageState((prevState: any) => {
-            return {
-                ...prevState,
-                data: new PodPageModel(responseJson),
-            };
-        });
+    const setVisualizationStateData = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetNumberOfPointsInTasksCompletedOverTimeVisualizationAssociatedWithPod',
+                { id: String(idPod) },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            dispatch(sliceVisualizationActions.setStateData(response.data));
+        } catch (e: any) {
+            dispatch(sliceVisualizationActions.setStateResponseError(e?.response?.data?.message));
+        }
     };
 
     const debouncedHandleChangeFilterNameOrDescription = _.debounce(
@@ -309,11 +301,12 @@ const PagePod: React.FC = () => {
         500,
     );
     useEffect(() => {
-        handleGetPodPage();
+        void setPodPageStateData();
         // eslint-disable-next-line
     }, []);
     useEffect(() => {
-        handleGetTasksAssociatedWithPod({
+        void handleGetTasksAssociatedWithPod({
+            id: String(idPod),
             filterNameOrDescription: taskState.filter.filterNameOrDescription,
             filterIsComplete: taskState.filter.filterIsComplete,
             filterIsNotComplete: taskState.filter.filterIsNotComplete,
@@ -325,10 +318,13 @@ const PagePod: React.FC = () => {
         // eslint-disable-next-line
     }, [taskState.filter, tabIdx]);
     useEffect(() => {
-        handleGetStampCardsAssociatedWithPod({
+        void handleGetStampCardsAssociatedWithPod({
+            id: String(idPod),
             filterNameOrDescription: stampCardState.filter.filterNameOrDescription,
             filterIsCollect: stampCardState.filter.filterIsCollect,
             filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
+            filterIsPublic: true,
+            filterIsNotPublic: true,
         });
         // eslint-disable-next-line
     }, [stampCardState.filter, tabIdx]);
@@ -342,7 +338,7 @@ const PagePod: React.FC = () => {
 
     return (
         <Box sx={{ minHeight: '100vh', background: THEME.palette.other.gradient }}>
-            {podPageState.response.state === Constants.RESPONSE_STATE_ERROR &&
+            {/* {podPageState.response.state === Constants.RESPONSE_STATE_ERROR &&
             podPageState.response.errorMessage !== null ? (
                 <AlertDialog
                     title="Error"
@@ -361,24 +357,27 @@ const PagePod: React.FC = () => {
                         });
                     }}
                 />
-            ) : null}
+            ) : null} */}
             <Box>
                 <Grid container direction="row">
                     <Grid item sx={{ padding: '24px' }}>
                         <AvatarImageEditor
-                            imageUploadHandler={(imageAsBase64String: string) => {
-                                ResourceClient.postResource('api/app/UpdatePod', {
-                                    id: idPod,
-                                    imageAsBase64String: getInputText(imageAsBase64String),
-                                })
-                                    .then((responseJson: any) => {
-                                        handleUpdatePodPage(responseJson);
-                                    })
-                                    .catch(() => {});
+                            imageUploadHandler={async (imageAsBase64String: string) => {
+                                try {
+                                    const response = await ResourceClient.postResource(
+                                        'api/app/UpdatePod',
+                                        {
+                                            id: idPod,
+                                            imageAsBase64String: getInputText(imageAsBase64String),
+                                        },
+                                        sliceAuthenticationStateData.getJwtToken(),
+                                    );
+                                    dispatch(slicePagePodActions.setStateData(response.data));
+                                } catch (e: any) {}
                             }}
-                            imageLink={podPageState.data.getImageLink()}
+                            imageLink={slicePagePodStateData.getImageLink()}
                             placeholderImage={PlaceholderImagePod}
-                            isReadOnly={!podPageState.data.getIsPodModerator()}
+                            isReadOnly={!slicePagePodStateData.getIsPodModerator()}
                         />
                         <Box
                             sx={{
@@ -390,20 +389,23 @@ const PagePod: React.FC = () => {
                                 marginBottom: '12px',
                             }}
                         >
-                            {!podPageState.data.getIsPodMember() ? (
+                            {!slicePagePodStateData.getIsPodMember() ? (
                                 <IconButtonJoinPod
-                                    handleJoinPod={() => {
-                                        ResourceClient.postResource('api/app/JoinPod', {
-                                            id: String(idPod),
-                                        })
-                                            .then(() => {
-                                                handleGetPodPage();
-                                            })
-                                            .catch(() => {});
+                                    handleJoinPod={async () => {
+                                        try {
+                                            await ResourceClient.postResource(
+                                                'api/app/JoinPod',
+                                                {
+                                                    id: String(idPod),
+                                                },
+                                                sliceAuthenticationStateData.getJwtToken(),
+                                            );
+                                            void setPodPageStateData();
+                                        } catch (e: any) {}
                                     }}
                                 />
                             ) : null}
-                            {podPageState.data.getIsPodMember() && !podPageState.data.getIsPodModerator() ? (
+                            {slicePagePodStateData.getIsPodMember() && !slicePagePodStateData.getIsPodModerator() ? (
                                 <React.Fragment>
                                     <IconButton
                                         edge="end"
@@ -425,7 +427,7 @@ const PagePod: React.FC = () => {
                                     />
                                 </React.Fragment>
                             ) : null}
-                            {podPageState.data.getIsPodModerator() ? (
+                            {slicePagePodStateData.getIsPodModerator() ? (
                                 <React.Fragment>
                                     <IconButton
                                         edge="end"
@@ -447,7 +449,7 @@ const PagePod: React.FC = () => {
                                     />
                                 </React.Fragment>
                             ) : null}
-                            {podPageState.data.getIsPodMember() ? (
+                            {slicePagePodStateData.getIsPodMember() ? (
                                 <React.Fragment>
                                     <IconButtonInviteUsersJoinPodModal idPod={idPod ?? ''} />
                                     <Divider
@@ -457,7 +459,7 @@ const PagePod: React.FC = () => {
                                     />
                                 </React.Fragment>
                             ) : null}
-                            {podPageState.data.getIsPodModerator() ? (
+                            {slicePagePodStateData.getIsPodModerator() ? (
                                 <React.Fragment>
                                     <IconButtonAddPodModeratorsModal idPod={idPod ?? ''} />
                                     <Divider
@@ -467,18 +469,21 @@ const PagePod: React.FC = () => {
                                     />
                                 </React.Fragment>
                             ) : null}
-                            {podPageState.data.getIsPodMember() && !podPageState.data.getIsPodModerator() ? (
+                            {slicePagePodStateData.getIsPodMember() && !slicePagePodStateData.getIsPodModerator() ? (
                                 <React.Fragment>
                                     <IconButtonSendBecomePodModeratorRequest
-                                        isSentBecomePodModeratorRequest={podPageState.data.getIsSentBecomePodModeratorRequest()}
-                                        handleSendBecomePodModeratorRequest={() => {
-                                            ResourceClient.postResource('api/app/SendBecomePodModeratorRequest', {
-                                                id: String(idPod),
-                                            })
-                                                .then(() => {
-                                                    handleGetPodPage();
-                                                })
-                                                .catch(() => {});
+                                        isSentBecomePodModeratorRequest={slicePagePodStateData.getIsSentBecomePodModeratorRequest()}
+                                        handleSendBecomePodModeratorRequest={async () => {
+                                            try {
+                                                await ResourceClient.postResource(
+                                                    'api/app/SendBecomePodModeratorRequest',
+                                                    {
+                                                        id: String(idPod),
+                                                    },
+                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                );
+                                                void setPodPageStateData();
+                                            } catch (e: any) {}
                                         }}
                                     />
                                     <Divider
@@ -488,13 +493,13 @@ const PagePod: React.FC = () => {
                                     />
                                 </React.Fragment>
                             ) : null}
-                            {podPageState.data.getIsPodModerator() ? (
+                            {slicePagePodStateData.getIsPodModerator() ? (
                                 <React.Fragment>
                                     <IconButtonManagePendingBecomePodModeratorRequestsModal
                                         idPod={idPod ?? ''}
-                                        numberOfPendingBecomeModeratorRequests={podPageState.data.getNumberOfPendingBecomeModeratorRequests()}
+                                        numberOfPendingBecomeModeratorRequests={slicePagePodStateData.getNumberOfPendingBecomeModeratorRequests()}
                                         handleUpdatePodPage={() => {
-                                            handleGetPodPage();
+                                            void setPodPageStateData();
                                         }}
                                     />
                                     <Divider
@@ -504,51 +509,68 @@ const PagePod: React.FC = () => {
                                     />
                                 </React.Fragment>
                             ) : null}
-                            {podPageState.data.getIsPodMember() ? (
+                            {slicePagePodStateData.getIsPodMember() ? (
                                 <IconButtonLeavePod
-                                    handleLeavePod={() => {
-                                        ResourceClient.postResource('api/app/LeavePod', {
-                                            id: String(idPod),
-                                        })
-                                            .then(() => {
-                                                handleGetPodPage();
-                                            })
-                                            .catch(() => {});
+                                    handleLeavePod={async () => {
+                                        try {
+                                            await ResourceClient.postResource(
+                                                'api/app/LeavePod',
+                                                {
+                                                    id: String(idPod),
+                                                },
+                                                sliceAuthenticationStateData.getJwtToken(),
+                                            );
+                                            void setPodPageStateData();
+                                        } catch (e: any) {}
                                     }}
                                 />
                             ) : null}
                         </Box>
-                        {podPageState.response.state !== Constants.RESPONSE_STATE_LOADING &&
-                        podPageState.data.getUserBubblesPodMember() !== null ? (
-                            <Grid container direction="row" sx={{ marginTop: '16px', marginBottom: '12px' }}>
-                                <Grid item sx={{ display: 'flex', width: '100%' }}>
+                        {!slicePagePodStateResponse.getIsLoading() ? (
+                            <React.Fragment>
+                                <Box sx={{ display: 'flex', width: '100%', marginBottom: '12px' }}>
                                     <UserListButton
                                         labelText={getUserListButtonText(
-                                            podPageState.data.getUserBubblesPodMemberTotalNumber(),
+                                            slicePagePodStateData.getUserBubblesPodMemberTotalNumber(),
                                             'member',
                                             'members',
                                         )}
-                                        userBubbles={podPageState.data.getUserBubblesPodMember()}
+                                        userBubbles={slicePagePodStateData.getUserBubblesPodMember()}
                                         sortByTimestampLabel="time become member"
                                         apiPath={'api/app/GetUserBubblesPodMember'}
                                         apiPayload={{ id: String(idPod) }}
                                         modalTitle="Pod Members"
                                         isUseDateTimeDateAndTime={false}
                                     />
-                                </Grid>
-                            </Grid>
+                                </Box>
+                                <Box sx={{ display: 'flex', width: '100%', marginBottom: '12px' }}>
+                                    <UserListButton
+                                        labelText={getUserListButtonText(
+                                            slicePagePodStateData.getUserBubblesPodModeratorTotalNumber(),
+                                            'moderator',
+                                            'moderators',
+                                        )}
+                                        userBubbles={slicePagePodStateData.getUserBubblesPodModerator()}
+                                        sortByTimestampLabel="time become moderator"
+                                        apiPath={'api/app/GetUserBubblesPodModerator'}
+                                        apiPayload={{ id: String(idPod) }}
+                                        modalTitle="Pod Moderators"
+                                        isUseDateTimeDateAndTime={false}
+                                    />
+                                </Box>
+                            </React.Fragment>
                         ) : null}
-                        {podPageState.response.state !== Constants.RESPONSE_STATE_LOADING &&
-                        podPageState.data.getUserBubblesPodModerator() !== null ? (
+                        {/* {!slicePagePodStateResponse.getIsLoading() &&
+                        slicePagePodStateData.getUserBubblesPodModerator() !== null ? (
                             <Grid container direction="row" sx={{ marginBottom: '12px' }}>
                                 <Grid item sx={{ display: 'flex', width: '100%' }}>
                                     <UserListButton
                                         labelText={getUserListButtonText(
-                                            podPageState.data.getUserBubblesPodModeratorTotalNumber(),
+                                            slicePagePodStateData.getUserBubblesPodModeratorTotalNumber(),
                                             'moderator',
                                             'moderators',
                                         )}
-                                        userBubbles={podPageState.data.getUserBubblesPodModerator()}
+                                        userBubbles={slicePagePodStateData.getUserBubblesPodModerator()}
                                         sortByTimestampLabel="time become moderator"
                                         apiPath={'api/app/GetUserBubblesPodModerator'}
                                         apiPayload={{ id: String(idPod) }}
@@ -557,18 +579,18 @@ const PagePod: React.FC = () => {
                                     />
                                 </Grid>
                             </Grid>
-                        ) : null}
-                        {podPageState.data.getIsPodMember() ? (
+                        ) : null} */}
+                        {slicePagePodStateData.getIsPodMember() ? (
                             <Box sx={{ marginBottom: '12px' }}>
                                 <CreateStampModalButton idPod={idPod === undefined || idPod === null ? null : idPod} />
                             </Box>
                         ) : null}
-                        {podPageState.data.getIsPodModerator() ? (
+                        {slicePagePodStateData.getIsPodModerator() ? (
                             <Box sx={{ marginBottom: '12px' }}>
                                 <CreateTaskModalButton
                                     idPod={idPod ?? null}
                                     handleUpdate={() => {
-                                        handleGetTasksAssociatedWithPod({
+                                        void handleGetTasksAssociatedWithPod({
                                             filterNameOrDescription: taskState.filter.filterNameOrDescription,
                                             filterIsComplete: taskState.filter.filterIsComplete,
                                             filterIsNotComplete: taskState.filter.filterIsNotComplete,
@@ -588,10 +610,11 @@ const PagePod: React.FC = () => {
                                 {podPageState.editMode.name.isEditMode ? (
                                     <TextField
                                         id="pod-edit-name"
-                                        defaultValue={podPageState.data.getName()}
+                                        defaultValue={slicePagePodStateData.getName()}
                                         fullWidth
                                         value={podPageState.editMode.name.editModeValue}
-                                        onBlur={() => {
+                                        /* eslint-disable @typescript-eslint/no-misused-promises */
+                                        onBlur={async () => {
                                             setPodPageState((prevState: IPodPageState) => {
                                                 return {
                                                     ...prevState,
@@ -602,7 +625,7 @@ const PagePod: React.FC = () => {
                                                             isEditMode: false,
                                                             ...(isErrorEditModeValuePodName
                                                                 ? {
-                                                                      editModeValue: prevState.data.name,
+                                                                      editModeValue: slicePagePodStateData.getName(),
                                                                   }
                                                                 : {}),
                                                         },
@@ -610,27 +633,25 @@ const PagePod: React.FC = () => {
                                                 };
                                             });
                                             if (!isErrorEditModeValuePodName) {
-                                                ResourceClient.postResource('api/app/UpdatePod', {
-                                                    id: idPod,
-                                                    name: getInputText(podPageState.editMode.name.editModeValue),
-                                                })
-                                                    .then((responseJson: any) => {
-                                                        handleUpdatePodPage(responseJson);
-                                                    })
-                                                    .catch((responseError: any) => {
-                                                        setPodPageState((prevState: IPodPageState) => {
-                                                            return {
-                                                                ...prevState,
-                                                                response: {
-                                                                    ...prevState.response,
-                                                                    state: Constants.RESPONSE_STATE_ERROR,
-                                                                    errorMessage: Constants.RESPONSE_GET_ERROR_MESSAGE(
-                                                                        responseError?.response?.data?.message,
-                                                                    ),
-                                                                },
-                                                            };
-                                                        });
-                                                    });
+                                                try {
+                                                    const response = await ResourceClient.postResource(
+                                                        'api/app/UpdatePod',
+                                                        {
+                                                            id: idPod,
+                                                            name: getInputText(
+                                                                podPageState.editMode.name.editModeValue,
+                                                            ),
+                                                        },
+                                                        sliceAuthenticationStateData.getJwtToken(),
+                                                    );
+                                                    dispatch(slicePagePodActions.setStateData(response.data));
+                                                } catch (e: any) {
+                                                    dispatch(
+                                                        slicePagePodActions.setStateResponseError(
+                                                            e?.response?.data?.message,
+                                                        ),
+                                                    );
+                                                }
                                             }
                                         }}
                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -647,7 +668,7 @@ const PagePod: React.FC = () => {
                                                 };
                                             });
                                         }}
-                                        onKeyDown={(event: React.KeyboardEvent) => {
+                                        onKeyDown={async (event: React.KeyboardEvent) => {
                                             if (event.key === 'Enter' && !event.shiftKey) {
                                                 setPodPageState((prevState: IPodPageState) => {
                                                     return {
@@ -659,7 +680,8 @@ const PagePod: React.FC = () => {
                                                                 isEditMode: false,
                                                                 ...(isErrorEditModeValuePodName
                                                                     ? {
-                                                                          editModeValue: prevState.data.name,
+                                                                          editModeValue:
+                                                                              slicePagePodStateData.getName(),
                                                                       }
                                                                     : {}),
                                                             },
@@ -667,28 +689,25 @@ const PagePod: React.FC = () => {
                                                     };
                                                 });
                                                 if (!isErrorEditModeValuePodName) {
-                                                    ResourceClient.postResource('api/app/UpdatePod', {
-                                                        id: idPod,
-                                                        name: getInputText(podPageState.editMode.name.editModeValue),
-                                                    })
-                                                        .then((responseJson: any) => {
-                                                            handleUpdatePodPage(responseJson);
-                                                        })
-                                                        .catch((responseError: any) => {
-                                                            setPodPageState((prevState: IPodPageState) => {
-                                                                return {
-                                                                    ...prevState,
-                                                                    response: {
-                                                                        ...prevState.response,
-                                                                        state: Constants.RESPONSE_STATE_ERROR,
-                                                                        errorMessage:
-                                                                            Constants.RESPONSE_GET_ERROR_MESSAGE(
-                                                                                responseError?.response?.data?.message,
-                                                                            ),
-                                                                    },
-                                                                };
-                                                            });
-                                                        });
+                                                    try {
+                                                        const response = await ResourceClient.postResource(
+                                                            'api/app/UpdatePod',
+                                                            {
+                                                                id: idPod,
+                                                                name: getInputText(
+                                                                    podPageState.editMode.name.editModeValue,
+                                                                ),
+                                                            },
+                                                            sliceAuthenticationStateData.getJwtToken(),
+                                                        );
+                                                        dispatch(slicePagePodActions.setStateData(response.data));
+                                                    } catch (e: any) {
+                                                        dispatch(
+                                                            slicePagePodActions.setStateResponseError(
+                                                                e?.response?.data?.message,
+                                                            ),
+                                                        );
+                                                    }
                                                 }
                                             }
                                         }}
@@ -708,7 +727,7 @@ const PagePod: React.FC = () => {
                                                         ...prevState.editMode,
                                                         name: {
                                                             ...prevState.editMode.name,
-                                                            isEditMode: podPageState.data.getIsPodModerator(),
+                                                            isEditMode: slicePagePodStateData.getIsPodModerator(),
                                                         },
                                                     },
                                                 };
@@ -716,7 +735,7 @@ const PagePod: React.FC = () => {
                                         }}
                                         sx={{ height: '60px', overflowY: 'auto' }}
                                     >
-                                        {podPageState.data.getName()}
+                                        {slicePagePodStateData.getName()}
                                     </Typography>
                                 )}
                             </Grid>
@@ -736,10 +755,10 @@ const PagePod: React.FC = () => {
                                         id="user-edit-bio"
                                         multiline
                                         maxRows={12}
-                                        defaultValue={podPageState.data.getDescription()}
+                                        defaultValue={slicePagePodStateData.getDescription()}
                                         fullWidth
                                         value={podPageState.editMode.description.editModeValue}
-                                        onBlur={() => {
+                                        onBlur={async () => {
                                             setPodPageState((prevState: IPodPageState) => {
                                                 return {
                                                     ...prevState,
@@ -750,7 +769,8 @@ const PagePod: React.FC = () => {
                                                             isEditMode: false,
                                                             ...(isErrorEditModeValuePodDescription
                                                                 ? {
-                                                                      editModeValue: prevState.data.description ?? '',
+                                                                      editModeValue:
+                                                                          slicePagePodStateData.getDescription() ?? '',
                                                                   }
                                                                 : {}),
                                                         },
@@ -758,20 +778,25 @@ const PagePod: React.FC = () => {
                                                 };
                                             });
                                             if (!isErrorEditModeValuePodDescription) {
-                                                ResourceClient.postResource('api/app/UpdatePod', {
-                                                    id: idPod,
-                                                    description:
-                                                        getInputText(podPageState.editMode.description.editModeValue)
-                                                            .length === 0
-                                                            ? null
-                                                            : getInputText(
-                                                                  podPageState.editMode.description.editModeValue,
-                                                              ),
-                                                })
-                                                    .then((responseJson: any) => {
-                                                        handleUpdatePodPage(responseJson);
-                                                    })
-                                                    .catch(() => {});
+                                                try {
+                                                    const response = await ResourceClient.postResource(
+                                                        'api/app/UpdatePod',
+                                                        {
+                                                            id: idPod,
+                                                            description:
+                                                                getInputText(
+                                                                    podPageState.editMode.description.editModeValue,
+                                                                ).length === 0
+                                                                    ? null
+                                                                    : getInputText(
+                                                                          podPageState.editMode.description
+                                                                              .editModeValue,
+                                                                      ),
+                                                        },
+                                                        sliceAuthenticationStateData.getJwtToken(),
+                                                    );
+                                                    dispatch(slicePagePodActions.setStateData(response.data));
+                                                } catch (e: any) {}
                                             }
                                         }}
                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -788,7 +813,7 @@ const PagePod: React.FC = () => {
                                                 };
                                             });
                                         }}
-                                        onKeyDown={(event: React.KeyboardEvent) => {
+                                        onKeyDown={async (event: React.KeyboardEvent) => {
                                             if (event.key === 'Enter' && !event.shiftKey) {
                                                 setPodPageState((prevState: IPodPageState) => {
                                                     return {
@@ -801,7 +826,8 @@ const PagePod: React.FC = () => {
                                                                 ...(isErrorEditModeValuePodDescription
                                                                     ? {
                                                                           editModeValue:
-                                                                              prevState.data.description ?? '',
+                                                                              slicePagePodStateData.getDescription() ??
+                                                                              '',
                                                                       }
                                                                     : {}),
                                                             },
@@ -809,21 +835,25 @@ const PagePod: React.FC = () => {
                                                     };
                                                 });
                                                 if (!isErrorEditModeValuePodDescription) {
-                                                    ResourceClient.postResource('api/app/UpdatePod', {
-                                                        id: idPod,
-                                                        description:
-                                                            getInputText(
-                                                                podPageState.editMode.description.editModeValue,
-                                                            ).length === 0
-                                                                ? null
-                                                                : getInputText(
-                                                                      podPageState.editMode.description.editModeValue,
-                                                                  ),
-                                                    })
-                                                        .then((responseJson: any) => {
-                                                            handleUpdatePodPage(responseJson);
-                                                        })
-                                                        .catch(() => {});
+                                                    try {
+                                                        const response = await ResourceClient.postResource(
+                                                            'api/app/UpdatePod',
+                                                            {
+                                                                id: idPod,
+                                                                description:
+                                                                    getInputText(
+                                                                        podPageState.editMode.description.editModeValue,
+                                                                    ).length === 0
+                                                                        ? null
+                                                                        : getInputText(
+                                                                              podPageState.editMode.description
+                                                                                  .editModeValue,
+                                                                          ),
+                                                            },
+                                                            sliceAuthenticationStateData.getJwtToken(),
+                                                        );
+                                                        dispatch(slicePagePodActions.setStateData(response.data));
+                                                    } catch (e: any) {}
                                                 }
                                             }
                                         }}
@@ -831,7 +861,7 @@ const PagePod: React.FC = () => {
                                             getInputText(podPageState.editMode.description.editModeValue).length,
                                         )}
                                         error={isErrorEditModeValuePodDescription}
-                                        inputProps={{ style: { fontFamily: 'monospace' } }}
+                                        InputProps={{ style: { fontFamily: 'monospace' } }}
                                     />
                                 ) : (
                                     <Typography
@@ -845,7 +875,7 @@ const PagePod: React.FC = () => {
                                                         ...prevState.editMode,
                                                         description: {
                                                             ...prevState.editMode.description,
-                                                            isEditMode: podPageState.data.getIsPodModerator(),
+                                                            isEditMode: slicePagePodStateData.getIsPodModerator(),
                                                         },
                                                     },
                                                 };
@@ -853,8 +883,8 @@ const PagePod: React.FC = () => {
                                         }}
                                         sx={{ whiteSpace: 'pre-wrap' }}
                                     >
-                                        {podPageState.data.getDescription() !== null
-                                            ? podPageState.data.getDescription()
+                                        {slicePagePodStateData.getDescription() !== null
+                                            ? slicePagePodStateData.getDescription()
                                             : ' '}
                                     </Typography>
                                 )}
@@ -919,13 +949,20 @@ const PagePod: React.FC = () => {
                     <Box sx={{ padding: '24px 96px 96px 96px', justifyContent: 'center', display: 'flex' }}>
                         <TaskCardList
                             tasks={taskState.data}
-                            isAuthorizedToComplete={podPageState.data.getIsPodMember()}
-                            isReadOnlyTaskBody={!podPageState.data.getIsPodModerator()}
-                            isReadOnlyTaskNotes={!podPageState.data.getIsPodMember()}
+                            isAuthorizedToComplete={slicePagePodStateData.getIsPodMember()}
+                            isReadOnlyTaskBody={!slicePagePodStateData.getIsPodModerator()}
+                            isReadOnlyTaskNotes={!slicePagePodStateData.getIsPodMember()}
                             isDisplayViewPodLink={false}
-                            isDisplayOptionsStarPinDelete={podPageState.data.getIsPodMember()}
-                            isAuthorizedToDelete={podPageState.data.getIsPodModerator()}
-                            handleUpdateUponToggleTaskComplete={() => {}}
+                            isDisplayOptionsStarPinDelete={slicePagePodStateData.getIsPodMember()}
+                            isAuthorizedToDelete={slicePagePodStateData.getIsPodModerator()}
+                            handleSideEffectToggleTaskComplete={() => {
+                                void setPodPageStateData();
+                                void setVisualizationStateData();
+                            }}
+                            handleSideEffectChangeNumberOfPoints={() => {
+                                void setPodPageStateData();
+                                void setVisualizationStateData();
+                            }}
                         />
                     </Box>
                 </React.Fragment>
@@ -965,20 +1002,18 @@ const PagePod: React.FC = () => {
                     </Box>
                     <Box sx={{ padding: '24px 96px 96px 96px', justifyContent: 'center', display: 'flex' }}>
                         <StampCardList
-                            stampCards={stampCardState.data}
+                            stampCards={sliceStampCardsAssociatedWithPodStateData}
                             isShowCreateStampModal={true}
-                            isLoading={stampCardState.response.state === Constants.RESPONSE_STATE_LOADING}
-                            handleChangePaginationPageNumber={() => {}}
-                            paginationTotalPages={0}
+                            isLoading={sliceStampCardsAssociatedWithPodStateResponse.getIsLoading()}
+                            pageSize={Constants.PAGE_SIZE_ASSOCIATED_STAMP_CARDS_ASSOCIATED_WITH_POD}
                         />
                     </Box>
                 </React.Fragment>
             ) : null}
             {tabIdxToDisplayMap[tabIdx] === 'progress' ? (
                 <NumberOfPointsInTasksCompletedOverTimeVisualization
-                    apiPath={'api/app/GetNumberOfPointsInTasksCompletedOverTimeVisualizationAssociatedWithPod'}
-                    apiPayload={{ id: idPod }}
-                    refreshSwitchValue={true}
+                    data={sliceVisualizationStateData}
+                    response={sliceVisualizationStateResponse}
                 />
             ) : null}
         </Box>

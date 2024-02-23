@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import _ from 'lodash';
 import { Box, Card, Grid, Typography } from '@mui/material';
 import { THEME } from 'src/javascripts/Theme';
@@ -11,9 +12,15 @@ import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import TaskModel from 'src/javascripts/models/TaskModel';
 import { PAGE_SIZE_TASK } from 'src/javascripts/clients/ResourceClientConfig';
 import PersonalPageModel from 'src/javascripts/models/PersonalPageModel';
+import NumberOfPointsInTasksCompletedOverTimeVisualizationModel from 'src/javascripts/models/NumberOfPointsInTasksCompletedOverTimeVisualizationModel';
 import Constants from 'src/javascripts/Constants';
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+import ResponseModel from 'src/javascripts/models/ResponseModel';
+import { sliceVisualizationActions } from 'src/javascripts/store/SliceVisualization';
+import { sliceHeaderActiveTabActions } from 'src/javascripts/store/SliceHeaderActiveTab';
 
+import type { IRootState } from 'src/javascripts/store';
 export interface IPagePersonalState {
     data: PersonalPageModel;
     refreshVisualizationSwitchValue: boolean;
@@ -44,6 +51,14 @@ export interface ITaskState {
     };
 }
 const PagePersonal: React.FC = () => {
+    const dispatch = useDispatch();
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
+    const sliceVisualizationState = useSelector((state: IRootState) => state.visualization);
+    const sliceVisualizationStateData = new NumberOfPointsInTasksCompletedOverTimeVisualizationModel(
+        sliceVisualizationState.data,
+    );
+    const sliceVisualizationStateResponse = new ResponseModel(sliceVisualizationState.response);
     const [taskState, setTaskState] = useState<ITaskState>({
         data: [],
         filter: {
@@ -82,64 +97,82 @@ const PagePersonal: React.FC = () => {
     };
     const debouncedHandleChangeFilterNameOrDescription = _.debounce(handleChangeFilterNameOrDescription, 500);
 
-    const handleGetPersonalPage = (): void => {
-        // ResourceClient.postResource('api/app/GetPersonalPage', {})
-        ResourceClient.getResource('api/user/read/personal/personalPage', {})
-            .then((responseJson: any) => {
-                setPagePersonalState((prevState: IPagePersonalState) => {
-                    return {
-                        ...prevState,
-                        data: new PersonalPageModel(responseJson),
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setPagePersonalState((prevState: IPagePersonalState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: Constants.RESPONSE_GET_ERROR_MESSAGE(responseError?.response?.data?.message),
-                        },
-                    };
-                });
+    const setPersonalPageStateData = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetPersonalPage',
+                {},
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setPagePersonalState((prevState: IPagePersonalState) => {
+                return {
+                    ...prevState,
+                    data: new PersonalPageModel(response.data),
+                };
             });
+        } catch (e: any) {
+            setPagePersonalState((prevState: IPagePersonalState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
 
-    const handleGetTasksPersonal = (requestBodyObject: Record<string, unknown>): void => {
-        ResourceClient.postResource('api/app/GetTasksPersonal', requestBodyObject)
-            .then((responseJson: any) => {
-                setTaskState((prevState: ITaskState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => {
-                            return new TaskModel(datapoint);
-                        }),
-                        isLoading: false,
-                        pagination: {
-                            ...prevState.pagination,
-                            totalNumberOfPages: responseJson.totalPages,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setTaskState((prevState: ITaskState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: Constants.RESPONSE_GET_ERROR_MESSAGE(responseError?.response?.data?.message),
-                        },
-                    };
-                });
+    const handleGetTasksPersonal = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetTasksPersonal',
+                requestBodyObject,
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => {
+                        return new TaskModel(datapoint);
+                    }),
+                    isLoading: false,
+                    pagination: {
+                        ...prevState.pagination,
+                        totalNumberOfPages: response.data.totalPages,
+                    },
+                };
             });
+        } catch (e: any) {
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: Constants.RESPONSE_GET_ERROR_MESSAGE(e?.response?.data?.message),
+                    },
+                };
+            });
+        }
+    };
+
+    const setVisualizationStateData = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetNumberOfPointsInTasksCompletedOverTimeVisualizationPersonal',
+                {},
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            dispatch(sliceVisualizationActions.setStateData(response.data));
+        } catch (e: any) {
+            dispatch(sliceVisualizationActions.setStateResponseError(e?.response?.data?.message));
+        }
     };
 
     useEffect(() => {
-        handleGetTasksPersonal({
+        void handleGetTasksPersonal({
             filterNameOrDescription: taskState.filter.filterNameOrDescription,
             filterIsComplete: taskState.filter.filterIsComplete,
             filterIsNotComplete: taskState.filter.filterIsNotComplete,
@@ -148,10 +181,13 @@ const PagePersonal: React.FC = () => {
             filterIsPin: taskState.filter.filterIsPin,
             filterIsNotPin: taskState.filter.filterIsNotPin,
         });
+        // eslint-disable-next-line
     }, [taskState.filter]);
 
     useEffect(() => {
-        handleGetPersonalPage();
+        void dispatch(sliceHeaderActiveTabActions.setStateData(Constants.HEADER_ACTIVE_TAB_IDX__PAGE_PERSONAL));
+        void setPersonalPageStateData();
+        void setVisualizationStateData();
         // eslint-disable-next-line
     }, []);
 
@@ -260,7 +296,7 @@ const PagePersonal: React.FC = () => {
                         <CreateTaskModalButton
                             idPod={null}
                             handleUpdate={() => {
-                                handleGetTasksPersonal({
+                                void handleGetTasksPersonal({
                                     filterNameOrDescription: taskState.filter.filterNameOrDescription,
                                     filterIsComplete: taskState.filter.filterIsComplete,
                                     filterIsNotComplete: taskState.filter.filterIsNotComplete,
@@ -317,22 +353,20 @@ const PagePersonal: React.FC = () => {
                         isDisplayViewPodLink={false}
                         isDisplayOptionsStarPinDelete={true}
                         isAuthorizedToDelete={true}
-                        handleUpdateUponToggleTaskComplete={() => {
-                            handleGetPersonalPage();
-                            setPagePersonalState((prevState: IPagePersonalState) => {
-                                return {
-                                    ...prevState,
-                                    refreshVisualizationSwitchValue: !prevState.refreshVisualizationSwitchValue,
-                                };
-                            });
+                        handleSideEffectToggleTaskComplete={() => {
+                            void setPersonalPageStateData();
+                            void setVisualizationStateData();
+                        }}
+                        handleSideEffectChangeNumberOfPoints={() => {
+                            void setPersonalPageStateData();
+                            void setVisualizationStateData();
                         }}
                     />
                 </Grid>
                 <Grid item sx={{ marginLeft: 'auto', marginRight: 'auto' }}>
                     <NumberOfPointsInTasksCompletedOverTimeVisualization
-                        apiPath={'api/app/GetNumberOfPointsInTasksCompletedOverTimeVisualizationPersonal'}
-                        apiPayload={{}}
-                        refreshSwitchValue={pagePersonalState.refreshVisualizationSwitchValue}
+                        data={sliceVisualizationStateData}
+                        response={sliceVisualizationStateResponse}
                     />
                 </Grid>
             </Grid>

@@ -2,15 +2,29 @@ import NumberOfPointsInTasksCompletedOverTimeVisualizationModel__HeatmapChartDat
 import NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel from 'src/javascripts/models/NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel';
 
 export default class NumberOfPointsInTasksCompletedOverTimeVisualizationModel {
-    dataHeatmapChart: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__HeatmapChartDataPointModel[];
-    dataLineChartAggregateDayNotCumulative: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel[];
-    dataLineChartAggregateDayCumulative: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel[];
-    dataLineChartAggregateWeekNotCumulative: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel[];
-    dataLineChartAggregateWeekCumulative: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel[];
-    dataLineChartAggregateMonthNotCumulative: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel[];
-    dataLineChartAggregateMonthCumulative: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel[];
+    dataHeatmapChart: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__HeatmapChartDataPointModel[] = [];
+    dataLineChartAggregateDayNotCumulative: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel[] =
+        [];
+
+    dataLineChartAggregateDayCumulative: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel[] =
+        [];
+
+    dataLineChartAggregateWeekNotCumulative: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel[] =
+        [];
+
+    dataLineChartAggregateWeekCumulative: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel[] =
+        [];
+
+    dataLineChartAggregateMonthNotCumulative: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel[] =
+        [];
+
+    dataLineChartAggregateMonthCumulative: NumberOfPointsInTasksCompletedOverTimeVisualizationModel__LineChartDataPointModel[] =
+        [];
 
     constructor(numberOfPointsInTasksCompletedOverTimeVisualizationModel: any) {
+        if (numberOfPointsInTasksCompletedOverTimeVisualizationModel === null) {
+            return;
+        }
         this.dataHeatmapChart = numberOfPointsInTasksCompletedOverTimeVisualizationModel.dataHeatmapChart.map(
             (datapoint: any) =>
                 new NumberOfPointsInTasksCompletedOverTimeVisualizationModel__HeatmapChartDataPointModel(datapoint),

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Box, Button, Grid, FormGroup, FormControlLabel, Checkbox } from '@mui/material';
 import SearchEntities from 'src/javascripts/components/SearchEntities';
 import PodCardList from 'src/javascripts/components/PodCardList';
@@ -7,21 +8,37 @@ import CreatePodModal from 'src/javascripts/components/CreatePodModal';
 import CreateStampModalButton from 'src/javascripts/components/CreateStampModalButton';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import { THEME } from 'src/javascripts/Theme';
-import { PAGE_SIZE_POD, PAGE_SIZE_STAMP } from 'src/javascripts/clients/ResourceClientConfig';
 import PodCardModel from 'src/javascripts/models/PodCardModel';
 import StampCardModel from 'src/javascripts/models/StampCardModel';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+import ResponseModel from 'src/javascripts/models/ResponseModel';
+import { sliceHeaderActiveTabActions } from 'src/javascripts/store/SliceHeaderActiveTab';
+import Constants from 'src/javascripts/Constants';
+import { slicePodCardsDiscoverPageActions } from 'src/javascripts/store/SlicePodCardsDiscoverPage';
+import { sliceStampCardsDiscoverPageActions } from 'src/javascripts/store/SliceStampCardsDiscoverPage';
+import { slicePaginationPageNumberActions } from 'src/javascripts/store/SlicePaginationPageNumber';
+
+import type { IRootState } from 'src/javascripts/store';
 
 const DEFAULT_SEARCH_ENTITY = 'pod';
 const SEARCH_ENTITY_CHOICES = ['pod', 'stamp'];
 
 const PageDiscover: React.FC = () => {
+    const dispatch = useDispatch();
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
+    const slicePodCardsDiscoverPageState = useSelector((state: IRootState) => state.podCardsDiscoverPage);
+    const slicePodCardsDiscoverPageStateData = slicePodCardsDiscoverPageState.data.map((d: any) => new PodCardModel(d));
+    const slicePodCardsDiscoverPageStateResponse = new ResponseModel(slicePodCardsDiscoverPageState.response);
+    const sliceStampCardsDiscoverPageState = useSelector((state: IRootState) => state.stampCardsDiscoverPage);
+    const sliceStampCardsDiscoverPageStateData = sliceStampCardsDiscoverPageState.data.map(
+        (d: any) => new StampCardModel(d),
+    );
+    const sliceStampCardsDiscoverPageStateResponse = new ResponseModel(sliceStampCardsDiscoverPageState.response);
     const [searchEntity, setSearchEntity] = useState(DEFAULT_SEARCH_ENTITY);
     const [searchText, setSearchText] = useState('');
 
     const [podCardState, setPodCardState] = useState({
-        data: [],
-        isLoading: true,
-        responseError: null,
         filter: {
             isShowAdvancedFilterOptions: false,
             filterIsMember: true,
@@ -29,87 +46,47 @@ const PageDiscover: React.FC = () => {
             filterIsModerator: true,
             filterIsNotModerator: true,
         },
-        pagination: {
-            pageNumber: 0,
-            pageSize: PAGE_SIZE_POD,
-            totalNumberOfPages: 1,
-        },
     });
     const [stampCardState, setStampCardState] = useState({
-        data: [],
-        isLoading: true,
-        responseError: null,
         filter: {
             isShowAdvancedFilterOptions: false,
             filterIsCollect: true,
             filterIsNotCollect: true,
         },
-        pagination: {
-            pageNumber: 0,
-            pageSize: PAGE_SIZE_STAMP,
-            totalNumberOfPages: 1,
-        },
     });
 
-    const handleGetPodCardsDiscover = (requestBodyObject: Record<string, unknown>): void => {
-        ResourceClient.postResource('api/app/GetPodCardsDiscover', requestBodyObject)
-            .then((responseJson: any) => {
-                setPodCardState((prevState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => {
-                            return new PodCardModel(datapoint);
-                        }),
-                        isLoading: false,
-                        pagination: {
-                            ...prevState.pagination,
-                            totalNumberOfPages: responseJson.totalPages,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setPodCardState((prevState) => {
-                    return {
-                        ...prevState,
-                        isLoading: false,
-                        responseError,
-                    };
-                });
-            });
+    const handleGetPodCardsDiscover = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
+        try {
+            dispatch(slicePaginationPageNumberActions.setStateData(1));
+            const response = await ResourceClient.postResource(
+                'api/app/GetPodCardsDiscover',
+                requestBodyObject,
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            dispatch(slicePodCardsDiscoverPageActions.setStateData(response.data));
+        } catch (e: any) {
+            dispatch(slicePodCardsDiscoverPageActions.setStateResponseError(e?.response?.data?.message));
+        }
     };
-    const handleGetStampCardsDiscover = (requestBodyObject: Record<string, unknown>): void => {
-        ResourceClient.postResource('api/app/GetStampCardsDiscover', requestBodyObject)
-            .then((responseJson: any) => {
-                setStampCardState((prevState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => {
-                            return new StampCardModel(datapoint);
-                        }),
-                        isLoading: false,
-                        pagination: {
-                            ...prevState.pagination,
-                            totalNumberOfPages: responseJson.totalPages,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setStampCardState((prevState) => {
-                    return {
-                        ...prevState,
-                        isLoading: false,
-                        responseError,
-                    };
-                });
-            });
+    const handleGetStampCardsDiscover = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
+        try {
+            dispatch(slicePaginationPageNumberActions.setStateData(1));
+            const response = await ResourceClient.postResource(
+                'api/app/GetStampCardsDiscover',
+                requestBodyObject,
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            dispatch(sliceStampCardsDiscoverPageActions.setStateData(response.data));
+        } catch (e: any) {
+            dispatch(sliceStampCardsDiscoverPageActions.setStateResponseError(e?.response?.data?.message));
+        }
     };
     useEffect(() => {
-        handleGetPodCardsDiscover(getRequestParamsPod());
-        handleGetStampCardsDiscover(getRequestParamsStamp());
+        void dispatch(sliceHeaderActiveTabActions.setStateData(Constants.HEADER_ACTIVE_TAB_IDX__PAGE_DISCOVER));
+        void handleGetPodCardsDiscover(getRequestParamsPod());
+        void handleGetStampCardsDiscover(getRequestParamsStamp());
         // eslint-disable-next-line
-    }, []);
+    }, [searchEntity]);
 
     const getRequestParamsPod = (): any => {
         return {
@@ -118,6 +95,8 @@ const PageDiscover: React.FC = () => {
             filterIsNotMember: podCardState.filter.filterIsNotMember,
             filterIsModerator: podCardState.filter.filterIsModerator,
             filterIsNotModerator: podCardState.filter.filterIsNotModerator,
+            filterIsPublic: true,
+            filterIsNotPublic: true,
         };
     };
 
@@ -126,6 +105,8 @@ const PageDiscover: React.FC = () => {
             filterNameOrDescription: searchText,
             filterIsCollect: stampCardState.filter.filterIsCollect,
             filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
+            filterIsPublic: true,
+            filterIsNotPublic: true,
         };
     };
 
@@ -150,9 +131,9 @@ const PageDiscover: React.FC = () => {
                         }}
                         handleSearch={() => {
                             if (searchEntity === 'pod') {
-                                handleGetPodCardsDiscover(getRequestParamsPod());
+                                void handleGetPodCardsDiscover(getRequestParamsPod());
                             } else if (searchEntity === 'stamp') {
-                                handleGetStampCardsDiscover(getRequestParamsStamp());
+                                void handleGetStampCardsDiscover(getRequestParamsStamp());
                             }
                         }}
                         entityChoices={SEARCH_ENTITY_CHOICES}
@@ -406,46 +387,18 @@ const PageDiscover: React.FC = () => {
                     ) : null}
                     {searchEntity === 'pod' ? (
                         <PodCardList
-                            podCards={podCardState.data}
+                            podCards={slicePodCardsDiscoverPageStateData}
                             isShowCreatePodModal={true}
-                            isLoading={podCardState.isLoading}
-                            paginationTotalPages={podCardState.pagination.totalNumberOfPages}
-                            handleChangePaginationPageNumber={(
-                                event: React.ChangeEvent<unknown>,
-                                newPageNumber: number,
-                            ) => {
-                                setPodCardState((prevState) => {
-                                    return {
-                                        ...prevState,
-                                        pagination: {
-                                            ...prevState.pagination,
-                                            pageNumber: newPageNumber - 1,
-                                        },
-                                    };
-                                });
-                            }}
+                            isLoading={slicePodCardsDiscoverPageStateResponse.getIsLoading()}
+                            pageSize={Constants.PAGE_SIZE_DISCOVER_PAGE_POD_CARDS}
                         />
                     ) : null}
                     {searchEntity === 'stamp' ? (
                         <StampCardList
-                            stampCards={stampCardState.data}
+                            stampCards={sliceStampCardsDiscoverPageStateData}
                             isShowCreateStampModal={true}
-                            isLoading={stampCardState.isLoading}
-                            paginationTotalPages={stampCardState.pagination.totalNumberOfPages}
-                            handleChangePaginationPageNumber={(
-                                event: React.ChangeEvent<unknown>,
-                                newPageNumber: number,
-                            ) => {
-                                setStampCardState((prevState) => {
-                                    return {
-                                        ...prevState,
-                                        pagination: {
-                                            ...prevState.pagination,
-                                            pageNumber: newPageNumber - 1,
-                                        },
-                                    };
-                                });
-                            }}
+                            isLoading={sliceStampCardsDiscoverPageStateResponse.getIsLoading()}
+                            pageSize={Constants.PAGE_SIZE_DISCOVER_PAGE_STAMP_CARDS}
                         />
                     ) : null}
                 </Grid>

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { IconButton, Tooltip } from '@mui/material';
 import NotificationListModal from 'src/javascripts/components/NotificationListModal';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import Badge from '@mui/material/Badge';
 import { styled } from '@mui/material/styles';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 
+import type { IRootState } from 'src/javascripts/store';
 const StyledBadge = styled(Badge)<any>(() => ({
     '& .MuiBadge-badge': {
         right: -3,
@@ -19,25 +22,30 @@ export interface IIconButtonOpenNotificationListModalState {
 }
 
 const IconButtonOpenNotificationListModal: React.FC = () => {
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [iconButtonOpenNotificationListModalState, setIconButtonOpenNotificationListModalState] =
         useState<IIconButtonOpenNotificationListModalState>({
             data: 0,
         });
 
-    const handleGetResourceNotificationsUnseenCount = (): void => {
-        ResourceClient.postResource('api/app/GetNotificationsUnseenCount', {})
-            .then((responseJson: any) => {
-                setIconButtonOpenNotificationListModalState((prevState: IIconButtonOpenNotificationListModalState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson,
-                    };
-                });
-            })
-            .catch(() => {});
+    const handleGetResourceNotificationsUnseenCount = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetNotificationsUnseenCount',
+                {},
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setIconButtonOpenNotificationListModalState((prevState: IIconButtonOpenNotificationListModalState) => {
+                return {
+                    ...prevState,
+                    data: response.data,
+                };
+            });
+        } catch (e) {}
     };
     useEffect(() => {
-        handleGetResourceNotificationsUnseenCount();
+        void handleGetResourceNotificationsUnseenCount();
         // eslint-disable-next-line
     }, []);
     const [isModalOpen, setModalOpen] = useState(false);
@@ -59,13 +67,14 @@ const IconButtonOpenNotificationListModal: React.FC = () => {
             </Tooltip>
             {isModalOpen ? (
                 <NotificationListModal
-                    handleClose={() => {
+                    handleClose={async () => {
                         setModalOpen(false);
-                        ResourceClient.postResource('api/app/MarkAllNotificationsAsSeen', {})
-                            .then(() => {
-                                handleGetResourceNotificationsUnseenCount();
-                            })
-                            .catch(() => {});
+                        await ResourceClient.postResource(
+                            'api/app/MarkAllNotificationsAsSeen',
+                            {},
+                            sliceAuthenticationStateData.getJwtToken(),
+                        );
+                        void handleGetResourceNotificationsUnseenCount();
                     }}
                     modalTitle={'My Notifications'}
                 />

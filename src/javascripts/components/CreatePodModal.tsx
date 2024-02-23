@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
     Alert,
     Button,
@@ -23,7 +24,10 @@ import { getInputText } from 'src/javascripts/utilities';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import Constants from 'src/javascripts/Constants';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 import { Link } from 'react-router-dom';
+
+import type { IRootState } from 'src/javascripts/store';
 export interface ICreatePodModalState {
     data: {
         id: string | null;
@@ -41,6 +45,8 @@ export interface ICreatePodModalState {
 }
 
 const CreatePodModal: React.FC = () => {
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [createPodModalState, setCreatePodModalState] = useState<ICreatePodModalState>({
         data: {
             id: null,
@@ -232,52 +238,56 @@ const CreatePodModal: React.FC = () => {
                         Cancel
                     </Button>
                     <Button
-                        onClick={() => {
-                            setCreatePodModalState((prevState: any) => {
-                                return {
-                                    ...prevState,
-                                    response: {
-                                        ...prevState.response,
-                                        state: Constants.RESPONSE_STATE_LOADING,
-                                        errorMessage: null,
-                                    },
-                                };
-                            });
-                            ResourceClient.postResource('api/app/CreatePod', {
-                                name: getInputText(createPodModalState.data.name),
-                                isPublic: createPodModalState.data.isPublic,
-                                ...(getInputText(createPodModalState.data.description).length === 0
-                                    ? {}
-                                    : { description: getInputText(createPodModalState.data.description) }),
-                            })
-                                .then((responseJson: any) => {
-                                    setCreatePodModalState((prevState: any) => {
-                                        return {
-                                            ...prevState,
-                                            data: {
-                                                ...prevState.data,
-                                                id: responseJson.id,
-                                            },
-                                            response: {
-                                                ...prevState.response,
-                                                state: Constants.RESPONSE_STATE_SUCCESS,
-                                                errorMessage: null,
-                                            },
-                                        };
-                                    });
-                                })
-                                .catch((errorMessage: any) => {
-                                    setCreatePodModalState((prevState: any) => {
-                                        return {
-                                            ...prevState,
-                                            response: {
-                                                ...prevState.response,
-                                                state: Constants.RESPONSE_STATE_ERROR,
-                                                errorMessage,
-                                            },
-                                        };
-                                    });
+                        /* eslint-disable @typescript-eslint/no-misused-promises */
+                        onClick={async () => {
+                            try {
+                                setCreatePodModalState((prevState: any) => {
+                                    return {
+                                        ...prevState,
+                                        response: {
+                                            ...prevState.response,
+                                            state: Constants.RESPONSE_STATE_LOADING,
+                                            errorMessage: null,
+                                        },
+                                    };
                                 });
+                                const response = await ResourceClient.postResource(
+                                    'api/app/CreatePod',
+                                    {
+                                        name: getInputText(createPodModalState.data.name),
+                                        isPublic: createPodModalState.data.isPublic,
+                                        ...(getInputText(createPodModalState.data.description).length === 0
+                                            ? {}
+                                            : { description: getInputText(createPodModalState.data.description) }),
+                                    },
+                                    sliceAuthenticationStateData.getJwtToken(),
+                                );
+                                setCreatePodModalState((prevState: any) => {
+                                    return {
+                                        ...prevState,
+                                        data: {
+                                            ...prevState.data,
+                                            id: response.data.id,
+                                        },
+                                        response: {
+                                            ...prevState.response,
+                                            state: Constants.RESPONSE_STATE_SUCCESS,
+                                            errorMessage: null,
+                                        },
+                                    };
+                                });
+                            } catch (e: any) {
+                                setCreatePodModalState((prevState: any) => {
+                                    return {
+                                        ...prevState,
+                                        response: {
+                                            ...prevState.response,
+                                            state: Constants.RESPONSE_STATE_ERROR,
+                                            errorMessage: e?.response?.data?.message,
+                                        },
+                                    };
+                                });
+                            }
                         }}
                         disabled={
                             isErrorCreatePod ||

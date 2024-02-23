@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import _ from 'lodash';
 import {
     Alert,
@@ -38,6 +39,9 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Constants from 'src/javascripts/Constants';
 import IconButtonFollowUser from 'src/javascripts/components/IconButtonFollowUser';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+
+import type { IRootState } from 'src/javascripts/store';
 
 export interface IManageBecomePodModeratorRequestsModalProps {
     handleClose: any;
@@ -92,6 +96,8 @@ const ManagePendingFollowUserRequestsModal: React.FC<IManageBecomePodModeratorRe
     props: IManageBecomePodModeratorRequestsModalProps,
 ) => {
     const { handleClose, modalTitle, handleUpdateUserPage } = props;
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [managePendingFollowUserRequestsModalState, setManagePendingFollowUserRequestsModalState] =
         useState<IManagePendingFollowUserRequestsModalState>({
             data: { selectedUserIds: new Set() },
@@ -141,36 +147,39 @@ const ManagePendingFollowUserRequestsModal: React.FC<IManageBecomePodModeratorRe
         userBubblesProcessed.reverse();
     }
 
-    const handleGetUserBubblesPendingFollowUserRequest = (): void => {
-        ResourceClient.postResource('api/app/GetUserBubblesPendingFollowUserRequest', {})
-            .then((responseJson: any) => {
-                setUserBubblePendingFollowUserRequestState((prevState: IUserBubblePendingFollowUserRequestState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => new UserBubbleModel(datapoint)),
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setUserBubblePendingFollowUserRequestState((prevState: IUserBubblePendingFollowUserRequestState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+    const handleGetUserBubblesPendingFollowUserRequest = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetUserBubblesPendingFollowUserRequest',
+                {},
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setUserBubblePendingFollowUserRequestState((prevState: IUserBubblePendingFollowUserRequestState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => new UserBubbleModel(datapoint)),
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                };
             });
+        } catch (e: any) {
+            setUserBubblePendingFollowUserRequestState((prevState: IUserBubblePendingFollowUserRequestState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
     useEffect(() => {
-        handleGetUserBubblesPendingFollowUserRequest();
+        void handleGetUserBubblesPendingFollowUserRequest();
         // eslint-disable-next-line
     }, []);
 
@@ -381,14 +390,17 @@ const ManagePendingFollowUserRequestsModal: React.FC<IManageBecomePodModeratorRe
                                                 isMe={userBubble.getIsMe()}
                                                 isFollowedByMe={userBubble.getIsFollowedByMe()}
                                                 isFollowRequestSentNotYetAccepted={userBubble.getIsFollowRequestSentNotYetAccepted()}
-                                                handleSendFollowRequest={() => {
-                                                    ResourceClient.postResource('api/app/SendFollowUserRequest', {
-                                                        id: userBubble.getId(),
-                                                    })
-                                                        .then(() => {
-                                                            handleGetUserBubblesPendingFollowUserRequest();
-                                                        })
-                                                        .catch(() => {});
+                                                handleSendFollowRequest={async () => {
+                                                    try {
+                                                        await ResourceClient.postResource(
+                                                            'api/app/SendFollowUserRequest',
+                                                            {
+                                                                id: userBubble.getId(),
+                                                            },
+                                                            sliceAuthenticationStateData.getJwtToken(),
+                                                        );
+                                                        void handleGetUserBubblesPendingFollowUserRequest();
+                                                    } catch (e: any) {}
                                                 }}
                                             />
                                         </ListItem>
@@ -427,40 +439,46 @@ const ManagePendingFollowUserRequestsModal: React.FC<IManageBecomePodModeratorRe
                             No
                         </Button>
                         <Button
-                            onClick={() => {
-                                setManagePendingFollowUserRequestsModalState(
-                                    (prevState: IManagePendingFollowUserRequestsModalState) => {
-                                        return {
-                                            ...prevState,
-                                            isAccept: false,
-                                            isShowDeclineConfirmationOptions: false,
-                                            response: {
-                                                ...prevState.response,
-                                                state: Constants.RESPONSE_STATE_LOADING,
-                                            },
-                                        };
-                                    },
-                                );
-                                ResourceClient.postResource('api/app/DeclineFollowUserRequests', {
-                                    idUsers: Array.from(managePendingFollowUserRequestsModalState.data.selectedUserIds),
-                                })
-                                    .then((responseJson: any) => {
-                                        handleUpdateUserBubblePendingFollowUserRequestState(responseJson);
-                                        handleUpdateUserPage();
-                                    })
-                                    .catch((errorMessage: any) => {
-                                        setManagePendingFollowUserRequestsModalState(
-                                            (prevState: IManagePendingFollowUserRequestsModalState) => {
-                                                return {
-                                                    ...prevState,
-                                                    response: {
-                                                        state: Constants.RESPONSE_STATE_ERROR,
-                                                        errorMessage,
-                                                    },
-                                                };
-                                            },
-                                        );
-                                    });
+                            /* eslint-disable @typescript-eslint/no-misused-promises */
+                            onClick={async () => {
+                                try {
+                                    setManagePendingFollowUserRequestsModalState(
+                                        (prevState: IManagePendingFollowUserRequestsModalState) => {
+                                            return {
+                                                ...prevState,
+                                                isAccept: false,
+                                                isShowDeclineConfirmationOptions: false,
+                                                response: {
+                                                    ...prevState.response,
+                                                    state: Constants.RESPONSE_STATE_LOADING,
+                                                },
+                                            };
+                                        },
+                                    );
+                                    const response = await ResourceClient.postResource(
+                                        'api/app/DeclineFollowUserRequests',
+                                        {
+                                            idUsers: Array.from(
+                                                managePendingFollowUserRequestsModalState.data.selectedUserIds,
+                                            ),
+                                        },
+                                        sliceAuthenticationStateData.getJwtToken(),
+                                    );
+                                    handleUpdateUserBubblePendingFollowUserRequestState(response.data);
+                                    handleUpdateUserPage();
+                                } catch (e: any) {
+                                    setManagePendingFollowUserRequestsModalState(
+                                        (prevState: IManagePendingFollowUserRequestsModalState) => {
+                                            return {
+                                                ...prevState,
+                                                response: {
+                                                    state: Constants.RESPONSE_STATE_ERROR,
+                                                    errorMessage: e?.response?.data?.message,
+                                                },
+                                            };
+                                        },
+                                    );
+                                }
                             }}
                         >
                             Yes
@@ -491,39 +509,45 @@ const ManagePendingFollowUserRequestsModal: React.FC<IManageBecomePodModeratorRe
                                 managePendingFollowUserRequestsModalState.data.selectedUserIds.size === 0 ||
                                 userBubblePendingFollowUserRequestState.data.length === 0
                             }
-                            onClick={() => {
-                                setManagePendingFollowUserRequestsModalState(
-                                    (prevState: IManagePendingFollowUserRequestsModalState) => {
-                                        return {
-                                            ...prevState,
-                                            isAccept: true,
-                                            response: {
-                                                ...prevState.response,
-                                                state: Constants.RESPONSE_STATE_LOADING,
-                                            },
-                                        };
-                                    },
-                                );
-                                ResourceClient.postResource('api/app/AcceptFollowUserRequests', {
-                                    idUsers: Array.from(managePendingFollowUserRequestsModalState.data.selectedUserIds),
-                                })
-                                    .then((responseJson: any) => {
-                                        handleUpdateUserBubblePendingFollowUserRequestState(responseJson);
-                                        handleUpdateUserPage();
-                                    })
-                                    .catch((errorMessage: any) => {
-                                        setManagePendingFollowUserRequestsModalState(
-                                            (prevState: IManagePendingFollowUserRequestsModalState) => {
-                                                return {
-                                                    ...prevState,
-                                                    response: {
-                                                        state: Constants.RESPONSE_STATE_ERROR,
-                                                        errorMessage,
-                                                    },
-                                                };
-                                            },
-                                        );
-                                    });
+                            /* eslint-disable @typescript-eslint/no-misused-promises */
+                            onClick={async () => {
+                                try {
+                                    setManagePendingFollowUserRequestsModalState(
+                                        (prevState: IManagePendingFollowUserRequestsModalState) => {
+                                            return {
+                                                ...prevState,
+                                                isAccept: true,
+                                                response: {
+                                                    ...prevState.response,
+                                                    state: Constants.RESPONSE_STATE_LOADING,
+                                                },
+                                            };
+                                        },
+                                    );
+                                    const response = await ResourceClient.postResource(
+                                        'api/app/AcceptFollowUserRequests',
+                                        {
+                                            idUsers: Array.from(
+                                                managePendingFollowUserRequestsModalState.data.selectedUserIds,
+                                            ),
+                                        },
+                                        sliceAuthenticationStateData.getJwtToken(),
+                                    );
+                                    handleUpdateUserBubblePendingFollowUserRequestState(response.data);
+                                    handleUpdateUserPage();
+                                } catch (e: any) {
+                                    setManagePendingFollowUserRequestsModalState(
+                                        (prevState: IManagePendingFollowUserRequestsModalState) => {
+                                            return {
+                                                ...prevState,
+                                                response: {
+                                                    state: Constants.RESPONSE_STATE_ERROR,
+                                                    errorMessage: e?.response?.data?.message,
+                                                },
+                                            };
+                                        },
+                                    );
+                                }
                             }}
                         >
                             Accept

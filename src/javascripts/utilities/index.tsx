@@ -39,3 +39,15 @@ export const getUserListButtonText = (
         return `3+ ${labelUserPlural}`;
     }
 };
+
+export const getTotalNumberOfPages = (totalNumberOfItems: number, pageSize: number): number => {
+    return Math.ceil(totalNumberOfItems / pageSize + 1) - 1;
+};
+
+export const getIdxStart = (pageSize: number, pageIdx: number): number => {
+    return pageSize * (pageIdx - 1);
+};
+
+export const getIdxEnd = (pageSize: number, pageIdx: number): number => {
+    return pageSize * pageIdx;
+};

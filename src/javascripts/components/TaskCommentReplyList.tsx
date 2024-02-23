@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { Box, Divider, Grid, List, ListItemAvatar, ListItemText, Avatar } from '@mui/material';
 import Constants from 'src/javascripts/Constants';
 import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
@@ -6,10 +7,11 @@ import UserBubbleReactionListModalButton from 'src/javascripts/components/UserBu
 import ReactionSelector from 'src/javascripts/components/ReactionSelector';
 import { getUserListButtonText } from 'src/javascripts/utilities';
 import ReactionsModel from 'src/javascripts/models/ReactionsModel';
-
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import { THEME } from 'src/javascripts/Theme';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 
+import type { IRootState } from 'src/javascripts/store';
 import type TaskCommentReplyModel from 'src/javascripts/models/TaskCommentReplyModel';
 
 export interface ITaskCommentReplyListProps {
@@ -37,6 +39,8 @@ const getTaskCommentRepliesReactionsInitialState = (taskCommentReplies: TaskComm
 
 const TaskCommentReplyList: React.FC<ITaskCommentReplyListProps> = (props: ITaskCommentReplyListProps) => {
     const { taskCommentReplies } = props;
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [taskCommentRepliesState] = useState<ITaskCommentReplyListState>({
         data: taskCommentReplies,
         response: {
@@ -49,20 +53,23 @@ const TaskCommentReplyList: React.FC<ITaskCommentReplyListProps> = (props: ITask
             data: getTaskCommentRepliesReactionsInitialState(taskCommentReplies),
         });
 
-    const handleGetTaskCommentReplyReactions = (
+    const handleGetTaskCommentReplyReactions = async (
         requestBodyObject: Record<string, unknown>,
         idTaskCommentReply: string,
-    ): void => {
-        ResourceClient.postResource('api/app/GetTaskCommentReplyReactions', requestBodyObject)
-            .then((responseJson: any) => {
-                setTaskCommentRepliesReactionsState((prevState: ITaskCommentRepliesReactionsState) => {
-                    return {
-                        ...prevState,
-                        data: { ...prevState.data, [idTaskCommentReply]: new ReactionsModel(responseJson) },
-                    };
-                });
-            })
-            .catch(() => {});
+    ): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetTaskCommentReplyReactions',
+                requestBodyObject,
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setTaskCommentRepliesReactionsState((prevState: ITaskCommentRepliesReactionsState) => {
+                return {
+                    ...prevState,
+                    data: { ...prevState.data, [idTaskCommentReply]: new ReactionsModel(response.data) },
+                };
+            });
+        } catch (e: any) {}
     };
     return (
         <List dense={false}>
@@ -135,10 +142,9 @@ const TaskCommentReplyList: React.FC<ITaskCommentReplyListProps> = (props: ITask
                                     <Grid item>
                                         <ReactionSelector
                                             handleUpdateCallback={() => {
-                                                handleGetTaskCommentReplyReactions(
+                                                void handleGetTaskCommentReplyReactions(
                                                     {
-                                                        idTaskCommentReply:
-                                                            taskCommentReplyModel.getIdTaskCommentReply(),
+                                                        id: taskCommentReplyModel.getIdTaskCommentReply(),
                                                         numberOfReactionsLimit: 3,
                                                     },
                                                     taskCommentReplyModel.getIdTaskCommentReply(),

@@ -16,7 +16,8 @@ export default class Constants {
     };
 
     static RESPONSE_GET_ERROR_MESSAGE = (errorCode: string | null): string => {
-        if (errorCode === null || errorCode === undefined) {
+        if (errorCode === null || errorCode === undefined || errorCode === 'No message available') {
+            // FYI: throw new Exception() returns a message: 'No message available'
             return Constants.RESPONSE_DEFAULT_ERROR_MESSAGE;
         }
         if (!Object.keys(Constants.RESPONSE_ERROR_CODE_TO_ERROR_MESSAGE_MAP).includes(errorCode)) {
@@ -124,6 +125,7 @@ export default class Constants {
     // USER
     static USER_USERNAME_MIN_LENGTH_CHARACTERS = 3;
     static USER_USERNAME_MAX_LENGTH_CHARACTERS = 30;
+    static USER_PASSWORD_MIN_LENGTH_CHARACTERS = 6;
     static USER_NAME_MIN_LENGTH_CHARACTERS = 3;
     static USER_NAME_MAX_LENGTH_CHARACTERS = 50;
     static USER_BIO_MIN_LENGTH_CHARACTERS = 1;
@@ -132,7 +134,7 @@ export default class Constants {
     static USER_INPUT_USERNAME_HELPER_TEXT = (numChars: number): string =>
         `Username must be between ${Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS}-${
             Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS
-        } chars, inclusive (${numChars.toString()} chars currently).`;
+        } chars, inclusive (${numChars.toString()} chars currently). Alphanumeric and underscores only.`;
 
     static USER_INPUT_NAME_HELPER_TEXT = (numChars: number): string =>
         `Name must be between ${Constants.USER_NAME_MIN_LENGTH_CHARACTERS}-${
@@ -142,6 +144,19 @@ export default class Constants {
     static USER_INPUT_BIO_HELPER_TEXT = (numChars: number): string =>
         `User bio must be less than ${
             Constants.USER_BIO_MAX_LENGTH_CHARACTERS
+        } chars, inclusive (${numChars.toString()} chars currently).`;
+
+    static USER_SIGN_UP_INPUT_USERNAME_HELPER_TEXT = (numChars: number): string =>
+        `${Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS}-${
+            Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS
+        } chars, inclusive (${numChars.toString()} chars currently). Alphanumeric and underscores only.`;
+
+    static USER_SIGN_UP_INPUT_PASSWORD_HELPER_TEXT = (numChars: number): string =>
+        `At least ${Constants.USER_PASSWORD_MIN_LENGTH_CHARACTERS} chars (${numChars.toString()} chars currently)`;
+
+    static USER_SIGN_UP_INPUT_NAME_HELPER_TEXT = (numChars: number): string =>
+        `${Constants.USER_NAME_MIN_LENGTH_CHARACTERS}-${
+            Constants.USER_NAME_MAX_LENGTH_CHARACTERS
         } chars, inclusive (${numChars.toString()} chars currently).`;
 
     static NOTIFICATION_TYPE_SENT_YOU_JOIN_POD_INVITE = 'NOTIFICATION_TYPE_SENT_YOU_JOIN_POD_INVITE';
@@ -154,4 +169,14 @@ export default class Constants {
     static NOTIFICATION_LINK_PAGE_TYPE_POD = 'POD';
     static NOTIFICATION_LINK_PAGE_TYPE_USER = 'USER';
     static NOTIFICATION_LINK_PAGE_TYPE_STAMP = 'STAMP';
+
+    static HEADER_ACTIVE_TAB_IDX__PAGE_PERSONAL = 0;
+    static HEADER_ACTIVE_TAB_IDX__PAGE_DISCOVER = 1;
+
+    static PAGE_SIZE_DISCOVER_PAGE_POD_CARDS = 3;
+    static PAGE_SIZE_DISCOVER_PAGE_STAMP_CARDS = 3;
+    static PAGE_SIZE_ASSOCIATED_STAMP_CARDS_ASSOCIATED_WITH_POD = 3;
+    static PAGE_SIZE_STAMP_PAGE_ASSOCIATED_POD_CARDS = 3;
+    static PAGE_SIZE_POD_CARDS_ASSOCIATED_WITH_USER = 3;
+    static PAGE_SIZE_STAMP_CARDS_ASSOCIATED_WITH_USER = 3;
 }

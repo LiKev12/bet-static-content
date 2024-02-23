@@ -1,14 +1,9 @@
 import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Button, Grid, Tab, Tabs } from '@mui/material';
+import { Grid, Tab, Tabs } from '@mui/material';
 import LoginForm from 'src/javascripts/components/LoginForm';
-import SignupForm from 'src/javascripts/components/SignupForm';
+import SignUpForm from 'src/javascripts/components/SignUpForm';
 import { THEME } from 'src/javascripts/Theme';
-import { sliceAuthenticationActions } from '../store/SliceAuthentication';
 const LoginAndSignupForms: React.FC = () => {
-    const dispatch = useDispatch();
-
-    const toggleValue: boolean = useSelector((state: any) => state.authentication.toggleValue);
     const [isLoginTabActive, setLoginTabActive] = useState(true);
     return (
         <Grid
@@ -39,14 +34,7 @@ const LoginAndSignupForms: React.FC = () => {
                     <Tab sx={{ width: '150px' }} label="Sign Up" />
                 </Tabs>
             </Grid>
-            <Button
-                onClick={() => {
-                    dispatch(sliceAuthenticationActions.toggle());
-                }}
-            >
-                {`test redux ${toggleValue ? 'true' : 'false'}`}
-            </Button>
-            {isLoginTabActive ? <LoginForm /> : <SignupForm />}
+            {isLoginTabActive ? <LoginForm /> : <SignUpForm />}
         </Grid>
     );
 };

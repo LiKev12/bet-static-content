@@ -1,121 +1,286 @@
-/* eslint-disable */
-import { useEffect } from 'react';
-import { FieldErrors, useForm } from 'react-hook-form';
-import { DevTool } from '@hookform/devtools';
-import { Button, FormControl, TextField, Grid } from '@mui/material';
+import { useState } from 'react';
+import { Button, FormControl, TextField, Grid, InputAdornment, IconButton } from '@mui/material';
+import Constants from 'src/javascripts/Constants';
+import { getInputText } from 'src/javascripts/utilities';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
-type FormValues = {
-    username: string;
-    email: string;
-    password: string;
-    password_confirmed: string;
-};
-
-const SignupForm = () => {
-    const form = useForm<FormValues>({
-        defaultValues: {
-            username: '',
-            email: '',
-            password: '',
-            password_confirmed: '',
+export interface ISignUpFormState {
+    data: {
+        username: { value: string; isBlurredInput: boolean };
+        name: { value: string; isBlurredInput: boolean };
+        email: { value: string; isBlurredInput: boolean };
+        password: { value: string; isBlurredInput: boolean; isShowVisible: boolean };
+        passwordConfirmed: { value: string; isBlurredInput: boolean; isShowVisible: boolean };
+    };
+    response: {
+        state: string;
+        errorMessage: string | null;
+    };
+}
+const SignUpForm: React.FC = () => {
+    const [signUpFormState, setSignUpFormState] = useState<ISignUpFormState>({
+        data: {
+            username: { value: '', isBlurredInput: false },
+            name: { value: '', isBlurredInput: false },
+            email: { value: '', isBlurredInput: false },
+            password: { value: '', isBlurredInput: false, isShowVisible: false },
+            passwordConfirmed: { value: '', isBlurredInput: false, isShowVisible: false },
         },
-        mode: 'onTouched',
+        response: {
+            state: Constants.RESPONSE_STATE_UNSTARTED,
+            errorMessage: null,
+        },
     });
 
-    const { register, control, handleSubmit, formState, watch, reset } = form;
-
-    const { errors, isDirty, isValid, isSubmitSuccessful } = formState;
-
-    const onSubmit = (data: FormValues) => {
-        console.log('[onSubmit]', data);
-        // TODO
+    const handleOnSubmitSignUp = (): void => {
+        console.log('[SUBMITTING]', signUpFormState);
     };
 
-    const onError = (errors: FieldErrors<FormValues>) => {
-        // FILL_HERE
-    };
+    const isErrorUsername =
+        (signUpFormState.data.username.isBlurredInput &&
+            getInputText(signUpFormState.data.username.value).length < Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS) ||
+        getInputText(signUpFormState.data.username.value).length > Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS;
+    const isErrorName =
+        (signUpFormState.data.name.isBlurredInput &&
+            getInputText(signUpFormState.data.name.value).length < Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS) ||
+        getInputText(signUpFormState.data.name.value).length > Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS;
+    const isErrorEmail =
+        signUpFormState.data.email.isBlurredInput &&
+        !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(signUpFormState.data.email.value);
+    const isErrorPassword =
+        signUpFormState.data.password.isBlurredInput &&
+        getInputText(signUpFormState.data.password.value).length < Constants.USER_PASSWORD_MIN_LENGTH_CHARACTERS;
+    const isErrorPasswordConfirmed =
+        signUpFormState.data.passwordConfirmed.isBlurredInput &&
+        signUpFormState.data.password.value !== signUpFormState.data.passwordConfirmed.value;
 
-    useEffect(() => {
-        if (isSubmitSuccessful) {
-            reset();
-        }
-    }, [isSubmitSuccessful, reset]);
+    const isErrorSignUpForm =
+        isErrorUsername || isErrorName || isErrorEmail || isErrorPassword || isErrorPasswordConfirmed;
 
     return (
-        <FormControl onSubmit={handleSubmit(onSubmit, onError)}>
+        <FormControl onSubmit={handleOnSubmitSignUp}>
             <Grid direction="column" container spacing={2}>
-                <Grid item>
+                <Grid item sx={{ marginBottom: '6px' }}>
                     <TextField
-                        type="text"
-                        id="username"
+                        id="sign-up-username"
                         label="Username"
+                        type="text"
                         required
-                        {...register('username', {
-                            required: { value: true, message: 'Username is required' },
-                        })}
-                        error={!!errors.username?.message}
-                        helperText={errors.username?.message}
-                        sx={{ width: '300px' }}
+                        value={signUpFormState.data.username.value}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                            setSignUpFormState((prevState: ISignUpFormState) => {
+                                return {
+                                    ...prevState,
+                                    data: {
+                                        ...prevState.data,
+                                        username: {
+                                            ...prevState.data.username,
+                                            isBlurredInput: true,
+                                            value: event.target.value,
+                                        },
+                                    },
+                                };
+                            });
+                        }}
+                        helperText={
+                            getInputText(signUpFormState.data.username.value).length > 0
+                                ? Constants.USER_SIGN_UP_INPUT_USERNAME_HELPER_TEXT(
+                                      getInputText(signUpFormState.data.username.value).length,
+                                  )
+                                : null
+                        }
+                        error={isErrorUsername}
+                        sx={{ width: '316px' }}
                     />
                 </Grid>
-                <Grid item>
+                <Grid item sx={{ marginBottom: '6px' }}>
                     <TextField
-                        type="email"
-                        id="email"
+                        id="sign-up-name"
+                        label="Name"
+                        type="text"
+                        required
+                        value={signUpFormState.data.name.value}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                            setSignUpFormState((prevState: ISignUpFormState) => {
+                                return {
+                                    ...prevState,
+                                    data: {
+                                        ...prevState.data,
+                                        name: {
+                                            ...prevState.data.name,
+                                            isBlurredInput: true,
+                                            value: event.target.value,
+                                        },
+                                    },
+                                };
+                            });
+                        }}
+                        helperText={
+                            getInputText(signUpFormState.data.name.value).length > 0
+                                ? Constants.USER_SIGN_UP_INPUT_NAME_HELPER_TEXT(
+                                      getInputText(signUpFormState.data.name.value).length,
+                                  )
+                                : null
+                        }
+                        error={isErrorName}
+                        sx={{ width: '316px' }}
+                    />
+                </Grid>
+                <Grid item sx={{ marginBottom: '6px' }}>
+                    <TextField
+                        id="sign-up-email"
                         label="Email"
+                        type="email"
                         required
-                        {...register('email', {
-                            pattern: {
-                                value: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/,
-                                message: 'Invalid email format',
-                            },
-                            required: { value: true, message: 'Email is required' },
-                        })}
-                        error={!!errors.email?.message}
-                        helperText={errors.email?.message}
-                        sx={{ width: '300px' }}
+                        value={signUpFormState.data.email.value}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                            setSignUpFormState((prevState: ISignUpFormState) => {
+                                return {
+                                    ...prevState,
+                                    data: {
+                                        ...prevState.data,
+                                        email: {
+                                            ...prevState.data.email,
+                                            isBlurredInput: true,
+                                            value: event.target.value,
+                                        },
+                                    },
+                                };
+                            });
+                        }}
+                        error={isErrorEmail}
+                        sx={{ width: '316px' }}
                     />
                 </Grid>
-                <Grid item>
+                <Grid item sx={{ marginBottom: '6px' }}>
                     <TextField
-                        type="password"
-                        id="password"
+                        id="sign-up-password"
                         label="Password"
+                        type={signUpFormState.data.password.isShowVisible ? 'text' : 'password'}
                         required
-                        {...register('password', {
-                            required: { value: true, message: 'Password is required' },
-                        })}
-                        error={!!errors.password?.message}
-                        helperText={errors.password?.message}
-                        sx={{ width: '300px' }}
+                        value={signUpFormState.data.password.value}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                            setSignUpFormState((prevState: ISignUpFormState) => {
+                                return {
+                                    ...prevState,
+                                    data: {
+                                        ...prevState.data,
+                                        password: {
+                                            ...prevState.data.password,
+                                            isBlurredInput: true,
+                                            value: event.target.value,
+                                        },
+                                    },
+                                };
+                            });
+                        }}
+                        helperText={
+                            getInputText(signUpFormState.data.password.value).length > 0
+                                ? Constants.USER_SIGN_UP_INPUT_PASSWORD_HELPER_TEXT(
+                                      getInputText(signUpFormState.data.password.value).length,
+                                  )
+                                : null
+                        }
+                        error={isErrorPassword}
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        aria-label="toggle password visibility"
+                                        onClick={() => {
+                                            setSignUpFormState((prevState: ISignUpFormState) => {
+                                                return {
+                                                    ...prevState,
+                                                    data: {
+                                                        ...prevState.data,
+                                                        password: {
+                                                            ...prevState.data.password,
+                                                            isShowVisible: !prevState.data.password.isShowVisible,
+                                                        },
+                                                    },
+                                                };
+                                            });
+                                        }}
+                                        onMouseDown={(event: React.MouseEvent<HTMLButtonElement>) => {
+                                            event.preventDefault();
+                                        }}
+                                        edge="end"
+                                    >
+                                        {signUpFormState.data.password.isShowVisible ? (
+                                            <VisibilityOff />
+                                        ) : (
+                                            <Visibility />
+                                        )}
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{ width: '316px' }}
                     />
                 </Grid>
-                <Grid item>
+                <Grid item sx={{ marginBottom: '6px' }}>
                     <TextField
-                        type="password"
-                        id="password_confirmed"
-                        label="Confirm Password"
+                        id="sign-up-password-confirmed"
+                        label="Confirm password"
+                        type={signUpFormState.data.passwordConfirmed.isShowVisible ? 'text' : 'password'}
                         required
-                        {...register('password_confirmed', {
-                            required: { value: true, message: 'Confirming password is required' },
-                            validate: (val: string) => {
-                                if (watch('password') != val) {
-                                    return 'Your passwords do not match';
-                                }
-                            },
-                        })}
-                        error={!!errors.password_confirmed?.message}
-                        helperText={errors.password_confirmed?.message}
-                        sx={{ width: '300px' }}
+                        value={signUpFormState.data.passwordConfirmed.value}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                            setSignUpFormState((prevState: ISignUpFormState) => {
+                                return {
+                                    ...prevState,
+                                    data: {
+                                        ...prevState.data,
+                                        passwordConfirmed: {
+                                            ...prevState.data.passwordConfirmed,
+                                            isBlurredInput: true,
+                                            value: event.target.value,
+                                        },
+                                    },
+                                };
+                            });
+                        }}
+                        error={isErrorPasswordConfirmed}
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        aria-label="toggle confirm-password visibility"
+                                        onClick={() => {
+                                            setSignUpFormState((prevState: ISignUpFormState) => {
+                                                return {
+                                                    ...prevState,
+                                                    data: {
+                                                        ...prevState.data,
+                                                        passwordConfirmed: {
+                                                            ...prevState.data.passwordConfirmed,
+                                                            isShowVisible:
+                                                                !prevState.data.passwordConfirmed.isShowVisible,
+                                                        },
+                                                    },
+                                                };
+                                            });
+                                        }}
+                                        onMouseDown={(event: React.MouseEvent<HTMLButtonElement>) => {
+                                            event.preventDefault();
+                                        }}
+                                        edge="end"
+                                    >
+                                        {signUpFormState.data.passwordConfirmed.isShowVisible ? (
+                                            <VisibilityOff />
+                                        ) : (
+                                            <Visibility />
+                                        )}
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{ width: '316px' }}
                     />
                 </Grid>
                 <Grid item>
-                    <Button
-                        onClick={handleSubmit(onSubmit, onError)}
-                        disabled={!isDirty || !isValid}
-                        variant="contained"
-                        sx={{ width: '300px' }}
-                    >
+                    <Button onClick={handleOnSubmitSignUp} disabled={isErrorSignUpForm} variant="contained" fullWidth>
                         Sign Up
                     </Button>
                 </Grid>
@@ -124,4 +289,4 @@ const SignupForm = () => {
     );
 };
 
-export default SignupForm;
+export default SignUpForm;

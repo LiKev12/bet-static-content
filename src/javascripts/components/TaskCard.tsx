@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import _ from 'lodash';
 import {
     Accordion,
@@ -34,7 +35,6 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DeleteIcon from '@mui/icons-material/Delete';
 import UserListButton from 'src/javascripts/components/UserListButton';
 import TaskCommentList from 'src/javascripts/components/TaskCommentList';
-
 import { getInputText, getInputInteger, getUserListButtonText } from 'src/javascripts/utilities';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -49,6 +49,9 @@ import ReactionsModel from 'src/javascripts/models/ReactionsModel';
 import UserBubbleReactionListModalButton from 'src/javascripts/components/UserBubbleReactionListModalButton';
 import ReactionSelector from 'src/javascripts/components/ReactionSelector';
 import PlaceholderImagePod from 'src/assets/PlaceholderImagePod.png';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+
+import type { IRootState } from 'src/javascripts/store';
 
 export interface ITaskCardProps {
     task: TaskModel;
@@ -58,7 +61,8 @@ export interface ITaskCardProps {
     isDisplayViewPodLink: boolean;
     isDisplayOptionsStarPinDelete: boolean;
     isAuthorizedToDelete: boolean;
-    handleUpdateUponToggleTaskComplete: any;
+    handleSideEffectToggleTaskComplete: any;
+    handleSideEffectChangeNumberOfPoints: any;
 }
 
 const getDateDescription = (
@@ -133,8 +137,11 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
         isDisplayViewPodLink,
         isDisplayOptionsStarPinDelete,
         isAuthorizedToDelete,
-        handleUpdateUponToggleTaskComplete,
+        handleSideEffectToggleTaskComplete,
+        handleSideEffectChangeNumberOfPoints,
     } = props;
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [taskCardState, setTaskCardState] = useState<ITaskCardState>({
         isShowDetails: false,
         isShowDeleteTaskConfirmationModal: false,
@@ -164,7 +171,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
     });
 
     const [taskReactionsState, setTaskReactionsState] = useState<ITaskReactionsState>({
-        data: new ReactionsModel(null, true),
+        data: new ReactionsModel(null),
         response: {
             state: Constants.RESPONSE_STATE_UNSTARTED,
             errorMessage: null,
@@ -196,121 +203,132 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
         });
     };
 
-    const handleOnChangeDatetimeTarget = (editModeValue: any): void => {
-        setTaskCardState((prevState: any) => {
-            return {
-                ...prevState,
-                editMode: {
-                    ...prevState.editMode,
-                    datetimeTarget: {
-                        ...prevState.editMode.datetimeTarget,
-                        editModeValue,
+    const handleOnChangeDatetimeTarget = async (editModeValue: any): Promise<any> => {
+        try {
+            setTaskCardState((prevState: any) => {
+                return {
+                    ...prevState,
+                    editMode: {
+                        ...prevState.editMode,
+                        datetimeTarget: {
+                            ...prevState.editMode.datetimeTarget,
+                            editModeValue,
+                        },
                     },
+                };
+            });
+            const response = await ResourceClient.postResource(
+                'api/app/UpdateTask',
+                {
+                    id: task.getId(),
+                    datetimeTarget:
+                        editModeValue === undefined || editModeValue === null
+                            ? null
+                            : editModeValue.format('YYYY/MM/DD'),
                 },
-            };
-        });
-        ResourceClient.postResource('api/app/UpdateTask', {
-            id: task.getId(),
-            datetimeTarget:
-                editModeValue === undefined || editModeValue === null ? null : editModeValue.format('YYYY/MM/DD'),
-        })
-            .then((responseJson: any) => {
-                handleUpdateTask(responseJson);
-                setTaskCardState((prevState: any) => {
-                    return {
-                        ...prevState,
-                        editMode: {
-                            ...prevState.editMode,
-                            datetimeTarget: {
-                                ...prevState.editMode.datetimeTarget,
-                                isEditMode: false,
-                            },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            handleUpdateTask(response.data);
+            setTaskCardState((prevState: any) => {
+                return {
+                    ...prevState,
+                    editMode: {
+                        ...prevState.editMode,
+                        datetimeTarget: {
+                            ...prevState.editMode.datetimeTarget,
+                            isEditMode: false,
                         },
-                    };
-                });
-            })
-            .catch(() => {});
+                    },
+                };
+            });
+        } catch (e: any) {}
     };
 
-    const handleGetTaskComments = (): void => {
-        setTaskCommentsState((prevState: ITaskCommentsState) => {
-            return {
-                ...prevState,
-                response: {
-                    ...prevState.response,
-                    state: Constants.RESPONSE_STATE_LOADING,
-                    errorMessage: null,
-                },
-            };
-        });
-        ResourceClient.postResource('api/app/GetTaskComments', {
-            id: task.getId(),
-        })
-            .then((responseJson: any) => {
-                setTaskCommentsState((prevState: ITaskCommentsState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => new TaskCommentModel(datapoint)),
-                        isShowTaskComments: true,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setTaskCommentsState((prevState: ITaskCommentsState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+    const handleGetTaskComments = async (): Promise<any> => {
+        try {
+            setTaskCommentsState((prevState: ITaskCommentsState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_LOADING,
+                        errorMessage: null,
+                    },
+                };
             });
+            const response = await ResourceClient.postResource(
+                'api/app/GetTaskComments',
+                {
+                    id: task.getId(),
+                },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setTaskCommentsState((prevState: ITaskCommentsState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => new TaskCommentModel(datapoint)),
+                    isShowTaskComments: true,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                };
+            });
+        } catch (e: any) {
+            setTaskCommentsState((prevState: ITaskCommentsState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
 
-    const handleGetTaskReactions = (): void => {
-        setTaskReactionsState((prevState: ITaskReactionsState) => {
-            return {
-                ...prevState,
-                response: {
-                    ...prevState.response,
-                    state: Constants.RESPONSE_STATE_LOADING,
-                    errorMessage: null,
-                },
-            };
-        });
-        ResourceClient.postResource('api/app/GetTaskReactions', { id: task.getId(), numberOfReactionsLimit: 3 })
-            .then((responseJson: any) => {
-                setTaskReactionsState((prevState: ITaskReactionsState) => {
-                    return {
-                        ...prevState,
-                        data: new ReactionsModel(responseJson),
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setTaskReactionsState((prevState: ITaskReactionsState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+    const handleGetTaskReactions = async (): Promise<any> => {
+        try {
+            setTaskReactionsState((prevState: ITaskReactionsState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_LOADING,
+                        errorMessage: null,
+                    },
+                };
             });
+            const response = await ResourceClient.postResource(
+                'api/app/GetTaskReactions',
+                { id: task.getId(), numberOfReactionsLimit: 3 },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setTaskReactionsState((prevState: ITaskReactionsState) => {
+                return {
+                    ...prevState,
+                    data: new ReactionsModel(response.data),
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                };
+            });
+        } catch (e: any) {
+            setTaskReactionsState((prevState: ITaskReactionsState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
     const debouncedOnChangeDatetimeTarget = _.debounce(handleOnChangeDatetimeTarget, 1000);
 
@@ -345,16 +363,20 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                         <Grid container direction="row">
                             <Grid item sx={{ paddingRight: '8px', paddingTop: '8px' }}>
                                 <IconButton
-                                    onClick={() => {
-                                        ResourceClient.postResource('api/app/UpdateTask', {
-                                            id: task.getId(),
-                                            isComplete: !taskCardState.data.getIsComplete(),
-                                        })
-                                            .then((responseJson: any) => {
-                                                handleUpdateTask(responseJson);
-                                                handleUpdateUponToggleTaskComplete();
-                                            })
-                                            .catch(() => {});
+                                    /* eslint-disable @typescript-eslint/no-misused-promises */
+                                    onClick={async () => {
+                                        try {
+                                            const response = await ResourceClient.postResource(
+                                                'api/app/UpdateTask',
+                                                {
+                                                    id: task.getId(),
+                                                    isComplete: !taskCardState.data.getIsComplete(),
+                                                },
+                                                sliceAuthenticationStateData.getJwtToken(),
+                                            );
+                                            handleUpdateTask(response.data);
+                                            handleSideEffectToggleTaskComplete();
+                                        } catch (e: any) {}
                                     }}
                                     disabled={
                                         !isAuthorizedToComplete || !taskCardState.data.getIsMemberOfTaskPod() // disabled if either unauthorized or if not a member
@@ -376,7 +398,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                 defaultValue={taskCardState.editMode.name.editModeValue}
                                                 fullWidth
                                                 value={taskCardState.editMode.name.editModeValue}
-                                                onBlur={() => {
+                                                onBlur={async () => {
                                                     setTaskCardState((prevState: ITaskCardState) => {
                                                         return {
                                                             ...prevState,
@@ -398,20 +420,25 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                         };
                                                     });
                                                     if (!isErrorEditModeValueName) {
-                                                        ResourceClient.postResource('api/app/UpdateTask', {
-                                                            id: task.getId(),
-                                                            name:
-                                                                getInputText(taskCardState.editMode.name.editModeValue)
-                                                                    .length === 0
-                                                                    ? null
-                                                                    : getInputText(
-                                                                          taskCardState.editMode.name.editModeValue,
-                                                                      ),
-                                                        })
-                                                            .then((responseJson: any) => {
-                                                                handleUpdateTask(responseJson);
-                                                            })
-                                                            .catch(() => {});
+                                                        try {
+                                                            const response = await ResourceClient.postResource(
+                                                                'api/app/UpdateTask',
+                                                                {
+                                                                    id: task.getId(),
+                                                                    name:
+                                                                        getInputText(
+                                                                            taskCardState.editMode.name.editModeValue,
+                                                                        ).length === 0
+                                                                            ? null
+                                                                            : getInputText(
+                                                                                  taskCardState.editMode.name
+                                                                                      .editModeValue,
+                                                                              ),
+                                                                },
+                                                                sliceAuthenticationStateData.getJwtToken(),
+                                                            );
+                                                            handleUpdateTask(response.data);
+                                                        } catch (e: any) {}
                                                     }
                                                 }}
                                                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -429,7 +456,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                         };
                                                     });
                                                 }}
-                                                onKeyDown={(event: React.KeyboardEvent) => {
+                                                onKeyDown={async (event: React.KeyboardEvent) => {
                                                     if (event.key === 'Enter' && !event.shiftKey) {
                                                         setTaskCardState((prevState: ITaskCardState) => {
                                                             return {
@@ -452,21 +479,26 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                             };
                                                         });
                                                         if (!isErrorEditModeValueName) {
-                                                            ResourceClient.postResource('api/app/UpdateTask', {
-                                                                id: task.getId(),
-                                                                name:
-                                                                    getInputText(
-                                                                        taskCardState.editMode.name.editModeValue,
-                                                                    ).length === 0
-                                                                        ? null
-                                                                        : getInputText(
-                                                                              taskCardState.editMode.name.editModeValue,
-                                                                          ),
-                                                            })
-                                                                .then((responseJson: any) => {
-                                                                    handleUpdateTask(responseJson);
-                                                                })
-                                                                .catch(() => {});
+                                                            try {
+                                                                const response = await ResourceClient.postResource(
+                                                                    'api/app/UpdateTask',
+                                                                    {
+                                                                        id: task.getId(),
+                                                                        name:
+                                                                            getInputText(
+                                                                                taskCardState.editMode.name
+                                                                                    .editModeValue,
+                                                                            ).length === 0
+                                                                                ? null
+                                                                                : getInputText(
+                                                                                      taskCardState.editMode.name
+                                                                                          .editModeValue,
+                                                                                  ),
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                handleUpdateTask(response.data);
+                                                            } catch (e: any) {}
                                                         }
                                                     }
                                                 }}
@@ -506,7 +538,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                 defaultValue={taskCardState.editMode.description.editModeValue}
                                                 fullWidth
                                                 value={taskCardState.editMode.description.editModeValue}
-                                                onBlur={() => {
+                                                onBlur={async () => {
                                                     setTaskCardState((prevState: ITaskCardState) => {
                                                         return {
                                                             ...prevState,
@@ -528,27 +560,27 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                         };
                                                     });
                                                     if (!isErrorEditModeValueDescription) {
-                                                        ResourceClient.postResource(
-                                                            'api/app/UpdateTask',
+                                                        try {
+                                                            const response = await ResourceClient.postResource(
+                                                                'api/app/UpdateTask',
 
-                                                            {
-                                                                id: task.getId(),
-                                                                description:
-                                                                    getInputText(
-                                                                        taskCardState.editMode.description
-                                                                            .editModeValue,
-                                                                    ).length === 0
-                                                                        ? null
-                                                                        : getInputText(
-                                                                              taskCardState.editMode.description
-                                                                                  .editModeValue,
-                                                                          ),
-                                                            },
-                                                        )
-                                                            .then((responseJson: any) => {
-                                                                handleUpdateTask(responseJson);
-                                                            })
-                                                            .catch(() => {});
+                                                                {
+                                                                    id: task.getId(),
+                                                                    description:
+                                                                        getInputText(
+                                                                            taskCardState.editMode.description
+                                                                                .editModeValue,
+                                                                        ).length === 0
+                                                                            ? null
+                                                                            : getInputText(
+                                                                                  taskCardState.editMode.description
+                                                                                      .editModeValue,
+                                                                              ),
+                                                                },
+                                                                sliceAuthenticationStateData.getJwtToken(),
+                                                            );
+                                                            handleUpdateTask(response.data);
+                                                        } catch (e: any) {}
                                                     }
                                                 }}
                                                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -566,7 +598,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                         };
                                                     });
                                                 }}
-                                                onKeyDown={(event: React.KeyboardEvent) => {
+                                                onKeyDown={async (event: React.KeyboardEvent) => {
                                                     if (event.key === 'Enter' && !event.shiftKey) {
                                                         setTaskCardState((prevState: ITaskCardState) => {
                                                             return {
@@ -590,23 +622,26 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                             };
                                                         });
                                                         if (!isErrorEditModeValueDescription) {
-                                                            ResourceClient.postResource('api/app/UpdateTask', {
-                                                                id: task.getId(),
-                                                                description:
-                                                                    getInputText(
-                                                                        taskCardState.editMode.description
-                                                                            .editModeValue,
-                                                                    ).length === 0
-                                                                        ? null
-                                                                        : getInputText(
-                                                                              taskCardState.editMode.description
-                                                                                  .editModeValue,
-                                                                          ),
-                                                            })
-                                                                .then((responseJson: any) => {
-                                                                    handleUpdateTask(responseJson);
-                                                                })
-                                                                .catch(() => {});
+                                                            try {
+                                                                const response = await ResourceClient.postResource(
+                                                                    'api/app/UpdateTask',
+                                                                    {
+                                                                        id: task.getId(),
+                                                                        description:
+                                                                            getInputText(
+                                                                                taskCardState.editMode.description
+                                                                                    .editModeValue,
+                                                                            ).length === 0
+                                                                                ? null
+                                                                                : getInputText(
+                                                                                      taskCardState.editMode.description
+                                                                                          .editModeValue,
+                                                                                  ),
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                handleUpdateTask(response.data);
+                                                            } catch (e: any) {}
                                                         }
                                                     }
                                                 }}
@@ -703,7 +738,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                 };
                                             });
                                         }}
-                                        onBlur={() => {
+                                        onBlur={async () => {
                                             setTaskCardState((prevState: ITaskCardState) => {
                                                 return {
                                                     ...prevState,
@@ -722,23 +757,26 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                 };
                                             });
                                             if (!isErrorEditModeValueNumberOfPoints) {
-                                                ResourceClient.postResource(
-                                                    'api/app/UpdateTask',
+                                                try {
+                                                    const response = await ResourceClient.postResource(
+                                                        'api/app/UpdateTask',
 
-                                                    {
-                                                        id: task.getId(),
-                                                        numberOfPoints: getInputInteger(
-                                                            String(taskCardState.editMode.numberOfPoints.editModeValue),
-                                                        ),
-                                                    },
-                                                )
-                                                    .then((responseJson: any) => {
-                                                        handleUpdateTask(responseJson);
-                                                    })
-                                                    .catch(() => {});
+                                                        {
+                                                            id: task.getId(),
+                                                            numberOfPoints: getInputInteger(
+                                                                String(
+                                                                    taskCardState.editMode.numberOfPoints.editModeValue,
+                                                                ),
+                                                            ),
+                                                        },
+                                                        sliceAuthenticationStateData.getJwtToken(),
+                                                    );
+                                                    handleUpdateTask(response.data);
+                                                    handleSideEffectChangeNumberOfPoints();
+                                                } catch (e: any) {}
                                             }
                                         }}
-                                        onKeyDown={(event: React.KeyboardEvent) => {
+                                        onKeyDown={async (event: React.KeyboardEvent) => {
                                             if (event.key === 'Enter' && !event.shiftKey) {
                                                 setTaskCardState((prevState: ITaskCardState) => {
                                                     return {
@@ -758,22 +796,24 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                     };
                                                 });
                                                 if (!isErrorEditModeValueNumberOfPoints) {
-                                                    ResourceClient.postResource(
-                                                        'api/app/UpdateTask',
+                                                    try {
+                                                        const response = await ResourceClient.postResource(
+                                                            'api/app/UpdateTask',
 
-                                                        {
-                                                            id: task.getId(),
-                                                            numberOfPoints: getInputInteger(
-                                                                String(
-                                                                    taskCardState.editMode.numberOfPoints.editModeValue,
+                                                            {
+                                                                id: task.getId(),
+                                                                numberOfPoints: getInputInteger(
+                                                                    String(
+                                                                        taskCardState.editMode.numberOfPoints
+                                                                            .editModeValue,
+                                                                    ),
                                                                 ),
-                                                            ),
-                                                        },
-                                                    )
-                                                        .then((responseJson: any) => {
-                                                            handleUpdateTask(responseJson);
-                                                        })
-                                                        .catch(() => {});
+                                                            },
+                                                            sliceAuthenticationStateData.getJwtToken(),
+                                                        );
+                                                        handleUpdateTask(response.data);
+                                                        handleSideEffectChangeNumberOfPoints();
+                                                    } catch (e: any) {}
                                                 }
                                             }
                                         }}
@@ -857,22 +897,22 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                 const file = e.target.files[0];
                                                 const fileReader = new FileReader();
                                                 fileReader.onload = (function (file) {
-                                                    return function (e) {
+                                                    return async function (e) {
                                                         if (this.result !== null && String(this.result).length > 0) {
-                                                            ResourceClient.postResource(
-                                                                'api/app/UpdateTask',
+                                                            try {
+                                                                const response = await ResourceClient.postResource(
+                                                                    'api/app/UpdateTask',
 
-                                                                {
-                                                                    id: task.getId(),
-                                                                    imageAsBase64String: getInputText(
-                                                                        String(this.result),
-                                                                    ),
-                                                                },
-                                                            )
-                                                                .then((responseJson: any) => {
-                                                                    handleUpdateTask(responseJson);
-                                                                })
-                                                                .catch(() => {});
+                                                                    {
+                                                                        id: task.getId(),
+                                                                        imageAsBase64String: getInputText(
+                                                                            String(this.result),
+                                                                        ),
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                handleUpdateTask(response.data);
+                                                            } catch (e: any) {}
                                                         }
                                                     };
                                                 })(file);
@@ -891,19 +931,19 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                 variant="text"
                                                 color="error"
                                                 sx={{ textTransform: 'none', padding: '0px' }}
-                                                onClick={() => {
-                                                    ResourceClient.postResource(
-                                                        'api/app/UpdateTask',
+                                                onClick={async () => {
+                                                    try {
+                                                        const response = await ResourceClient.postResource(
+                                                            'api/app/UpdateTask',
 
-                                                        {
-                                                            id: task.getId(),
-                                                            imageAsBase64String: null,
-                                                        },
-                                                    )
-                                                        .then((responseJson: any) => {
-                                                            handleUpdateTask(responseJson);
-                                                        })
-                                                        .catch(() => {});
+                                                            {
+                                                                id: task.getId(),
+                                                                imageAsBase64String: null,
+                                                            },
+                                                            sliceAuthenticationStateData.getJwtToken(),
+                                                        );
+                                                        handleUpdateTask(response.data);
+                                                    } catch (e: any) {}
                                                 }}
                                             >
                                                 {'Delete image'}
@@ -923,19 +963,19 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                         }}
                                     >
                                         <IconButton
-                                            onClick={() => {
-                                                ResourceClient.postResource(
-                                                    'api/app/UpdateTask',
+                                            onClick={async () => {
+                                                try {
+                                                    const response = await ResourceClient.postResource(
+                                                        'api/app/UpdateTask',
 
-                                                    {
-                                                        id: task.getId(),
-                                                        isStar: !taskCardState.data.getIsStar(),
-                                                    },
-                                                )
-                                                    .then((responseJson: any) => {
-                                                        handleUpdateTask(responseJson);
-                                                    })
-                                                    .catch(() => {});
+                                                        {
+                                                            id: task.getId(),
+                                                            isStar: !taskCardState.data.getIsStar(),
+                                                        },
+                                                        sliceAuthenticationStateData.getJwtToken(),
+                                                    );
+                                                    handleUpdateTask(response.data);
+                                                } catch (e: any) {}
                                             }}
                                         >
                                             {taskCardState.data.getIsStar() ? <StarIcon /> : <StarOutlineIcon />}
@@ -956,19 +996,19 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                         </Tooltip>
                                         <Divider orientation="vertical" flexItem />
                                         <IconButton
-                                            onClick={() => {
-                                                ResourceClient.postResource(
-                                                    'api/app/UpdateTask',
+                                            onClick={async () => {
+                                                try {
+                                                    const response = await ResourceClient.postResource(
+                                                        'api/app/UpdateTask',
 
-                                                    {
-                                                        id: task.getId(),
-                                                        isPin: !taskCardState.data.getIsPin(),
-                                                    },
-                                                )
-                                                    .then((responseJson: any) => {
-                                                        handleUpdateTask(responseJson);
-                                                    })
-                                                    .catch(() => {});
+                                                        {
+                                                            id: task.getId(),
+                                                            isPin: !taskCardState.data.getIsPin(),
+                                                        },
+                                                        sliceAuthenticationStateData.getJwtToken(),
+                                                    );
+                                                    handleUpdateTask(response.data);
+                                                } catch (e: any) {}
                                             }}
                                         >
                                             {taskCardState.data.getIsPin() ? <PushPinIcon /> : <PushPinOutlinedIcon />}
@@ -1155,7 +1195,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                             defaultValue={taskCardState.editMode.noteText.editModeValue}
                                                             fullWidth
                                                             value={taskCardState.editMode.noteText.editModeValue}
-                                                            onBlur={() => {
+                                                            onBlur={async () => {
                                                                 setTaskCardState((prevState: ITaskCardState) => {
                                                                     return {
                                                                         ...prevState,
@@ -1179,27 +1219,29 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                                     };
                                                                 });
                                                                 if (!isErrorEditModeValueNoteText) {
-                                                                    ResourceClient.postResource(
-                                                                        'api/app/UpdateTask',
+                                                                    try {
+                                                                        const response =
+                                                                            await ResourceClient.postResource(
+                                                                                'api/app/UpdateTask',
 
-                                                                        {
-                                                                            id: task.getId(),
-                                                                            noteText:
-                                                                                getInputText(
-                                                                                    taskCardState.editMode.noteText
-                                                                                        .editModeValue,
-                                                                                ).length === 0
-                                                                                    ? null
-                                                                                    : getInputText(
-                                                                                          taskCardState.editMode
-                                                                                              .noteText.editModeValue,
-                                                                                      ),
-                                                                        },
-                                                                    )
-                                                                        .then((responseJson: any) => {
-                                                                            handleUpdateTask(responseJson);
-                                                                        })
-                                                                        .catch(() => {});
+                                                                                {
+                                                                                    id: task.getId(),
+                                                                                    noteText:
+                                                                                        getInputText(
+                                                                                            taskCardState.editMode
+                                                                                                .noteText.editModeValue,
+                                                                                        ).length === 0
+                                                                                            ? null
+                                                                                            : getInputText(
+                                                                                                  taskCardState.editMode
+                                                                                                      .noteText
+                                                                                                      .editModeValue,
+                                                                                              ),
+                                                                                },
+                                                                                sliceAuthenticationStateData.getJwtToken(),
+                                                                            );
+                                                                        handleUpdateTask(response.data);
+                                                                    } catch (e: any) {}
                                                                 }
                                                             }}
                                                             onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1217,7 +1259,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                                     };
                                                                 });
                                                             }}
-                                                            onKeyDown={(event: React.KeyboardEvent) => {
+                                                            onKeyDown={async (event: React.KeyboardEvent) => {
                                                                 if (event.key === 'Enter' && !event.shiftKey) {
                                                                     setTaskCardState((prevState: ITaskCardState) => {
                                                                         return {
@@ -1242,28 +1284,31 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                                         };
                                                                     });
                                                                     if (!isErrorEditModeValueNoteText) {
-                                                                        ResourceClient.postResource(
-                                                                            'api/app/UpdateTask',
+                                                                        try {
+                                                                            const response =
+                                                                                await ResourceClient.postResource(
+                                                                                    'api/app/UpdateTask',
 
-                                                                            {
-                                                                                id: task.getId(),
-                                                                                noteText:
-                                                                                    getInputText(
-                                                                                        taskCardState.editMode.noteText
-                                                                                            .editModeValue,
-                                                                                    ).length === 0
-                                                                                        ? null
-                                                                                        : getInputText(
-                                                                                              taskCardState.editMode
-                                                                                                  .noteText
-                                                                                                  .editModeValue,
-                                                                                          ),
-                                                                            },
-                                                                        )
-                                                                            .then((responseJson: any) => {
-                                                                                handleUpdateTask(responseJson);
-                                                                            })
-                                                                            .catch(() => {});
+                                                                                    {
+                                                                                        id: task.getId(),
+                                                                                        noteText:
+                                                                                            getInputText(
+                                                                                                taskCardState.editMode
+                                                                                                    .noteText
+                                                                                                    .editModeValue,
+                                                                                            ).length === 0
+                                                                                                ? null
+                                                                                                : getInputText(
+                                                                                                      taskCardState
+                                                                                                          .editMode
+                                                                                                          .noteText
+                                                                                                          .editModeValue,
+                                                                                                  ),
+                                                                                    },
+                                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                                );
+                                                                            handleUpdateTask(response.data);
+                                                                        } catch (e: any) {}
                                                                     }
                                                                 }
                                                             }}
@@ -1346,26 +1391,27 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                                 const file = e.target.files[0];
                                                                 const fileReader = new FileReader();
                                                                 fileReader.onload = (function (file) {
-                                                                    return function (e) {
+                                                                    return async function (e) {
                                                                         if (
                                                                             this.result !== null &&
                                                                             String(this.result).length > 0
                                                                         ) {
-                                                                            ResourceClient.postResource(
-                                                                                'api/app/UpdateTask',
+                                                                            try {
+                                                                                const response =
+                                                                                    await ResourceClient.postResource(
+                                                                                        'api/app/UpdateTask',
 
-                                                                                {
-                                                                                    id: task.getId(),
-                                                                                    noteImageAsBase64String:
-                                                                                        getInputText(
-                                                                                            String(this.result),
-                                                                                        ),
-                                                                                },
-                                                                            )
-                                                                                .then((responseJson: any) => {
-                                                                                    handleUpdateTask(responseJson);
-                                                                                })
-                                                                                .catch(() => {});
+                                                                                        {
+                                                                                            id: task.getId(),
+                                                                                            noteImageAsBase64String:
+                                                                                                getInputText(
+                                                                                                    String(this.result),
+                                                                                                ),
+                                                                                        },
+                                                                                        sliceAuthenticationStateData.getJwtToken(),
+                                                                                    );
+                                                                                handleUpdateTask(response.data);
+                                                                            } catch (e: any) {}
                                                                         }
                                                                     };
                                                                 })(file);
@@ -1384,19 +1430,20 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                                 variant="text"
                                                                 color="error"
                                                                 sx={{ textTransform: 'none', padding: '0px' }}
-                                                                onClick={() => {
-                                                                    ResourceClient.postResource(
-                                                                        'api/app/UpdateTask',
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        const response =
+                                                                            await ResourceClient.postResource(
+                                                                                'api/app/UpdateTask',
 
-                                                                        {
-                                                                            id: task.getId(),
-                                                                            noteImageAsBase64String: null,
-                                                                        },
-                                                                    )
-                                                                        .then((responseJson: any) => {
-                                                                            handleUpdateTask(responseJson);
-                                                                        })
-                                                                        .catch(() => {});
+                                                                                {
+                                                                                    id: task.getId(),
+                                                                                    noteImageAsBase64String: null,
+                                                                                },
+                                                                                sliceAuthenticationStateData.getJwtToken(),
+                                                                            );
+                                                                        handleUpdateTask(response.data);
+                                                                    } catch (e: any) {}
                                                                 }}
                                                             >
                                                                 {'Delete image'}
@@ -1468,8 +1515,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                 <Accordion
                                     onChange={(event: React.SyntheticEvent, expanded: boolean) => {
                                         if (expanded) {
-                                            handleGetTaskComments();
-                                            handleGetTaskReactions();
+                                            void handleGetTaskComments();
+                                            void handleGetTaskReactions();
                                         } else {
                                             setTaskCommentsState((prevState: ITaskCommentsState) => {
                                                 return {
@@ -1505,7 +1552,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                     <Grid item>
                                                         <ReactionSelector
                                                             handleUpdateCallback={() => {
-                                                                handleGetTaskReactions();
+                                                                void handleGetTaskReactions();
                                                             }}
                                                             myReaction={taskReactionsState.data.getMyReactionType()}
                                                             apiPathSelectReaction={'api/app/UpdateTaskReaction'}
@@ -1633,23 +1680,23 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                             Close
                         </Button>
                         <Button
-                            onClick={() => {
-                                ResourceClient.postResource(
-                                    'api/app/DeleteTask',
+                            onClick={async () => {
+                                try {
+                                    await ResourceClient.postResource(
+                                        'api/app/DeleteTask',
 
-                                    {
-                                        id: task.getId(),
-                                    },
-                                )
-                                    .then(() => {
-                                        setTaskCardState((prevState: any) => {
-                                            return {
-                                                ...prevState,
-                                                isShowDeleteTaskConfirmationModal: false,
-                                            };
-                                        });
-                                    })
-                                    .catch(() => {});
+                                        {
+                                            id: task.getId(),
+                                        },
+                                        sliceAuthenticationStateData.getJwtToken(),
+                                    );
+                                    setTaskCardState((prevState: any) => {
+                                        return {
+                                            ...prevState,
+                                            isShowDeleteTaskConfirmationModal: false,
+                                        };
+                                    });
+                                } catch (e: any) {}
                             }}
                         >
                             Delete

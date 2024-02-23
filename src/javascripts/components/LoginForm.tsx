@@ -1,73 +1,133 @@
-/* eslint-disable */
-import { useEffect } from 'react';
-import { FieldErrors, useForm } from 'react-hook-form';
-import { Box, Button, FormControl, TextField, Grid } from '@mui/material';
+import { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { Alert, Box, Button, FormControl, TextField, Grid, InputAdornment, IconButton } from '@mui/material';
 import { THEME } from 'src/javascripts/Theme';
+import Constants from 'src/javascripts/Constants';
+import ResourceClient from 'src/javascripts/clients/ResourceClient';
+import { getInputText } from 'src/javascripts/utilities';
+import { sliceAuthenticationActions } from 'src/javascripts/store/SliceAuthentication';
+import ResponseModel from 'src/javascripts/models/ResponseModel';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import type { IRootState } from 'src/javascripts/store';
 
-type FormValues = {
-    username: string;
-    password: string;
-};
-
-const LoginForm = () => {
-    const form = useForm<FormValues>({
-        defaultValues: {
-            username: '',
-            password: '',
+export interface ILoginFormState {
+    data: {
+        username: string;
+        password: string;
+    };
+    isShowVisiblePassword: boolean;
+    response: {
+        state: string;
+        errorMessage: string | null;
+    };
+}
+const LoginForm: React.FC = () => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateResponse = new ResponseModel(sliceAuthenticationState.response);
+    const [loginFormState, setLoginFormState] = useState<ILoginFormState>({
+        data: { username: 'chenpachi', password: 'chenpachipwd' },
+        isShowVisiblePassword: false,
+        response: {
+            state: Constants.RESPONSE_STATE_UNSTARTED,
+            errorMessage: null,
         },
-        mode: 'onTouched',
     });
 
-    const { register, control, handleSubmit, formState, watch, reset } = form;
-
-    const { errors, isDirty, isValid, isSubmitSuccessful } = formState;
-
-    const onSubmit = (data: FormValues) => {
-        console.log('[onSubmit]', data);
-    };
-
-    const onError = (errors: FieldErrors<FormValues>) => {
-        // FILL_HERE
-    };
-
-    useEffect(() => {
-        if (isSubmitSuccessful) {
-            reset();
+    const handleOnSubmitLogin = async (): Promise<any> => {
+        try {
+            dispatch(sliceAuthenticationActions.setStateResponseLoading());
+            const response = await ResourceClient.postResourceUnauthenticated('api/auth/Login', {
+                username: loginFormState.data.username,
+                password: loginFormState.data.password,
+            });
+            dispatch(sliceAuthenticationActions.setStateData(response.data));
+            navigate('/me');
+        } catch (e: any) {
+            dispatch(sliceAuthenticationActions.setStateResponseError(e?.response?.data?.message));
         }
-    }, [isSubmitSuccessful, reset]);
+    };
+
+    const isLoginFormDisabled =
+        getInputText(loginFormState.data.username).length === 0 ||
+        getInputText(loginFormState.data.password).length === 0;
 
     return (
-        <FormControl onSubmit={handleSubmit(onSubmit, onError)}>
+        <FormControl
+            onSubmit={() => {
+                void handleOnSubmitLogin();
+            }}
+        >
             <Grid direction="column" container spacing={2}>
-                <Grid item>
+                <Grid item sx={{ marginBottom: '6px' }}>
                     <TextField
-                        type="text"
-                        id="username"
+                        id="login-username"
                         label="Username"
+                        type="text"
                         required
-                        {...register('username', {
-                            required: { value: true, message: 'Username is required' },
-                        })}
-                        error={!!errors.username?.message}
-                        helperText={errors.username?.message}
-                        sx={{ width: '300px' }}
+                        value={loginFormState.data.username}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                            setLoginFormState((prevState: ILoginFormState) => {
+                                return {
+                                    ...prevState,
+                                    data: {
+                                        ...prevState.data,
+                                        username: event.target.value,
+                                    },
+                                };
+                            });
+                        }}
+                        sx={{ width: '316px' }}
+                    />
+                </Grid>
+                <Grid item sx={{ marginBottom: '6px' }}>
+                    <TextField
+                        id="login-password"
+                        label="Password"
+                        type={loginFormState.isShowVisiblePassword ? 'text' : 'password'}
+                        required
+                        value={loginFormState.data.password}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                            setLoginFormState((prevState: ILoginFormState) => {
+                                return {
+                                    ...prevState,
+                                    data: {
+                                        ...prevState.data,
+                                        password: event.target.value,
+                                    },
+                                };
+                            });
+                        }}
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        aria-label="toggle password visibility"
+                                        onClick={() => {
+                                            setLoginFormState((prevState: ILoginFormState) => {
+                                                return {
+                                                    ...prevState,
+                                                    isShowVisiblePassword: !prevState.isShowVisiblePassword,
+                                                };
+                                            });
+                                        }}
+                                        onMouseDown={(event: React.MouseEvent<HTMLButtonElement>) => {
+                                            event.preventDefault();
+                                        }}
+                                        edge="end"
+                                    >
+                                        {loginFormState.isShowVisiblePassword ? <VisibilityOff /> : <Visibility />}
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{ width: '316px' }}
                     />
                 </Grid>
                 <Grid item>
-                    <TextField
-                        type="password"
-                        id="password"
-                        label="Password"
-                        required
-                        {...register('password', {
-                            required: { value: true, message: 'Password is required' },
-                        })}
-                        error={!!errors.password?.message}
-                        helperText={errors.password?.message}
-                        sx={{ width: '300px' }}
-                    />
-                </Grid>
-                <Grid item sx={{ height: '144px', width: '316px' }}>
                     <Box
                         sx={{
                             fontFamily: 'Raleway',
@@ -80,12 +140,19 @@ const LoginForm = () => {
                         Forgot password? Click <a href="/">here</a>.
                     </Box>
                 </Grid>
+                {sliceAuthenticationStateResponse.getIsError() ? (
+                    <Grid item>
+                        <Alert severity="error">Invalid login. Please try again.</Alert>
+                    </Grid>
+                ) : null}
                 <Grid item>
                     <Button
-                        onClick={handleSubmit(onSubmit, onError)}
-                        disabled={!isDirty || !isValid}
+                        onClick={() => {
+                            void handleOnSubmitLogin();
+                        }}
+                        disabled={isLoginFormDisabled}
                         variant="contained"
-                        sx={{ width: '300px' }}
+                        fullWidth
                     >
                         Log In
                     </Button>

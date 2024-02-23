@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import _ from 'lodash';
 import {
     Alert,
@@ -38,6 +39,9 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Constants from 'src/javascripts/Constants';
 import IconButtonFollowUser from 'src/javascripts/components/IconButtonFollowUser';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+
+import type { IRootState } from 'src/javascripts/store';
 
 export interface IManageBecomePodModeratorRequestsModalProps {
     handleClose: any;
@@ -94,6 +98,8 @@ const ManagePendingBecomePodModeratorRequestsModal: React.FC<IManageBecomePodMod
     props: IManageBecomePodModeratorRequestsModalProps,
 ) => {
     const { handleClose, idPod, modalTitle, handleUpdatePodPage } = props;
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [managePendingBecomePodModeratorRequestsModalState, setManagePendingBecomePodModeratorRequestsModalState] =
         useState<IManagePendingBecomePodModeratorRequestsModalState>({
             data: { selectedUserIds: new Set() },
@@ -143,40 +149,43 @@ const ManagePendingBecomePodModeratorRequestsModal: React.FC<IManageBecomePodMod
         userBubblesProcessed.reverse();
     }
 
-    const handleGetUserBubblesPendingBecomePodModeratorRequest = (): void => {
-        ResourceClient.postResource('api/app/GetUserBubblesPendingBecomePodModeratorRequest', { id: String(idPod) })
-            .then((responseJson: any) => {
-                setUserBubblePendingBecomePodModeratorRequestState(
-                    (prevState: IUserBubblePendingBecomePodModeratorRequestState) => {
-                        return {
-                            ...prevState,
-                            data: responseJson.map((datapoint: any) => new UserBubbleModel(datapoint)),
-                            response: {
-                                ...prevState.response,
-                                state: Constants.RESPONSE_STATE_SUCCESS,
-                                errorMessage: null,
-                            },
-                        };
-                    },
-                );
-            })
-            .catch((responseError: any) => {
-                setUserBubblePendingBecomePodModeratorRequestState(
-                    (prevState: IUserBubblePendingBecomePodModeratorRequestState) => {
-                        return {
-                            ...prevState,
-                            response: {
-                                ...prevState.response,
-                                state: Constants.RESPONSE_STATE_ERROR,
-                                errorMessage: responseError,
-                            },
-                        };
-                    },
-                );
-            });
+    const handleGetUserBubblesPendingBecomePodModeratorRequest = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetUserBubblesPendingBecomePodModeratorRequest',
+                { id: String(idPod) },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setUserBubblePendingBecomePodModeratorRequestState(
+                (prevState: IUserBubblePendingBecomePodModeratorRequestState) => {
+                    return {
+                        ...prevState,
+                        data: response.data.map((datapoint: any) => new UserBubbleModel(datapoint)),
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_SUCCESS,
+                            errorMessage: null,
+                        },
+                    };
+                },
+            );
+        } catch (e: any) {
+            setUserBubblePendingBecomePodModeratorRequestState(
+                (prevState: IUserBubblePendingBecomePodModeratorRequestState) => {
+                    return {
+                        ...prevState,
+                        response: {
+                            ...prevState.response,
+                            state: Constants.RESPONSE_STATE_ERROR,
+                            errorMessage: e?.response?.data?.message,
+                        },
+                    };
+                },
+            );
+        }
     };
     useEffect(() => {
-        handleGetUserBubblesPendingBecomePodModeratorRequest();
+        void handleGetUserBubblesPendingBecomePodModeratorRequest();
         // eslint-disable-next-line
     }, []);
 
@@ -395,14 +404,17 @@ const ManagePendingBecomePodModeratorRequestsModal: React.FC<IManageBecomePodMod
                                                 isMe={userBubble.getIsMe()}
                                                 isFollowedByMe={userBubble.getIsFollowedByMe()}
                                                 isFollowRequestSentNotYetAccepted={userBubble.getIsFollowRequestSentNotYetAccepted()}
-                                                handleSendFollowRequest={() => {
-                                                    ResourceClient.postResource('api/app/SendFollowUserRequest', {
-                                                        id: userBubble.getId(),
-                                                    })
-                                                        .then(() => {
-                                                            handleGetUserBubblesPendingBecomePodModeratorRequest();
-                                                        })
-                                                        .catch(() => {});
+                                                handleSendFollowRequest={async () => {
+                                                    try {
+                                                        await ResourceClient.postResource(
+                                                            'api/app/SendFollowUserRequest',
+                                                            {
+                                                                id: userBubble.getId(),
+                                                            },
+                                                            sliceAuthenticationStateData.getJwtToken(),
+                                                        );
+                                                        void handleGetUserBubblesPendingBecomePodModeratorRequest();
+                                                    } catch (e: any) {}
                                                 }}
                                             />
                                         </ListItem>
@@ -442,43 +454,47 @@ const ManagePendingBecomePodModeratorRequestsModal: React.FC<IManageBecomePodMod
                             No
                         </Button>
                         <Button
-                            onClick={() => {
-                                setManagePendingBecomePodModeratorRequestsModalState(
-                                    (prevState: IManagePendingBecomePodModeratorRequestsModalState) => {
-                                        return {
-                                            ...prevState,
-                                            isApprove: false,
-                                            isShowRejectConfirmationOptions: false,
-                                            response: {
-                                                ...prevState.response,
-                                                state: Constants.RESPONSE_STATE_LOADING,
-                                            },
-                                        };
-                                    },
-                                );
-                                ResourceClient.postResource('api/app/RejectBecomePodModeratorRequests', {
-                                    id: idPod,
-                                    idUsers: Array.from(
-                                        managePendingBecomePodModeratorRequestsModalState.data.selectedUserIds,
-                                    ),
-                                })
-                                    .then((responseJson: any) => {
-                                        handleUpdateUserBubblePendingBecomePodModeratorRequestState(responseJson);
-                                        handleUpdatePodPage();
-                                    })
-                                    .catch((errorMessage: any) => {
-                                        setManagePendingBecomePodModeratorRequestsModalState(
-                                            (prevState: IManagePendingBecomePodModeratorRequestsModalState) => {
-                                                return {
-                                                    ...prevState,
-                                                    response: {
-                                                        state: Constants.RESPONSE_STATE_ERROR,
-                                                        errorMessage,
-                                                    },
-                                                };
-                                            },
-                                        );
-                                    });
+                            /* eslint-disable @typescript-eslint/no-misused-promises */
+                            onClick={async () => {
+                                try {
+                                    setManagePendingBecomePodModeratorRequestsModalState(
+                                        (prevState: IManagePendingBecomePodModeratorRequestsModalState) => {
+                                            return {
+                                                ...prevState,
+                                                isApprove: false,
+                                                isShowRejectConfirmationOptions: false,
+                                                response: {
+                                                    ...prevState.response,
+                                                    state: Constants.RESPONSE_STATE_LOADING,
+                                                },
+                                            };
+                                        },
+                                    );
+                                    const response = await ResourceClient.postResource(
+                                        'api/app/RejectBecomePodModeratorRequests',
+                                        {
+                                            id: idPod,
+                                            idUsers: Array.from(
+                                                managePendingBecomePodModeratorRequestsModalState.data.selectedUserIds,
+                                            ),
+                                        },
+                                        sliceAuthenticationStateData.getJwtToken(),
+                                    );
+                                    handleUpdateUserBubblePendingBecomePodModeratorRequestState(response.data);
+                                    handleUpdatePodPage();
+                                } catch (e: any) {
+                                    setManagePendingBecomePodModeratorRequestsModalState(
+                                        (prevState: IManagePendingBecomePodModeratorRequestsModalState) => {
+                                            return {
+                                                ...prevState,
+                                                response: {
+                                                    state: Constants.RESPONSE_STATE_ERROR,
+                                                    errorMessage: e?.response?.data?.message,
+                                                },
+                                            };
+                                        },
+                                    );
+                                }
                             }}
                         >
                             Yes
@@ -509,42 +525,46 @@ const ManagePendingBecomePodModeratorRequestsModal: React.FC<IManageBecomePodMod
                                 managePendingBecomePodModeratorRequestsModalState.data.selectedUserIds.size === 0 ||
                                 userBubblePendingBecomePodModeratorRequestState.data.length === 0
                             }
-                            onClick={() => {
-                                setManagePendingBecomePodModeratorRequestsModalState(
-                                    (prevState: IManagePendingBecomePodModeratorRequestsModalState) => {
-                                        return {
-                                            ...prevState,
-                                            isApprove: true,
-                                            response: {
-                                                ...prevState.response,
-                                                state: Constants.RESPONSE_STATE_LOADING,
-                                            },
-                                        };
-                                    },
-                                );
-                                ResourceClient.postResource('api/app/ApproveBecomePodModeratorRequests', {
-                                    id: idPod,
-                                    idUsers: Array.from(
-                                        managePendingBecomePodModeratorRequestsModalState.data.selectedUserIds,
-                                    ),
-                                })
-                                    .then((responseJson: any) => {
-                                        handleUpdateUserBubblePendingBecomePodModeratorRequestState(responseJson);
-                                        handleUpdatePodPage();
-                                    })
-                                    .catch((errorMessage: any) => {
-                                        setManagePendingBecomePodModeratorRequestsModalState(
-                                            (prevState: IManagePendingBecomePodModeratorRequestsModalState) => {
-                                                return {
-                                                    ...prevState,
-                                                    response: {
-                                                        state: Constants.RESPONSE_STATE_ERROR,
-                                                        errorMessage,
-                                                    },
-                                                };
-                                            },
-                                        );
-                                    });
+                            /* eslint-disable @typescript-eslint/no-misused-promises */
+                            onClick={async () => {
+                                try {
+                                    setManagePendingBecomePodModeratorRequestsModalState(
+                                        (prevState: IManagePendingBecomePodModeratorRequestsModalState) => {
+                                            return {
+                                                ...prevState,
+                                                isApprove: true,
+                                                response: {
+                                                    ...prevState.response,
+                                                    state: Constants.RESPONSE_STATE_LOADING,
+                                                },
+                                            };
+                                        },
+                                    );
+                                    const response = await ResourceClient.postResource(
+                                        'api/app/ApproveBecomePodModeratorRequests',
+                                        {
+                                            id: idPod,
+                                            idUsers: Array.from(
+                                                managePendingBecomePodModeratorRequestsModalState.data.selectedUserIds,
+                                            ),
+                                        },
+                                        sliceAuthenticationStateData.getJwtToken(),
+                                    );
+                                    handleUpdateUserBubblePendingBecomePodModeratorRequestState(response.data);
+                                    handleUpdatePodPage();
+                                } catch (e: any) {
+                                    setManagePendingBecomePodModeratorRequestsModalState(
+                                        (prevState: IManagePendingBecomePodModeratorRequestsModalState) => {
+                                            return {
+                                                ...prevState,
+                                                response: {
+                                                    state: Constants.RESPONSE_STATE_ERROR,
+                                                    errorMessage: e?.response?.data?.message,
+                                                },
+                                            };
+                                        },
+                                    );
+                                }
                             }}
                         >
                             Approve

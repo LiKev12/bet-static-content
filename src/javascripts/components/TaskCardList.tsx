@@ -10,7 +10,8 @@ export interface ITaskCardListProps {
     isDisplayViewPodLink: boolean;
     isDisplayOptionsStarPinDelete: boolean;
     isAuthorizedToDelete: boolean;
-    handleUpdateUponToggleTaskComplete: any;
+    handleSideEffectToggleTaskComplete: any;
+    handleSideEffectChangeNumberOfPoints: any;
 }
 
 const TaskCardList: React.FC<ITaskCardListProps> = (props: ITaskCardListProps) => {
@@ -22,7 +23,8 @@ const TaskCardList: React.FC<ITaskCardListProps> = (props: ITaskCardListProps) =
         isDisplayViewPodLink,
         isDisplayOptionsStarPinDelete,
         isAuthorizedToDelete,
-        handleUpdateUponToggleTaskComplete,
+        handleSideEffectToggleTaskComplete,
+        handleSideEffectChangeNumberOfPoints,
     } = props;
 
     console.log({ tasks });
@@ -46,7 +48,8 @@ const TaskCardList: React.FC<ITaskCardListProps> = (props: ITaskCardListProps) =
                             isDisplayViewPodLink={isDisplayViewPodLink}
                             isDisplayOptionsStarPinDelete={isDisplayOptionsStarPinDelete}
                             isAuthorizedToDelete={isAuthorizedToDelete}
-                            handleUpdateUponToggleTaskComplete={handleUpdateUponToggleTaskComplete}
+                            handleSideEffectToggleTaskComplete={handleSideEffectToggleTaskComplete}
+                            handleSideEffectChangeNumberOfPoints={handleSideEffectChangeNumberOfPoints}
                         />
                     </Grid>
                 ))}

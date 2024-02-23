@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import _ from 'lodash';
 import {
     Alert,
@@ -33,6 +34,9 @@ import { getInputText } from 'src/javascripts/utilities';
 import TaskModel from 'src/javascripts/models/TaskModel';
 import PlaceholderImagePod from 'src/assets/PlaceholderImagePod.png';
 import { Link } from 'react-router-dom';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+
+import type { IRootState } from 'src/javascripts/store';
 
 export interface ICreateStampModalProps {
     idPod: string | null;
@@ -89,7 +93,8 @@ const getTasksFilteredByName = (filterTextRaw: string, tasks: TaskModel[]): Task
 
 const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampModalProps) => {
     const { idPod, handleClose } = props;
-
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [createStampModalState, setCreateStampModalState] = useState<ICreateStampModalState>({
         data: {
             id: null,
@@ -124,79 +129,85 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
         },
     });
 
-    const handleGetPodCardsAssociatedWithUser = (): void => {
-        ResourceClient.postResource('api/app/GetPodCardsAssociatedWithUser', {
-            filterNameOrDescription: '',
-            filterIsPublic: true,
-            filterIsNotPublic: true,
-            filterIsMember: true,
-            filterIsNotMember: true,
-            filterIsModerator: true,
-            filterIsNotModerator: true,
-        })
-            .then((responseJson: any) => {
-                setPodCardState((prevState: IPodCardState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => {
-                            return new PodCardModel(datapoint);
-                        }),
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setPodCardState((prevState: IPodCardState) => {
-                    return {
-                        ...prevState,
-                        data: [],
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+    const handleGetPodCardsAssociatedWithUser = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetPodCardsAssociatedWithUser',
+                {
+                    filterNameOrDescription: '',
+                    filterIsPublic: true,
+                    filterIsNotPublic: true,
+                    filterIsMember: true,
+                    filterIsNotMember: true,
+                    filterIsModerator: true,
+                    filterIsNotModerator: true,
+                },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setPodCardState((prevState: IPodCardState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => {
+                        return new PodCardModel(datapoint);
+                    }),
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                };
             });
+        } catch (e: any) {
+            setPodCardState((prevState: IPodCardState) => {
+                return {
+                    ...prevState,
+                    data: [],
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
 
-    const handleGetTasksAssociatedWithPod = (): void => {
-        ResourceClient.postResource('api/app/GetTasksAssociatedWithPod', { id: createStampModalState.selectedPodId })
-            .then((responseJson: any) => {
-                setTaskState((prevState: ITaskState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => {
-                            return new TaskModel(datapoint);
-                        }),
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setTaskState((prevState: ITaskState) => {
-                    return {
-                        ...prevState,
-                        data: [],
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+    const handleGetTasksAssociatedWithPod = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetTasksAssociatedWithPod',
+                { id: createStampModalState.selectedPodId },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => {
+                        return new TaskModel(datapoint);
+                    }),
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                };
             });
+        } catch (e: any) {
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    data: [],
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
     useEffect(() => {
-        handleGetPodCardsAssociatedWithUser();
+        void handleGetPodCardsAssociatedWithUser();
         // eslint-disable-next-line
     }, []);
 
@@ -225,7 +236,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                     },
                 };
             });
-            handleGetTasksAssociatedWithPod();
+            void handleGetTasksAssociatedWithPod();
         }
         // eslint-disable-next-line
     }, [createStampModalState.selectedPodId]);
@@ -613,49 +624,44 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                         Cancel
                     </Button>
                     <Button
-                        onClick={() => {
-                            setCreateStampModalState((prevState: any) => {
-                                return {
-                                    ...prevState,
-                                    response: {
-                                        ...prevState.response,
-                                        state: Constants.RESPONSE_STATE_LOADING,
+                        /* eslint-disable @typescript-eslint/no-misused-promises */
+                        onClick={async () => {
+                            try {
+                                const response = await ResourceClient.postResource(
+                                    'api/app/CreateStamp',
+                                    {
+                                        name: getInputText(createStampModalState.data.name),
+                                        idTasks: Array.from(createStampModalState.data.selectedTaskIds),
+                                        ...(getInputText(createStampModalState.data.description).length === 0
+                                            ? {}
+                                            : { description: getInputText(createStampModalState.data.description) }),
                                     },
-                                };
-                            });
-                            ResourceClient.postResource('api/app/CreateStamp', {
-                                name: getInputText(createStampModalState.data.name),
-                                idTasks: Array.from(createStampModalState.data.selectedTaskIds),
-                                ...(getInputText(createStampModalState.data.description).length === 0
-                                    ? {}
-                                    : { description: getInputText(createStampModalState.data.description) }),
-                            })
-                                .then((responseJson: any) => {
-                                    setCreateStampModalState((prevState: any) => {
-                                        return {
-                                            ...prevState,
-                                            data: {
-                                                ...prevState.data,
-                                                id: responseJson.id,
-                                            },
-                                            response: {
-                                                state: Constants.RESPONSE_STATE_SUCCESS,
-                                                errorMessage: null,
-                                            },
-                                        };
-                                    });
-                                })
-                                .catch((errorMessage: any) => {
-                                    setCreateStampModalState((prevState: any) => {
-                                        return {
-                                            ...prevState,
-                                            response: {
-                                                state: Constants.RESPONSE_STATE_ERROR,
-                                                errorMessage,
-                                            },
-                                        };
-                                    });
+                                    sliceAuthenticationStateData.getJwtToken(),
+                                );
+                                setCreateStampModalState((prevState: any) => {
+                                    return {
+                                        ...prevState,
+                                        data: {
+                                            ...prevState.data,
+                                            id: response.data.id,
+                                        },
+                                        response: {
+                                            state: Constants.RESPONSE_STATE_SUCCESS,
+                                            errorMessage: null,
+                                        },
+                                    };
                                 });
+                            } catch (e: any) {
+                                setCreateStampModalState((prevState: any) => {
+                                    return {
+                                        ...prevState,
+                                        response: {
+                                            state: Constants.RESPONSE_STATE_ERROR,
+                                            errorMessage: e?.response?.data?.message,
+                                        },
+                                    };
+                                });
+                            }
                         }}
                         disabled={
                             isErrorCreateStamp ||

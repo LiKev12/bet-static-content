@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
     Alert,
     Box,
@@ -20,7 +21,11 @@ import Constants from 'src/javascripts/Constants';
 import { getInputText, getInputInteger } from 'src/javascripts/utilities';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+
+import type { IRootState } from 'src/javascripts/store';
 import type { Dayjs } from 'dayjs';
+
 export interface ICreateTaskModalProps {
     idPod: string | null;
     handleUpdate: any;
@@ -52,6 +57,8 @@ export interface ICreateTaskModalState {
 }
 const CreateTaskModal: React.FC<ICreateTaskModalProps> = (props: ICreateTaskModalProps) => {
     const { idPod, handleClose, handleUpdate } = props;
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [createTaskModalState, setCreateTaskModalState] = useState<ICreateTaskModalState>({
         data: {
             name: {
@@ -301,71 +308,77 @@ const CreateTaskModal: React.FC<ICreateTaskModalProps> = (props: ICreateTaskModa
                     Cancel
                 </Button>
                 <Button
-                    onClick={() => {
-                        setCreateTaskModalState((prevState: ICreateTaskModalState) => {
-                            return {
-                                ...prevState,
-                                response: {
-                                    ...prevState.response,
-                                    isLoading: true,
-                                },
-                            };
-                        });
-                        ResourceClient.postResource('api/app/CreateTask', {
-                            name: getInputText(createTaskModalState.data.name.value),
-                            numberOfPoints: getInputInteger(String(createTaskModalState.data.numberOfPoints.value)),
-                            ...(getInputText(createTaskModalState.data.description.value).length > 0
-                                ? { description: getInputText(createTaskModalState.data.description.value) }
-                                : {}),
-                            ...(createTaskModalState.data.datetimeTarget.value !== null
-                                ? {
-                                      datetimeTarget:
-                                          createTaskModalState.data.datetimeTarget.value.format('YYYY/MM/DD'),
-                                  }
-                                : {}),
-                            ...(idPod !== null ? { idPod } : {}),
-                        })
-                            .then(() => {
-                                setCreateTaskModalState((prevState: ICreateTaskModalState) => {
-                                    return {
-                                        ...prevState,
-                                        response: {
-                                            ...prevState.response,
-                                            state: Constants.RESPONSE_STATE_SUCCESS,
-                                            errorMessage: null,
-                                        },
-                                        data: {
-                                            name: {
-                                                value: '',
-                                                isBlurredInput: false,
-                                            },
-                                            numberOfPoints: {
-                                                value: 1,
-                                            },
-                                            datetimeTarget: {
-                                                value: null,
-                                            },
-                                            description: {
-                                                value: '',
-                                                isBlurredInput: false,
-                                            },
-                                        },
-                                    };
-                                });
-                                handleUpdate();
-                            })
-                            .catch((errorMessage: any) => {
-                                setCreateTaskModalState((prevState: ICreateTaskModalState) => {
-                                    return {
-                                        ...prevState,
-                                        response: {
-                                            ...prevState.response,
-                                            state: Constants.RESPONSE_STATE_ERROR,
-                                            errorMessage,
-                                        },
-                                    };
-                                });
+                    /* eslint-disable @typescript-eslint/no-misused-promises */
+                    onClick={async () => {
+                        try {
+                            setCreateTaskModalState((prevState: ICreateTaskModalState) => {
+                                return {
+                                    ...prevState,
+                                    response: {
+                                        ...prevState.response,
+                                        isLoading: true,
+                                    },
+                                };
                             });
+                            await ResourceClient.postResource(
+                                'api/app/CreateTask',
+                                {
+                                    name: getInputText(createTaskModalState.data.name.value),
+                                    numberOfPoints: getInputInteger(
+                                        String(createTaskModalState.data.numberOfPoints.value),
+                                    ),
+                                    ...(getInputText(createTaskModalState.data.description.value).length > 0
+                                        ? { description: getInputText(createTaskModalState.data.description.value) }
+                                        : {}),
+                                    ...(createTaskModalState.data.datetimeTarget.value !== null
+                                        ? {
+                                              datetimeTarget:
+                                                  createTaskModalState.data.datetimeTarget.value.format('YYYY/MM/DD'),
+                                          }
+                                        : {}),
+                                    ...(idPod !== null ? { idPod } : {}),
+                                },
+                                sliceAuthenticationStateData.getJwtToken(),
+                            );
+                            setCreateTaskModalState((prevState: ICreateTaskModalState) => {
+                                return {
+                                    ...prevState,
+                                    response: {
+                                        ...prevState.response,
+                                        state: Constants.RESPONSE_STATE_SUCCESS,
+                                        errorMessage: null,
+                                    },
+                                    data: {
+                                        name: {
+                                            value: '',
+                                            isBlurredInput: false,
+                                        },
+                                        numberOfPoints: {
+                                            value: 1,
+                                        },
+                                        datetimeTarget: {
+                                            value: null,
+                                        },
+                                        description: {
+                                            value: '',
+                                            isBlurredInput: false,
+                                        },
+                                    },
+                                };
+                            });
+                            handleUpdate();
+                        } catch (e: any) {
+                            setCreateTaskModalState((prevState: ICreateTaskModalState) => {
+                                return {
+                                    ...prevState,
+                                    response: {
+                                        ...prevState.response,
+                                        state: Constants.RESPONSE_STATE_ERROR,
+                                        errorMessage: e?.response?.data?.message,
+                                    },
+                                };
+                            });
+                        }
                     }}
                     disabled={isErrorTaskName || isErrorTaskNumberOfPoints || isErrorTaskDescription}
                 >

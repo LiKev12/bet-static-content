@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import _ from 'lodash';
 import {
     Alert,
@@ -31,7 +32,9 @@ import Constants from 'src/javascripts/Constants';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import TaskModel from 'src/javascripts/models/TaskModel';
 import PlaceholderImagePod from 'src/assets/PlaceholderImagePod.png';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 
+import type { IRootState } from 'src/javascripts/store';
 export interface IEditStampModalProps {
     idStamp: string;
     handleClose: any;
@@ -82,6 +85,8 @@ const getTasksFilteredByName = (filterTextRaw: string, tasks: TaskModel[]): Task
 
 const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalProps) => {
     const { idStamp, handleClose } = props;
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
 
     const [editStampModalState, setEditStampModalState] = useState<IEditStampModalState>({
         data: {
@@ -112,114 +117,123 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
         },
     });
 
-    const handleGetPodCardsAssociatedWithUser = (): void => {
-        ResourceClient.postResource('api/app/GetPodCardsAssociatedWithUser', {
-            filterNameOrDescription: '',
-            filterIsPublic: true,
-            filterIsNotPublic: true,
-            filterIsMember: true,
-            filterIsNotMember: true,
-            filterIsModerator: true,
-            filterIsNotModerator: true,
-        })
-            .then((responseJson: any) => {
-                setPodCardState((prevState: IPodCardState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => {
-                            return new PodCardModel(datapoint);
-                        }),
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setPodCardState((prevState: IPodCardState) => {
-                    return {
-                        ...prevState,
-                        data: [],
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+    const handleGetPodCardsAssociatedWithUser = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetPodCardsAssociatedWithUser',
+                {
+                    filterNameOrDescription: '',
+                    filterIsPublic: true,
+                    filterIsNotPublic: true,
+                    filterIsMember: true,
+                    filterIsNotMember: true,
+                    filterIsModerator: true,
+                    filterIsNotModerator: true,
+                },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setPodCardState((prevState: IPodCardState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => {
+                        return new PodCardModel(datapoint);
+                    }),
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                };
             });
+        } catch (e: any) {
+            setPodCardState((prevState: IPodCardState) => {
+                return {
+                    ...prevState,
+                    data: [],
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
 
-    const handleGetTasksAssociatedWithPod = (): void => {
-        ResourceClient.postResource('api/app/GetTasksAssociatedWithPod', { id: editStampModalState.selectedPodId })
-            .then((responseJson: any) => {
-                setTaskState((prevState: ITaskState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => {
-                            return new TaskModel(datapoint);
-                        }),
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setTaskState((prevState: ITaskState) => {
-                    return {
-                        ...prevState,
-                        data: [],
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+    const handleGetTasksAssociatedWithPod = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetTasksAssociatedWithPod',
+                { id: editStampModalState.selectedPodId },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => {
+                        return new TaskModel(datapoint);
+                    }),
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                };
             });
+        } catch (e: any) {
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    data: [],
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
 
-    const handleGetTasksAssociatedWithStamp = (requestBodyObject: Record<string, unknown>): void => {
-        ResourceClient.postResource('api/app/GetTasksAssociatedWithStamp', requestBodyObject)
-            .then((responseJson: any) => {
-                setEditStampModalState((prevState) => {
-                    return {
-                        ...prevState,
-                        data: {
-                            selectedTaskIds: new Set(
-                                responseJson.map((datapoint: any) => {
-                                    return new TaskModel(datapoint).getId();
-                                }),
-                            ),
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setEditStampModalState((prevState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+    const handleGetTasksAssociatedWithStamp = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetTasksAssociatedWithStamp',
+                requestBodyObject,
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setEditStampModalState((prevState) => {
+                return {
+                    ...prevState,
+                    data: {
+                        selectedTaskIds: new Set(
+                            response.data.map((datapoint: any) => {
+                                return new TaskModel(datapoint).getId();
+                            }),
+                        ),
+                    },
+                };
             });
+        } catch (e: any) {
+            setEditStampModalState((prevState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
     useEffect(() => {
-        handleGetPodCardsAssociatedWithUser();
+        void handleGetPodCardsAssociatedWithUser();
         // eslint-disable-next-line
     }, []);
 
     useEffect(() => {
-        handleGetTasksAssociatedWithStamp({
+        void handleGetTasksAssociatedWithStamp({
             filterNameOrDescription: '',
             filterIsComplete: true,
             filterIsNotComplete: true,
@@ -256,7 +270,7 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                     },
                 };
             });
-            handleGetTasksAssociatedWithPod();
+            void handleGetTasksAssociatedWithPod();
         }
         // eslint-disable-next-line
     }, [editStampModalState.selectedPodId]);
@@ -524,42 +538,46 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                         Cancel
                     </Button>
                     <Button
-                        onClick={() => {
-                            setEditStampModalState((prevState: any) => {
-                                return {
-                                    ...prevState,
-                                    response: {
-                                        ...prevState.response,
-                                        state: Constants.RESPONSE_STATE_LOADING,
-                                    },
-                                };
-                            });
-                            ResourceClient.postResource('api/app/UpdateStamp', {
-                                id: idStamp,
-                                idTasks: Array.from(editStampModalState.data.selectedTaskIds),
-                            })
-                                .then((responseJson: any) => {
-                                    setEditStampModalState((prevState: any) => {
-                                        return {
-                                            ...prevState,
-                                            response: {
-                                                state: Constants.RESPONSE_STATE_SUCCESS,
-                                                errorMessage: null,
-                                            },
-                                        };
-                                    });
-                                })
-                                .catch((errorMessage: any) => {
-                                    setEditStampModalState((prevState: any) => {
-                                        return {
-                                            ...prevState,
-                                            response: {
-                                                state: Constants.RESPONSE_STATE_ERROR,
-                                                errorMessage,
-                                            },
-                                        };
-                                    });
+                        /* eslint-disable @typescript-eslint/no-misused-promises */
+                        onClick={async () => {
+                            try {
+                                setEditStampModalState((prevState: any) => {
+                                    return {
+                                        ...prevState,
+                                        response: {
+                                            ...prevState.response,
+                                            state: Constants.RESPONSE_STATE_LOADING,
+                                        },
+                                    };
                                 });
+                                await ResourceClient.postResource(
+                                    'api/app/UpdateStamp',
+                                    {
+                                        id: idStamp,
+                                        idTasks: Array.from(editStampModalState.data.selectedTaskIds),
+                                    },
+                                    sliceAuthenticationStateData.getJwtToken(),
+                                );
+                                setEditStampModalState((prevState: any) => {
+                                    return {
+                                        ...prevState,
+                                        response: {
+                                            state: Constants.RESPONSE_STATE_SUCCESS,
+                                            errorMessage: null,
+                                        },
+                                    };
+                                });
+                            } catch (e: any) {
+                                setEditStampModalState((prevState: any) => {
+                                    return {
+                                        ...prevState,
+                                        response: {
+                                            state: Constants.RESPONSE_STATE_ERROR,
+                                            errorMessage: e?.response?.data?.message,
+                                        },
+                                    };
+                                });
+                            }
                         }}
                         disabled={
                             isErrorCreateStamp ||

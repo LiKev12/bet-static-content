@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import _ from 'lodash';
 import {
     Alert,
@@ -38,6 +39,9 @@ import Constants from 'src/javascripts/Constants';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import IconButtonFollowUser from 'src/javascripts/components/IconButtonFollowUser';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+
+import type { IRootState } from 'src/javascripts/store';
 
 export interface IAddPodModeratorsModalProps {
     handleClose: any;
@@ -89,6 +93,8 @@ const SORT_BY_DIRECTION = {
 
 const AddPodModeratorsModal: React.FC<IAddPodModeratorsModalProps> = (props: IAddPodModeratorsModalProps) => {
     const { handleClose, idPod, modalTitle } = props;
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [addPodModeratorsModalState, setAddPodModeratorsModalState] = useState<IAddPodModeratorsModalState>({
         data: { selectedUserIds: new Set() },
         filterUserText: '',
@@ -135,36 +141,39 @@ const AddPodModeratorsModal: React.FC<IAddPodModeratorsModalProps> = (props: IAd
         userBubblesProcessed.reverse();
     }
 
-    const handleGetUserBubblesAddPodModerator = (): void => {
-        ResourceClient.postResource('api/app/GetUserBubblesAddPodModerator', { id: String(idPod) })
-            .then((responseJson: any) => {
-                setUserBubbleAddPodModeratorState((prevState: IUserBubbleAddPodModeratorState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => new UserBubbleModel(datapoint)),
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setUserBubbleAddPodModeratorState((prevState: IUserBubbleAddPodModeratorState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+    const handleGetUserBubblesAddPodModerator = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetUserBubblesAddPodModerator',
+                { id: String(idPod) },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setUserBubbleAddPodModeratorState((prevState: IUserBubbleAddPodModeratorState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => new UserBubbleModel(datapoint)),
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                };
             });
+        } catch (e: any) {
+            setUserBubbleAddPodModeratorState((prevState: IUserBubbleAddPodModeratorState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
     useEffect(() => {
-        handleGetUserBubblesAddPodModerator();
+        void handleGetUserBubblesAddPodModerator();
         // eslint-disable-next-line
     }, []);
 
@@ -368,14 +377,17 @@ const AddPodModeratorsModal: React.FC<IAddPodModeratorsModalProps> = (props: IAd
                                                 isMe={userBubble.getIsMe()}
                                                 isFollowedByMe={userBubble.getIsFollowedByMe()}
                                                 isFollowRequestSentNotYetAccepted={userBubble.getIsFollowRequestSentNotYetAccepted()}
-                                                handleSendFollowRequest={() => {
-                                                    ResourceClient.postResource('api/app/SendFollowUserRequest', {
-                                                        id: userBubble.getId(),
-                                                    })
-                                                        .then(() => {
-                                                            handleGetUserBubblesAddPodModerator();
-                                                        })
-                                                        .catch(() => {});
+                                                handleSendFollowRequest={async () => {
+                                                    try {
+                                                        await ResourceClient.postResource(
+                                                            'api/app/SendFollowUserRequest',
+                                                            {
+                                                                id: userBubble.getId(),
+                                                            },
+                                                            sliceAuthenticationStateData.getJwtToken(),
+                                                        );
+                                                        void handleGetUserBubblesAddPodModerator();
+                                                    } catch {}
                                                 }}
                                             />
                                         </ListItem>
@@ -397,7 +409,8 @@ const AddPodModeratorsModal: React.FC<IAddPodModeratorsModalProps> = (props: IAd
                         addPodModeratorsModalState.data.selectedUserIds.size === 0 ||
                         userBubbleAddPodModeratorState.data.length === 0
                     }
-                    onClick={() => {
+                    /* eslint-disable @typescript-eslint/no-misused-promises */
+                    onClick={async () => {
                         setAddPodModeratorsModalState((prevState: IAddPodModeratorsModalState) => {
                             return {
                                 ...prevState,
@@ -407,24 +420,27 @@ const AddPodModeratorsModal: React.FC<IAddPodModeratorsModalProps> = (props: IAd
                                 },
                             };
                         });
-                        ResourceClient.postResource('api/app/AddPodModerators', {
-                            id: idPod,
-                            idUsers: Array.from(addPodModeratorsModalState.data.selectedUserIds),
-                        })
-                            .then((responseJson: any) => {
-                                handleUpdateUserBubbleAddPodModeratorState(responseJson);
-                            })
-                            .catch((errorMessage: any) => {
-                                setAddPodModeratorsModalState((prevState: IAddPodModeratorsModalState) => {
-                                    return {
-                                        ...prevState,
-                                        response: {
-                                            state: Constants.RESPONSE_STATE_ERROR,
-                                            errorMessage,
-                                        },
-                                    };
-                                });
+                        try {
+                            const response = await ResourceClient.postResource(
+                                'api/app/AddPodModerators',
+                                {
+                                    id: idPod,
+                                    idUsers: Array.from(addPodModeratorsModalState.data.selectedUserIds),
+                                },
+                                sliceAuthenticationStateData.getJwtToken(),
+                            );
+                            handleUpdateUserBubbleAddPodModeratorState(response.data);
+                        } catch (e: any) {
+                            setAddPodModeratorsModalState((prevState: IAddPodModeratorsModalState) => {
+                                return {
+                                    ...prevState,
+                                    response: {
+                                        state: Constants.RESPONSE_STATE_ERROR,
+                                        errorMessage: e?.response?.data?.message,
+                                    },
+                                };
                             });
+                        }
                     }}
                 >
                     Add

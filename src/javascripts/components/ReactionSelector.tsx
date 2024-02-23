@@ -1,8 +1,11 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import { Box, Button, ButtonGroup } from '@mui/material';
 import Constants from 'src/javascripts/Constants';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 
+import type { IRootState } from 'src/javascripts/store';
 export interface IReactionSelectorProps {
     handleUpdateCallback: any;
     apiPathSelectReaction: string;
@@ -16,7 +19,8 @@ export interface IReactionSelectorState {
 
 const ReactionSelector: React.FC<IReactionSelectorProps> = (props: IReactionSelectorProps) => {
     const { handleUpdateCallback, apiPathSelectReaction, apiSelectReactionSourceEntityIdValue, myReaction } = props;
-
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     return (
         <Box>
             <ButtonGroup variant="contained">
@@ -30,15 +34,19 @@ const ReactionSelector: React.FC<IReactionSelectorProps> = (props: IReactionSele
                                 fontSize: '20px',
                                 ...(myReaction === reactionType ? { backgroundColor: '#fff59d' } : {}),
                             }}
-                            onClick={() => {
-                                ResourceClient.postResource(apiPathSelectReaction, {
-                                    id: apiSelectReactionSourceEntityIdValue,
-                                    reactionType: reactionType === myReaction ? null : reactionType,
-                                })
-                                    .then(() => {
-                                        handleUpdateCallback();
-                                    })
-                                    .catch(() => {});
+                            /* eslint-disable @typescript-eslint/no-misused-promises */
+                            onClick={async () => {
+                                try {
+                                    await ResourceClient.postResource(
+                                        apiPathSelectReaction,
+                                        {
+                                            id: apiSelectReactionSourceEntityIdValue,
+                                            reactionType,
+                                        },
+                                        sliceAuthenticationStateData.getJwtToken(),
+                                    );
+                                    handleUpdateCallback();
+                                } catch (e: any) {}
                             }}
                         >
                             {Constants.GET_EMOJI_HTML_FROM_REACTION(reactionType)}

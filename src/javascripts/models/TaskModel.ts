@@ -20,8 +20,8 @@ export default class TaskModel {
     userBubblesTaskCompleteTotalNumber: number = 0;
     isMemberOfTaskPod: boolean = false;
 
-    constructor(taskModel: any, isInitial: boolean = false) {
-        if (isInitial) {
+    constructor(taskModel: any) {
+        if (taskModel === null) {
             return;
         }
         this.id = taskModel.id;

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import { THEME } from 'src/javascripts/Theme';
@@ -6,6 +7,10 @@ import { AppBar, Box, Tab, Tabs, Toolbar } from '@mui/material';
 import { styled } from '@mui/system';
 import { Link } from 'react-router-dom';
 import IconButtonOpenNotificationListModal from 'src/javascripts/components/IconButtonOpenNotificationListModal';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+import { sliceHeaderActiveTabActions } from 'src/javascripts/store/SliceHeaderActiveTab';
+
+import type { IRootState } from 'src/javascripts/store';
 
 function ElevationScroll(props: any): any {
     const { children, window } = props;
@@ -34,12 +39,12 @@ const StyledTab = styled(Tab)<any>(({ theme }: any) => ({
     },
 }));
 
-export interface IHeaderProps {
-    activeTabIdx: number;
-    setActiveTabIdx: any;
-}
-
-const Header: React.FC<IHeaderProps> = (props: IHeaderProps) => {
+const Header: React.FC = (props) => {
+    const dispatch = useDispatch();
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
+    const sliceHeaderActiveTabState = useSelector((state: IRootState) => state.headerActiveTab);
+    const sliceHeaderActiveTabStateData = sliceHeaderActiveTabState.data;
     return (
         <React.Fragment>
             <ElevationScroll>
@@ -59,21 +64,35 @@ const Header: React.FC<IHeaderProps> = (props: IHeaderProps) => {
                             <img src={Logo} alt="bet logo" width="64px" height="64px" />
                             <Box sx={{ width: '12px' }}></Box>
                         </Button> */}
-                        <Tabs
-                            value={props.activeTabIdx}
-                            onChange={(e, activeTabIdx) => {
-                                props.setActiveTabIdx(activeTabIdx);
-                            }}
-                            style={{ marginLeft: 'auto' }}
-                            indicatorColor="primary"
-                        >
-                            <StyledTab component={Link} to="/" label="Home" />
-                            <StyledTab component={Link} to="/me" label="Me" />
-                            <StyledTab component={Link} to="/discover" label="Discover" />
-                        </Tabs>
-                        <Box sx={{ marginRight: '48px' }}>
-                            <IconButtonOpenNotificationListModal />
-                        </Box>
+                        {sliceAuthenticationStateData.hasJwtToken() ? (
+                            <React.Fragment>
+                                <Tabs
+                                    value={sliceHeaderActiveTabStateData}
+                                    onChange={(e, activeTabIdx) => {
+                                        dispatch(sliceHeaderActiveTabActions.setStateData(activeTabIdx));
+                                    }}
+                                    style={{ marginLeft: 'auto' }}
+                                    indicatorColor="primary"
+                                >
+                                    <StyledTab component={Link} to="/me" label="Me" />
+                                    <StyledTab component={Link} to="/discover" label="Discover" />
+                                </Tabs>
+                                <Box sx={{ marginRight: '48px' }}>
+                                    <IconButtonOpenNotificationListModal />
+                                </Box>
+                            </React.Fragment>
+                        ) : (
+                            <Tabs
+                                value={sliceHeaderActiveTabStateData}
+                                // onChange={(e, activeTabIdx) => {
+                                //     props.setActiveTabIdx(activeTabIdx);
+                                // }}
+                                style={{ marginLeft: 'auto', marginRight: '48px' }}
+                                indicatorColor="primary"
+                            >
+                                <StyledTab component={Link} to="/" label="Home" />
+                            </Tabs>
+                        )}
                     </Toolbar>
                 </AppBar>
             </ElevationScroll>

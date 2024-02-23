@@ -13,8 +13,8 @@ export default class NotificationModel {
     isMemberOfPod: boolean = false;
     isFollowedByUserWhoSentFollowRequest: boolean = false;
 
-    constructor(notificationModel: any, isInitial: boolean = false) {
-        if (isInitial) {
+    constructor(notificationModel: any) {
+        if (notificationModel === null) {
             return;
         }
         this.id = notificationModel.id;

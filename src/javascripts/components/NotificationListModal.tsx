@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import _ from 'lodash';
 import {
     Box,
@@ -38,7 +39,9 @@ import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import LoginIcon from '@mui/icons-material/Login';
 import Constants from 'src/javascripts/Constants';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 
+import type { IRootState } from 'src/javascripts/store';
 export interface INotificationListModalProps {
     handleClose: any;
     modalTitle: string;
@@ -77,6 +80,8 @@ const SORT_BY_DIRECTION = {
 
 const NotificationListModal: React.FC<INotificationListModalProps> = (props: INotificationListModalProps) => {
     const { handleClose } = props;
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [notificationListModalState, setNotificationListModalState] = useState<INotificationListModalState>({
         data: [],
         response: {
@@ -107,30 +112,33 @@ const NotificationListModal: React.FC<INotificationListModalProps> = (props: INo
         notificationsProcessed.reverse();
     }
 
-    const handleGetResourceNotifications = (): void => {
-        ResourceClient.postResource('api/app/GetNotifications', {})
-            .then((responseJson: any) => {
-                setNotificationListModalState((prevState: INotificationListModalState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => new NotificationModel(datapoint)),
-                        isLoading: false,
-                        responseError: null,
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setNotificationListModalState((prevState: INotificationListModalState) => {
-                    return {
-                        ...prevState,
-                        isLoading: false,
-                        responseError,
-                    };
-                });
+    const handleGetResourceNotifications = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetNotifications',
+                {},
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setNotificationListModalState((prevState: INotificationListModalState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => new NotificationModel(datapoint)),
+                    isLoading: false,
+                    responseError: null,
+                };
             });
+        } catch (e: any) {
+            setNotificationListModalState((prevState: INotificationListModalState) => {
+                return {
+                    ...prevState,
+                    isLoading: false,
+                    responseError: e?.response?.data?.message,
+                };
+            });
+        }
     };
     useEffect(() => {
-        handleGetResourceNotifications();
+        void handleGetResourceNotifications();
         // eslint-disable-next-line
     }, []);
     const debouncedHandleChangeFilterText = _.debounce((event: React.ChangeEvent<HTMLInputElement>): void => {
@@ -272,43 +280,49 @@ const NotificationListModal: React.FC<INotificationListModalProps> = (props: INo
                                             secondaryAction = (
                                                 <ButtonGroup>
                                                     <IconButton
-                                                        onClick={() => {
-                                                            ResourceClient.postResource(
-                                                                'api/app/AcceptFollowUserRequests',
-                                                                {
-                                                                    idUsers: [notification.getIdLinkPage()],
-                                                                },
-                                                            )
-                                                                .then(() => {})
-                                                                .catch(() => {});
-                                                            ResourceClient.postResource('api/app/DismissNotification', {
-                                                                id: notification.getId(),
-                                                            })
-                                                                .then(() => {
-                                                                    handleGetResourceNotifications();
-                                                                })
-                                                                .catch(() => {});
+                                                        /* eslint-disable @typescript-eslint/no-misused-promises */
+                                                        onClick={async () => {
+                                                            try {
+                                                                await ResourceClient.postResource(
+                                                                    'api/app/AcceptFollowUserRequests',
+                                                                    {
+                                                                        idUsers: [notification.getIdLinkPage()],
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                await ResourceClient.postResource(
+                                                                    'api/app/DismissNotification',
+                                                                    {
+                                                                        id: notification.getId(),
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                void handleGetResourceNotifications();
+                                                            } catch (e: any) {}
                                                         }}
                                                     >
                                                         <CheckIcon />
                                                     </IconButton>
                                                     <IconButton
-                                                        onClick={() => {
-                                                            ResourceClient.postResource(
-                                                                'api/app/DeclineFollowUserRequests',
-                                                                {
-                                                                    idUsers: [notification.getIdLinkPage()],
-                                                                },
-                                                            )
-                                                                .then(() => {})
-                                                                .catch(() => {});
-                                                            ResourceClient.postResource('api/app/DismissNotification', {
-                                                                id: notification.getId(),
-                                                            })
-                                                                .then(() => {
-                                                                    handleGetResourceNotifications();
-                                                                })
-                                                                .catch(() => {});
+                                                        /* eslint-disable @typescript-eslint/no-misused-promises */
+                                                        onClick={async () => {
+                                                            try {
+                                                                await ResourceClient.postResource(
+                                                                    'api/app/DeclineFollowUserRequests',
+                                                                    {
+                                                                        idUsers: [notification.getIdLinkPage()],
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                await ResourceClient.postResource(
+                                                                    'api/app/DismissNotification',
+                                                                    {
+                                                                        id: notification.getId(),
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                void handleGetResourceNotifications();
+                                                            } catch (e: any) {}
                                                         }}
                                                     >
                                                         <CloseIcon />
@@ -357,40 +371,49 @@ const NotificationListModal: React.FC<INotificationListModalProps> = (props: INo
                                             secondaryAction = (
                                                 <ButtonGroup>
                                                     <IconButton
-                                                        onClick={() => {
-                                                            ResourceClient.postResource('api/app/AcceptJoinPodInvite', {
-                                                                id: notification.getIdLinkPage(),
-                                                            })
-                                                                .then(() => {})
-                                                                .catch(() => {});
-                                                            ResourceClient.postResource('api/app/DismissNotification', {
-                                                                id: notification.getId(),
-                                                            })
-                                                                .then(() => {
-                                                                    handleGetResourceNotifications();
-                                                                })
-                                                                .catch(() => {});
+                                                        /* eslint-disable @typescript-eslint/no-misused-promises */
+                                                        onClick={async () => {
+                                                            try {
+                                                                await ResourceClient.postResource(
+                                                                    'api/app/AcceptJoinPodInvite',
+                                                                    {
+                                                                        id: notification.getIdLinkPage(),
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                await ResourceClient.postResource(
+                                                                    'api/app/DismissNotification',
+                                                                    {
+                                                                        id: notification.getId(),
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                void handleGetResourceNotifications();
+                                                            } catch (e: any) {}
                                                         }}
                                                     >
                                                         <CheckIcon />
                                                     </IconButton>
                                                     <IconButton
-                                                        onClick={() => {
-                                                            ResourceClient.postResource(
-                                                                'api/app/DeclineJoinPodInvite',
-                                                                {
-                                                                    id: notification.getIdLinkPage(),
-                                                                },
-                                                            )
-                                                                .then(() => {})
-                                                                .catch(() => {});
-                                                            ResourceClient.postResource('api/app/DismissNotification', {
-                                                                id: notification.getId(),
-                                                            })
-                                                                .then(() => {
-                                                                    handleGetResourceNotifications();
-                                                                })
-                                                                .catch(() => {});
+                                                        /* eslint-disable @typescript-eslint/no-misused-promises */
+                                                        onClick={async () => {
+                                                            try {
+                                                                await ResourceClient.postResource(
+                                                                    'api/app/DeclineJoinPodInvite',
+                                                                    {
+                                                                        id: notification.getIdLinkPage(),
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                await ResourceClient.postResource(
+                                                                    'api/app/DismissNotification',
+                                                                    {
+                                                                        id: notification.getId(),
+                                                                    },
+                                                                    sliceAuthenticationStateData.getJwtToken(),
+                                                                );
+                                                                void handleGetResourceNotifications();
+                                                            } catch (e: any) {}
                                                         }}
                                                     >
                                                         <CloseIcon />

@@ -6,8 +6,8 @@ export default class ReactionsModel {
     userBubblesReactionTotalNumber: number = 0;
     myReactionType: string | null = null;
 
-    constructor(reactionsModel: any, isInitial: boolean = false) {
-        if (isInitial) {
+    constructor(reactionsModel: any) {
+        if (reactionsModel === null) {
             return;
         }
         this.idReactionTargetEntity = reactionsModel.idReactionTargetEntity;

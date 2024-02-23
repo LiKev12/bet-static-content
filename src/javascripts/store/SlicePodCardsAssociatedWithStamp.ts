@@ -1,42 +1,39 @@
 import { createSlice } from '@reduxjs/toolkit';
-import type AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+import type PodPageModel from 'src/javascripts/models/PodPageModel';
 import Constants from 'src/javascripts/Constants';
 
-export interface ISliceAuthenticationState {
-    // data: AuthenticationModel | null;
-    data: any;
+export interface ISlicePodCardsAssociatedWithStampState {
+    data: PodPageModel[];
     response: {
         state: string;
         errorMessage: string | null;
     };
 }
-const sliceAuthentication = createSlice({
-    name: 'authentication',
+
+const slicePodCardsAssociatedWithStamp = createSlice({
+    name: 'podCardsAssociatedWithStamp',
     initialState: {
-        data: {
-            jwtToken: sessionStorage.getItem('jwtToken'),
-        },
+        data: [],
         response: {
             state: Constants.RESPONSE_STATE_UNSTARTED,
             errorMessage: null,
         },
     },
     reducers: {
-        setStateData(state: ISliceAuthenticationState, action: { payload: AuthenticationModel }) {
-            sessionStorage.setItem('jwtToken', action.payload.jwtToken);
+        setStateData(state: ISlicePodCardsAssociatedWithStampState, action: { payload: PodPageModel[] }) {
             state.data = action.payload;
             state.response = {
                 state: Constants.RESPONSE_STATE_SUCCESS,
                 errorMessage: null,
             };
         },
-        setStateResponseLoading(state: ISliceAuthenticationState) {
+        setStateResponseLoading(state: ISlicePodCardsAssociatedWithStampState) {
             state.response = {
                 state: Constants.RESPONSE_STATE_LOADING,
                 errorMessage: null,
             };
         },
-        setStateResponseError(state: ISliceAuthenticationState, action: { payload: string | null }) {
+        setStateResponseError(state: ISlicePodCardsAssociatedWithStampState, action: { payload: string | null }) {
             state.response = {
                 state: Constants.RESPONSE_STATE_ERROR,
                 errorMessage: action.payload,
@@ -45,5 +42,5 @@ const sliceAuthentication = createSlice({
     },
 });
 
-export const sliceAuthenticationActions = sliceAuthentication.actions;
-export default sliceAuthentication;
+export const slicePodCardsAssociatedWithStampActions = slicePodCardsAssociatedWithStamp.actions;
+export default slicePodCardsAssociatedWithStamp;

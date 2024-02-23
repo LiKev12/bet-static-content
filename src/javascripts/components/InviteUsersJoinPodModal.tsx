@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import _ from 'lodash';
 import {
     Alert,
@@ -38,6 +39,9 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Constants from 'src/javascripts/Constants';
 import IconButtonFollowUser from 'src/javascripts/components/IconButtonFollowUser';
+import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+
+import type { IRootState } from 'src/javascripts/store';
 
 export interface IInviteUsersJoinPodModalProps {
     handleClose: any;
@@ -89,6 +93,8 @@ const SORT_BY_DIRECTION = {
 
 const InviteUsersJoinPodModal: React.FC<IInviteUsersJoinPodModalProps> = (props: IInviteUsersJoinPodModalProps) => {
     const { handleClose, idPod, modalTitle } = props;
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [inviteUsersJoinPodModalState, setInviteUsersJoinPodModalState] = useState<IInviteUsersJoinPodModalState>({
         data: { selectedUserIds: new Set() },
         filterUserText: '',
@@ -135,36 +141,39 @@ const InviteUsersJoinPodModal: React.FC<IInviteUsersJoinPodModalProps> = (props:
         userBubblesProcessed.reverse();
     }
 
-    const handleGetUserBubblesInviteJoinPod = (): void => {
-        ResourceClient.postResource('api/app/GetUserBubblesInviteJoinPod', { id: String(idPod) })
-            .then((responseJson: any) => {
-                setUserBubbleInviteJoinPodState((prevState: IUserBubbleInviteJoinPodState) => {
-                    return {
-                        ...prevState,
-                        data: responseJson.map((datapoint: any) => new UserBubbleModel(datapoint)),
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_SUCCESS,
-                            errorMessage: null,
-                        },
-                    };
-                });
-            })
-            .catch((responseError: any) => {
-                setUserBubbleInviteJoinPodState((prevState: IUserBubbleInviteJoinPodState) => {
-                    return {
-                        ...prevState,
-                        response: {
-                            ...prevState.response,
-                            state: Constants.RESPONSE_STATE_ERROR,
-                            errorMessage: responseError,
-                        },
-                    };
-                });
+    const handleGetUserBubblesInviteJoinPod = async (): Promise<any> => {
+        try {
+            const response = await ResourceClient.postResource(
+                'api/app/GetUserBubblesInviteJoinPod',
+                { id: String(idPod) },
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            setUserBubbleInviteJoinPodState((prevState: IUserBubbleInviteJoinPodState) => {
+                return {
+                    ...prevState,
+                    data: response.data.map((datapoint: any) => new UserBubbleModel(datapoint)),
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_SUCCESS,
+                        errorMessage: null,
+                    },
+                };
             });
+        } catch (e: any) {
+            setUserBubbleInviteJoinPodState((prevState: IUserBubbleInviteJoinPodState) => {
+                return {
+                    ...prevState,
+                    response: {
+                        ...prevState.response,
+                        state: Constants.RESPONSE_STATE_ERROR,
+                        errorMessage: e?.response?.data?.message,
+                    },
+                };
+            });
+        }
     };
     useEffect(() => {
-        handleGetUserBubblesInviteJoinPod();
+        void handleGetUserBubblesInviteJoinPod();
         // eslint-disable-next-line
     }, []);
 
@@ -369,14 +378,17 @@ const InviteUsersJoinPodModal: React.FC<IInviteUsersJoinPodModalProps> = (props:
                                                 isMe={userBubble.getIsMe()}
                                                 isFollowedByMe={userBubble.getIsFollowedByMe()}
                                                 isFollowRequestSentNotYetAccepted={userBubble.getIsFollowRequestSentNotYetAccepted()}
-                                                handleSendFollowRequest={() => {
-                                                    ResourceClient.postResource('api/app/SendFollowUserRequest', {
-                                                        id: userBubble.getId(),
-                                                    })
-                                                        .then(() => {
-                                                            handleGetUserBubblesInviteJoinPod();
-                                                        })
-                                                        .catch(() => {});
+                                                handleSendFollowRequest={async () => {
+                                                    try {
+                                                        await ResourceClient.postResource(
+                                                            'api/app/SendFollowUserRequest',
+                                                            {
+                                                                id: userBubble.getId(),
+                                                            },
+                                                            sliceAuthenticationStateData.getJwtToken(),
+                                                        );
+                                                        void handleGetUserBubblesInviteJoinPod();
+                                                    } catch (e: any) {}
                                                 }}
                                             />
                                         </ListItem>
@@ -398,34 +410,38 @@ const InviteUsersJoinPodModal: React.FC<IInviteUsersJoinPodModalProps> = (props:
                         inviteUsersJoinPodModalState.data.selectedUserIds.size === 0 ||
                         userBubbleInviteJoinPodState.data.length === 0
                     }
-                    onClick={() => {
-                        setInviteUsersJoinPodModalState((prevState: IInviteUsersJoinPodModalState) => {
-                            return {
-                                ...prevState,
-                                response: {
-                                    ...prevState.response,
-                                    state: Constants.RESPONSE_STATE_LOADING,
-                                },
-                            };
-                        });
-                        ResourceClient.postResource('api/app/SendJoinPodInvite', {
-                            id: String(idPod),
-                            idUsers: Array.from(inviteUsersJoinPodModalState.data.selectedUserIds),
-                        })
-                            .then((responseJson: any) => {
-                                handleUpdateUserBubbleInviteJoinPodState(responseJson);
-                            })
-                            .catch((errorMessage: any) => {
-                                setInviteUsersJoinPodModalState((prevState: IInviteUsersJoinPodModalState) => {
-                                    return {
-                                        ...prevState,
-                                        response: {
-                                            state: Constants.RESPONSE_STATE_ERROR,
-                                            errorMessage,
-                                        },
-                                    };
-                                });
+                    /* eslint-disable @typescript-eslint/no-misused-promises */
+                    onClick={async () => {
+                        try {
+                            setInviteUsersJoinPodModalState((prevState: IInviteUsersJoinPodModalState) => {
+                                return {
+                                    ...prevState,
+                                    response: {
+                                        ...prevState.response,
+                                        state: Constants.RESPONSE_STATE_LOADING,
+                                    },
+                                };
                             });
+                            const response = await ResourceClient.postResource(
+                                'api/app/SendJoinPodInvite',
+                                {
+                                    id: String(idPod),
+                                    idUsers: Array.from(inviteUsersJoinPodModalState.data.selectedUserIds),
+                                },
+                                sliceAuthenticationStateData.getJwtToken(),
+                            );
+                            handleUpdateUserBubbleInviteJoinPodState(response.data);
+                        } catch (e: any) {
+                            setInviteUsersJoinPodModalState((prevState: IInviteUsersJoinPodModalState) => {
+                                return {
+                                    ...prevState,
+                                    response: {
+                                        state: Constants.RESPONSE_STATE_ERROR,
+                                        errorMessage: e?.response?.data?.message,
+                                    },
+                                };
+                            });
+                        }
                     }}
                 >
                     Invite

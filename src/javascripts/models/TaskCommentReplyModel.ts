@@ -10,10 +10,10 @@ export default class TaskCommentReplyModel {
     commentReplyText: string = '';
     isImage: boolean = false;
     commentReplyImageLink: string = '';
-    reactions: ReactionsModel = new ReactionsModel(null, true);
+    reactions: ReactionsModel = new ReactionsModel(null);
 
-    constructor(taskCommentReplyModel: any, isInitial: boolean = false) {
-        if (isInitial) {
+    constructor(taskCommentReplyModel: any) {
+        if (taskCommentReplyModel === null) {
             return;
         }
         this.idTaskCommentReply = taskCommentReplyModel.idTaskCommentReply;
