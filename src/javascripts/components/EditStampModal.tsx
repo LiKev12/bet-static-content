@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import _ from 'lodash';
 import {
     Alert,
@@ -33,6 +33,7 @@ import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import TaskModel from 'src/javascripts/models/TaskModel';
 import PlaceholderImagePod from 'src/assets/PlaceholderImagePod.png';
 import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
+import { sliceTasksAssociatedWithStampActions } from 'src/javascripts/store/SliceTasksAssociatedWithStamp';
 
 import type { IRootState } from 'src/javascripts/store';
 export interface IEditStampModalProps {
@@ -85,6 +86,7 @@ const getTasksFilteredByName = (filterTextRaw: string, tasks: TaskModel[]): Task
 
 const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalProps) => {
     const { idStamp, handleClose } = props;
+    const dispatch = useDispatch();
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
     const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
 
@@ -122,6 +124,7 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
             const response = await ResourceClient.postResource(
                 'api/app/GetPodCardsAssociatedWithUser',
                 {
+                    id: sliceAuthenticationStateData.getIdUser(),
                     filterNameOrDescription: '',
                     filterIsPublic: true,
                     filterIsNotPublic: true,
@@ -164,7 +167,16 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
         try {
             const response = await ResourceClient.postResource(
                 'api/app/GetTasksAssociatedWithPod',
-                { id: editStampModalState.selectedPodId },
+                {
+                    id: editStampModalState.selectedPodId,
+                    filterNameOrDescription: '',
+                    filterIsComplete: true,
+                    filterIsNotComplete: true,
+                    filterIsStar: true,
+                    filterIsNotStar: true,
+                    filterIsPin: true,
+                    filterIsNotPin: true,
+                },
                 sliceAuthenticationStateData.getJwtToken(),
             );
             setTaskState((prevState: ITaskState) => {
@@ -202,6 +214,7 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                 requestBodyObject,
                 sliceAuthenticationStateData.getJwtToken(),
             );
+            console.log({ response });
             setEditStampModalState((prevState) => {
                 return {
                     ...prevState,
@@ -234,6 +247,7 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
 
     useEffect(() => {
         void handleGetTasksAssociatedWithStamp({
+            id: idStamp,
             filterNameOrDescription: '',
             filterIsComplete: true,
             filterIsNotComplete: true,
@@ -567,6 +581,31 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                                         },
                                     };
                                 });
+                                try {
+                                    dispatch(sliceTasksAssociatedWithStampActions.setStateResponseLoading());
+                                    const response = await ResourceClient.postResource(
+                                        'api/app/GetTasksAssociatedWithStamp',
+                                        {
+                                            id: idStamp,
+                                            filterNameOrDescription: '',
+                                            filterIsComplete: true,
+                                            filterIsNotComplete: true,
+                                            filterIsStar: true,
+                                            filterIsNotStar: true,
+                                            filterIsPin: true,
+                                            filterIsNotPin: true,
+                                        },
+                                        sliceAuthenticationStateData.getJwtToken(),
+                                    );
+                                    dispatch(sliceTasksAssociatedWithStampActions.setStateData(response.data));
+                                } catch (e: any) {
+                                    dispatch(
+                                        sliceTasksAssociatedWithStampActions.setStateResponseError(
+                                            e?.response?.data?.message,
+                                        ),
+                                    );
+                                }
+                                handleClose();
                             } catch (e: any) {
                                 setEditStampModalState((prevState: any) => {
                                     return {
@@ -579,10 +618,7 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                                 });
                             }
                         }}
-                        disabled={
-                            isErrorCreateStamp ||
-                            editStampModalState.response.state !== Constants.RESPONSE_STATE_UNSTARTED
-                        }
+                        disabled={isErrorCreateStamp}
                     >
                         Confirm
                     </Button>

@@ -134,6 +134,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
             const response = await ResourceClient.postResource(
                 'api/app/GetPodCardsAssociatedWithUser',
                 {
+                    id: sliceAuthenticationStateData.getIdUser(),
                     filterNameOrDescription: '',
                     filterIsPublic: true,
                     filterIsNotPublic: true,
@@ -144,6 +145,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                 },
                 sliceAuthenticationStateData.getJwtToken(),
             );
+
             setPodCardState((prevState: IPodCardState) => {
                 return {
                     ...prevState,
@@ -176,7 +178,16 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
         try {
             const response = await ResourceClient.postResource(
                 'api/app/GetTasksAssociatedWithPod',
-                { id: createStampModalState.selectedPodId },
+                {
+                    id: createStampModalState.selectedPodId,
+                    filterNameOrDescription: '',
+                    filterIsComplete: true,
+                    filterIsNotComplete: true,
+                    filterIsStar: true,
+                    filterIsNotStar: true,
+                    filterIsPin: true,
+                    filterIsNotPin: true,
+                },
                 sliceAuthenticationStateData.getJwtToken(),
             );
             setTaskState((prevState: ITaskState) => {

@@ -5,7 +5,7 @@ import useScrollTrigger from '@mui/material/useScrollTrigger';
 import { THEME } from 'src/javascripts/Theme';
 import { AppBar, Box, Tab, Tabs, Toolbar } from '@mui/material';
 import { styled } from '@mui/system';
-import { Link } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
 import IconButtonOpenNotificationListModal from 'src/javascripts/components/IconButtonOpenNotificationListModal';
 import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 import { sliceHeaderActiveTabActions } from 'src/javascripts/store/SliceHeaderActiveTab';
@@ -76,23 +76,18 @@ const Header: React.FC = (props) => {
                                 >
                                     <StyledTab component={Link} to="/me" label="Me" />
                                     <StyledTab component={Link} to="/discover" label="Discover" />
+                                    <StyledTab
+                                        component={Link}
+                                        to={`/profiles/${String(sliceAuthenticationStateData.getIdUser())}`}
+                                        label="Profile"
+                                    />
+                                    <StyledTab component={Link} to="/account" label="Account" />
                                 </Tabs>
                                 <Box sx={{ marginRight: '48px' }}>
                                     <IconButtonOpenNotificationListModal />
                                 </Box>
                             </React.Fragment>
-                        ) : (
-                            <Tabs
-                                value={sliceHeaderActiveTabStateData}
-                                // onChange={(e, activeTabIdx) => {
-                                //     props.setActiveTabIdx(activeTabIdx);
-                                // }}
-                                style={{ marginLeft: 'auto', marginRight: '48px' }}
-                                indicatorColor="primary"
-                            >
-                                <StyledTab component={Link} to="/" label="Home" />
-                            </Tabs>
-                        )}
+                        ) : null}
                     </Toolbar>
                 </AppBar>
             </ElevationScroll>
@@ -103,6 +98,7 @@ const Header: React.FC = (props) => {
                     background: THEME.palette.other.gradient,
                 }}
             />
+            <Outlet />
         </React.Fragment>
     );
 };

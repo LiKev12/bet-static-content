@@ -16,7 +16,7 @@ import { sliceHeaderActiveTabActions } from 'src/javascripts/store/SliceHeaderAc
 import Constants from 'src/javascripts/Constants';
 import { slicePodCardsDiscoverPageActions } from 'src/javascripts/store/SlicePodCardsDiscoverPage';
 import { sliceStampCardsDiscoverPageActions } from 'src/javascripts/store/SliceStampCardsDiscoverPage';
-import { slicePaginationPageNumberActions } from 'src/javascripts/store/SlicePaginationPageNumber';
+import { getPaginationIdxStart, getPaginationN } from 'src/javascripts/utilities';
 
 import type { IRootState } from 'src/javascripts/store';
 
@@ -41,6 +41,8 @@ const PageDiscover: React.FC = () => {
     const [podCardState, setPodCardState] = useState({
         filter: {
             isShowAdvancedFilterOptions: false,
+            filterIsPublic: true,
+            filterIsNotPublic: true,
             filterIsMember: true,
             filterIsNotMember: true,
             filterIsModerator: true,
@@ -50,6 +52,8 @@ const PageDiscover: React.FC = () => {
     const [stampCardState, setStampCardState] = useState({
         filter: {
             isShowAdvancedFilterOptions: false,
+            filterIsPublic: true,
+            filterIsNotPublic: true,
             filterIsCollect: true,
             filterIsNotCollect: true,
         },
@@ -57,20 +61,24 @@ const PageDiscover: React.FC = () => {
 
     const handleGetPodCardsDiscover = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
         try {
-            dispatch(slicePaginationPageNumberActions.setStateData(1));
+            dispatch(slicePodCardsDiscoverPageActions.setStateResponseLoading());
             const response = await ResourceClient.postResource(
                 'api/app/GetPodCardsDiscover',
                 requestBodyObject,
                 sliceAuthenticationStateData.getJwtToken(),
             );
-            dispatch(slicePodCardsDiscoverPageActions.setStateData(response.data));
+            dispatch(
+                slicePodCardsDiscoverPageActions.setStateData({
+                    data: response.data.data,
+                    totalN: response.data.totalN,
+                }),
+            );
         } catch (e: any) {
             dispatch(slicePodCardsDiscoverPageActions.setStateResponseError(e?.response?.data?.message));
         }
     };
     const handleGetStampCardsDiscover = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
         try {
-            dispatch(slicePaginationPageNumberActions.setStateData(1));
             const response = await ResourceClient.postResource(
                 'api/app/GetStampCardsDiscover',
                 requestBodyObject,
@@ -83,30 +91,44 @@ const PageDiscover: React.FC = () => {
     };
     useEffect(() => {
         void dispatch(sliceHeaderActiveTabActions.setStateData(Constants.HEADER_ACTIVE_TAB_IDX__PAGE_DISCOVER));
-        void handleGetPodCardsDiscover(getRequestParamsPod());
-        void handleGetStampCardsDiscover(getRequestParamsStamp());
+        void dispatch(slicePodCardsDiscoverPageActions.setPaginationCurrentPageIdx(0));
+        void dispatch(sliceStampCardsDiscoverPageActions.setPaginationCurrentPageIdx(0));
+        void handleGetPodCardsDiscover(REQUEST_PARAMS_POD_CARDS(0));
+        void handleGetStampCardsDiscover(REQUEST_PARAMS_STAMP_CARDS(0));
         // eslint-disable-next-line
     }, [searchEntity]);
 
-    const getRequestParamsPod = (): any => {
+    const REQUEST_PARAMS_POD_CARDS = (currentPageIdx: number): any => {
         return {
             filterNameOrDescription: searchText,
             filterIsMember: podCardState.filter.filterIsMember,
             filterIsNotMember: podCardState.filter.filterIsNotMember,
             filterIsModerator: podCardState.filter.filterIsModerator,
             filterIsNotModerator: podCardState.filter.filterIsNotModerator,
-            filterIsPublic: true,
-            filterIsNotPublic: true,
+            filterIsPublic: podCardState.filter.filterIsPublic,
+            filterIsNotPublic: podCardState.filter.filterIsNotPublic,
+            paginationIdxStart: getPaginationIdxStart(
+                currentPageIdx,
+                Constants.PAGINATION_BATCH_N,
+                Constants.PAGE_SIZE_POD_CARDS_DISCOVER_PAGE,
+            ),
+            paginationN: getPaginationN(Constants.PAGE_SIZE_POD_CARDS_DISCOVER_PAGE, Constants.PAGINATION_BATCH_N),
         };
     };
 
-    const getRequestParamsStamp = (): any => {
+    const REQUEST_PARAMS_STAMP_CARDS = (currentPageIdx: number): any => {
         return {
             filterNameOrDescription: searchText,
             filterIsCollect: stampCardState.filter.filterIsCollect,
             filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
-            filterIsPublic: true,
-            filterIsNotPublic: true,
+            filterIsPublic: stampCardState.filter.filterIsPublic,
+            filterIsNotPublic: stampCardState.filter.filterIsNotPublic,
+            paginationIdxStart: getPaginationIdxStart(
+                currentPageIdx,
+                Constants.PAGINATION_BATCH_N,
+                Constants.PAGE_SIZE_STAMP_CARDS_DISCOVER_PAGE,
+            ),
+            paginationN: getPaginationN(Constants.PAGE_SIZE_STAMP_CARDS_DISCOVER_PAGE, Constants.PAGINATION_BATCH_N),
         };
     };
 
@@ -130,10 +152,12 @@ const PageDiscover: React.FC = () => {
                             setSearchText(event.target.value);
                         }}
                         handleSearch={() => {
+                            void dispatch(slicePodCardsDiscoverPageActions.setPaginationCurrentPageIdx(0));
+                            void dispatch(sliceStampCardsDiscoverPageActions.setPaginationCurrentPageIdx(0));
                             if (searchEntity === 'pod') {
-                                void handleGetPodCardsDiscover(getRequestParamsPod());
+                                void handleGetPodCardsDiscover(REQUEST_PARAMS_POD_CARDS(0));
                             } else if (searchEntity === 'stamp') {
-                                void handleGetStampCardsDiscover(getRequestParamsStamp());
+                                void handleGetStampCardsDiscover(REQUEST_PARAMS_STAMP_CARDS(0));
                             }
                         }}
                         entityChoices={SEARCH_ENTITY_CHOICES}
@@ -185,6 +209,54 @@ const PageDiscover: React.FC = () => {
                             {podCardState.filter.isShowAdvancedFilterOptions ? (
                                 <Grid item>
                                     <Grid container direction="row">
+                                        <Grid item>
+                                            <Box sx={{ width: '200px' }}>
+                                                <FormGroup>
+                                                    <FormControlLabel
+                                                        control={
+                                                            <Checkbox
+                                                                checked={podCardState.filter.filterIsPublic}
+                                                                onChange={(
+                                                                    event: React.ChangeEvent<HTMLInputElement>,
+                                                                ) => {
+                                                                    setPodCardState((prevState) => {
+                                                                        return {
+                                                                            ...prevState,
+                                                                            filter: {
+                                                                                ...prevState.filter,
+                                                                                filterIsPublic: event.target.checked,
+                                                                            },
+                                                                        };
+                                                                    });
+                                                                }}
+                                                            />
+                                                        }
+                                                        label="Public"
+                                                    />
+                                                    <FormControlLabel
+                                                        control={
+                                                            <Checkbox
+                                                                checked={podCardState.filter.filterIsNotPublic}
+                                                                onChange={(
+                                                                    event: React.ChangeEvent<HTMLInputElement>,
+                                                                ) => {
+                                                                    setPodCardState((prevState) => {
+                                                                        return {
+                                                                            ...prevState,
+                                                                            filter: {
+                                                                                ...prevState.filter,
+                                                                                filterIsNotPublic: event.target.checked,
+                                                                            },
+                                                                        };
+                                                                    });
+                                                                }}
+                                                            />
+                                                        }
+                                                        label="Not public"
+                                                    />
+                                                </FormGroup>
+                                            </Box>
+                                        </Grid>
                                         <Grid item>
                                             <Box sx={{ width: '200px' }}>
                                                 <FormGroup>
@@ -337,6 +409,54 @@ const PageDiscover: React.FC = () => {
                                                     <FormControlLabel
                                                         control={
                                                             <Checkbox
+                                                                checked={stampCardState.filter.filterIsPublic}
+                                                                onChange={(
+                                                                    event: React.ChangeEvent<HTMLInputElement>,
+                                                                ) => {
+                                                                    setStampCardState((prevState) => {
+                                                                        return {
+                                                                            ...prevState,
+                                                                            filter: {
+                                                                                ...prevState.filter,
+                                                                                filterIsPublic: event.target.checked,
+                                                                            },
+                                                                        };
+                                                                    });
+                                                                }}
+                                                            />
+                                                        }
+                                                        label="Public"
+                                                    />
+                                                    <FormControlLabel
+                                                        control={
+                                                            <Checkbox
+                                                                checked={stampCardState.filter.filterIsNotPublic}
+                                                                onChange={(
+                                                                    event: React.ChangeEvent<HTMLInputElement>,
+                                                                ) => {
+                                                                    setStampCardState((prevState) => {
+                                                                        return {
+                                                                            ...prevState,
+                                                                            filter: {
+                                                                                ...prevState.filter,
+                                                                                filterIsNotPublic: event.target.checked,
+                                                                            },
+                                                                        };
+                                                                    });
+                                                                }}
+                                                            />
+                                                        }
+                                                        label="Not public"
+                                                    />
+                                                </FormGroup>
+                                            </Box>
+                                        </Grid>
+                                        <Grid item>
+                                            <Box sx={{ width: '200px' }}>
+                                                <FormGroup>
+                                                    <FormControlLabel
+                                                        control={
+                                                            <Checkbox
                                                                 checked={stampCardState.filter.filterIsCollect}
                                                                 onChange={(
                                                                     event: React.ChangeEvent<HTMLInputElement>,
@@ -390,7 +510,24 @@ const PageDiscover: React.FC = () => {
                             podCards={slicePodCardsDiscoverPageStateData}
                             isShowCreatePodModal={true}
                             isLoading={slicePodCardsDiscoverPageStateResponse.getIsLoading()}
-                            pageSize={Constants.PAGE_SIZE_DISCOVER_PAGE_POD_CARDS}
+                            paginationPageSize={Constants.PAGE_SIZE_POD_CARDS_DISCOVER_PAGE}
+                            paginationBatchN={Constants.PAGINATION_BATCH_N}
+                            paginationTotalN={slicePodCardsDiscoverPageState.pagination.totalN}
+                            paginationPageIdx={slicePodCardsDiscoverPageState.pagination.currentPageIdx}
+                            handleUpdatePaginationPageIdx={(newPaginationPageIdx: number) => {
+                                const isRequireRequestNewBatch =
+                                    Math.floor(newPaginationPageIdx / Constants.PAGINATION_BATCH_N) !==
+                                    Math.floor(
+                                        slicePodCardsDiscoverPageState.pagination.currentPageIdx /
+                                            Constants.PAGINATION_BATCH_N,
+                                    );
+                                dispatch(
+                                    slicePodCardsDiscoverPageActions.setPaginationCurrentPageIdx(newPaginationPageIdx),
+                                );
+                                if (isRequireRequestNewBatch) {
+                                    void handleGetPodCardsDiscover(REQUEST_PARAMS_POD_CARDS(newPaginationPageIdx));
+                                }
+                            }}
                         />
                     ) : null}
                     {searchEntity === 'stamp' ? (
@@ -398,7 +535,26 @@ const PageDiscover: React.FC = () => {
                             stampCards={sliceStampCardsDiscoverPageStateData}
                             isShowCreateStampModal={true}
                             isLoading={sliceStampCardsDiscoverPageStateResponse.getIsLoading()}
-                            pageSize={Constants.PAGE_SIZE_DISCOVER_PAGE_STAMP_CARDS}
+                            paginationPageSize={Constants.PAGE_SIZE_STAMP_CARDS_DISCOVER_PAGE}
+                            paginationBatchN={Constants.PAGINATION_BATCH_N}
+                            paginationTotalN={sliceStampCardsDiscoverPageState.pagination.totalN}
+                            paginationPageIdx={sliceStampCardsDiscoverPageState.pagination.currentPageIdx}
+                            handleUpdatePaginationPageIdx={(newPaginationPageIdx: number) => {
+                                const isRequireRequestNewBatch =
+                                    Math.floor(newPaginationPageIdx / Constants.PAGINATION_BATCH_N) !==
+                                    Math.floor(
+                                        sliceStampCardsDiscoverPageState.pagination.currentPageIdx /
+                                            Constants.PAGINATION_BATCH_N,
+                                    );
+                                dispatch(
+                                    sliceStampCardsDiscoverPageActions.setPaginationCurrentPageIdx(
+                                        newPaginationPageIdx,
+                                    ),
+                                );
+                                if (isRequireRequestNewBatch) {
+                                    void handleGetStampCardsDiscover(REQUEST_PARAMS_STAMP_CARDS(newPaginationPageIdx));
+                                }
+                            }}
                         />
                     ) : null}
                 </Grid>

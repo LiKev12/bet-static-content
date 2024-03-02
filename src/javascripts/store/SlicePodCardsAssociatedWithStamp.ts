@@ -1,9 +1,13 @@
 import { createSlice } from '@reduxjs/toolkit';
-import type PodPageModel from 'src/javascripts/models/PodPageModel';
+import type PodCardModel from 'src/javascripts/models/PodCardModel';
 import Constants from 'src/javascripts/Constants';
 
 export interface ISlicePodCardsAssociatedWithStampState {
-    data: PodPageModel[];
+    data: PodCardModel[];
+    pagination: {
+        currentPageIdx: number;
+        totalN: number;
+    };
     response: {
         state: string;
         errorMessage: string | null;
@@ -14,18 +18,29 @@ const slicePodCardsAssociatedWithStamp = createSlice({
     name: 'podCardsAssociatedWithStamp',
     initialState: {
         data: [],
+        pagination: {
+            currentPageIdx: 0,
+            totalN: 0,
+        },
         response: {
             state: Constants.RESPONSE_STATE_UNSTARTED,
             errorMessage: null,
         },
     },
     reducers: {
-        setStateData(state: ISlicePodCardsAssociatedWithStampState, action: { payload: PodPageModel[] }) {
-            state.data = action.payload;
+        setStateData(
+            state: ISlicePodCardsAssociatedWithStampState,
+            action: { payload: { data: PodCardModel[]; totalN: number } },
+        ) {
+            state.data = action.payload.data;
+            state.pagination.totalN = action.payload.totalN;
             state.response = {
                 state: Constants.RESPONSE_STATE_SUCCESS,
                 errorMessage: null,
             };
+        },
+        setPaginationCurrentPageIdx(state: ISlicePodCardsAssociatedWithStampState, action: { payload: number }) {
+            state.pagination.currentPageIdx = action.payload;
         },
         setStateResponseLoading(state: ISlicePodCardsAssociatedWithStampState) {
             state.response = {

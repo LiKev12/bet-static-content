@@ -1,24 +1,23 @@
 export default class PersonalPageModel {
-    id: string;
-    username: string;
-    name: string;
-    imageLink: string | null;
-    numberOfPointsTaskCompleteToday: number;
+    id: string = '';
+    username: string = '';
+    name: string = '';
+    imageLink: string | null = null;
+    numberOfPointsTaskCompleteToday: number = 0;
+    timeZone: string = '';
+    isSelectedTimeZone: boolean = true;
 
     constructor(personalPageModel: any) {
         if (personalPageModel === null) {
-            this.id = '';
-            this.username = '';
-            this.name = '';
-            this.imageLink = null;
-            this.numberOfPointsTaskCompleteToday = 0;
-        } else {
-            this.id = personalPageModel.id;
-            this.username = personalPageModel.username;
-            this.name = personalPageModel.name;
-            this.imageLink = personalPageModel.imageLink;
-            this.numberOfPointsTaskCompleteToday = personalPageModel.numberOfPointsTaskCompleteToday;
+            return;
         }
+        this.id = personalPageModel.id;
+        this.username = personalPageModel.username;
+        this.name = personalPageModel.name;
+        this.imageLink = personalPageModel.imageLink;
+        this.numberOfPointsTaskCompleteToday = personalPageModel.numberOfPointsTaskCompleteToday;
+        this.timeZone = personalPageModel.timeZone;
+        this.isSelectedTimeZone = personalPageModel.isSelectedTimeZone;
     }
 
     getId(): string {
@@ -39,5 +38,13 @@ export default class PersonalPageModel {
 
     getNumberOfPointsTaskCompleteToday(): number {
         return this.numberOfPointsTaskCompleteToday;
+    }
+
+    getTimeZone(): string {
+        return this.timeZone;
+    }
+
+    getIsSelectedTimeZone(): boolean {
+        return this.isSelectedTimeZone;
     }
 }

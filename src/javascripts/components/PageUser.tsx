@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import _ from 'lodash';
 import { useParams } from 'react-router-dom';
-import { Box, Divider, Grid, Typography, Tab, Tabs, TextField } from '@mui/material';
+import { Box, CircularProgress, Divider, Grid, Typography, Tab, Tabs, TextField } from '@mui/material';
 import { THEME } from 'src/javascripts/Theme';
 import AvatarImageEditor from 'src/javascripts/components/AvatarImageEditor';
 import PodCardList from 'src/javascripts/components/PodCardList';
@@ -12,7 +12,7 @@ import FilterPods from 'src/javascripts/components/FilterPods';
 import UserListButton from 'src/javascripts/components/UserListButton';
 import TaskCardList from 'src/javascripts/components/TaskCardList';
 import StampCardList from 'src/javascripts/components/StampCardList';
-import { getInputText, getUserListButtonText } from 'src/javascripts/utilities';
+import { getInputText, getUserListButtonText, getPaginationIdxStart, getPaginationN } from 'src/javascripts/utilities';
 import { PAGE_SIZE_STAMP, PAGE_SIZE_TASK } from 'src/javascripts/clients/ResourceClientConfig';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import UserPageModel from 'src/javascripts/models/UserPageModel';
@@ -28,7 +28,7 @@ import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 import { slicePageUserActions } from 'src/javascripts/store/SlicePageUser';
 import { slicePodCardsAssociatedWithUserActions } from 'src/javascripts/store/SlicePodCardsAssociatedWithUser';
 import { sliceStampCardsAssociatedWithUserActions } from 'src/javascripts/store/SliceStampCardsAssociatedWithUser';
-import { slicePaginationPageNumberActions } from 'src/javascripts/store/SlicePaginationPageNumber';
+import { sliceHeaderActiveTabActions } from 'src/javascripts/store/SliceHeaderActiveTab';
 
 import type { IRootState } from 'src/javascripts/store';
 const tabIdxToDisplayMap: any = {
@@ -96,6 +96,8 @@ export interface IStampCardState {
     };
     filter: {
         filterNameOrDescription: string;
+        filterIsPublic: boolean;
+        filterIsNotPublic: boolean;
         filterIsCollect: boolean;
         filterIsNotCollect: boolean;
     };
@@ -172,6 +174,8 @@ const PageUser: React.FC = () => {
         },
         filter: {
             filterNameOrDescription: '',
+            filterIsPublic: true,
+            filterIsNotPublic: true,
             filterIsCollect: true,
             filterIsNotCollect: true,
         },
@@ -203,6 +207,7 @@ const PageUser: React.FC = () => {
             totalNumberOfPages: 1,
         },
     });
+    const taskResponse = new ResponseModel(taskState.response);
     const handleGetUserPage = async (): Promise<any> => {
         try {
             dispatch(slicePageUserActions.setStateResponseLoading());
@@ -279,26 +284,36 @@ const PageUser: React.FC = () => {
     };
     const handleGetPodCardsAssociatedWithUser = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
         try {
-            dispatch(slicePaginationPageNumberActions.setStateData(1));
+            dispatch(slicePodCardsAssociatedWithUserActions.setStateResponseLoading());
             const response = await ResourceClient.postResource(
                 'api/app/GetPodCardsAssociatedWithUser',
                 requestBodyObject,
                 sliceAuthenticationStateData.getJwtToken(),
             );
-            dispatch(slicePodCardsAssociatedWithUserActions.setStateData(response.data));
+            dispatch(
+                slicePodCardsAssociatedWithUserActions.setStateData({
+                    data: response.data.data,
+                    totalN: response.data.totalN,
+                }),
+            );
         } catch (e: any) {
             dispatch(slicePodCardsAssociatedWithUserActions.setStateResponseError(e?.response?.data?.message));
         }
     };
     const handleGetStampCardsAssociatedWithUser = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
         try {
-            dispatch(slicePaginationPageNumberActions.setStateData(1));
+            dispatch(sliceStampCardsAssociatedWithUserActions.setStateResponseLoading());
             const response = await ResourceClient.postResource(
                 'api/app/GetStampCardsAssociatedWithUser',
                 requestBodyObject,
                 sliceAuthenticationStateData.getJwtToken(),
             );
-            dispatch(sliceStampCardsAssociatedWithUserActions.setStateData(response.data));
+            dispatch(
+                sliceStampCardsAssociatedWithUserActions.setStateData({
+                    data: response.data.data,
+                    totalN: response.data.totalN,
+                }),
+            );
         } catch (e: any) {
             dispatch(sliceStampCardsAssociatedWithUserActions.setStateResponseError(e?.response?.data?.message));
         }
@@ -331,9 +346,14 @@ const PageUser: React.FC = () => {
         500,
     );
     useEffect(() => {
+        if (sliceAuthenticationStateData.getIdUser() === idUser) {
+            void dispatch(sliceHeaderActiveTabActions.setStateData(Constants.HEADER_ACTIVE_TAB_IDX__PAGE_USER));
+        } else {
+            void dispatch(sliceHeaderActiveTabActions.setStateData(Constants.HEADER_ACTIVE_TAB_IDX__NO_ACTIVE_TAB));
+        }
         void handleGetUserPage();
         // eslint-disable-next-line
-    }, []);
+    }, [idUser]);
     useEffect(() => {
         void handleGetPinnedTasksAssociatedWithUser({
             id: String(idUser),
@@ -346,9 +366,10 @@ const PageUser: React.FC = () => {
             filterIsNotPin: taskState.filter.filterIsNotPin,
         });
         // eslint-disable-next-line
-    }, [taskState.filter]);
-    useEffect(() => {
-        void handleGetPodCardsAssociatedWithUser({
+    }, [taskState.filter, idUser]);
+
+    const REQUEST_PARAMS_POD_CARDS = (currentPageIdx: number): any => {
+        return {
             id: String(idUser),
             filterNameOrDescription: podCardState.filter.filterNameOrDescription,
             filterIsPublic: podCardState.filter.filterIsPublic,
@@ -357,20 +378,47 @@ const PageUser: React.FC = () => {
             filterIsNotMember: podCardState.filter.filterIsNotMember,
             filterIsModerator: podCardState.filter.filterIsModerator,
             filterIsNotModerator: podCardState.filter.filterIsNotModerator,
-        });
-        // eslint-disable-next-line
-    }, [podCardState.filter, tabIdx]);
-    useEffect(() => {
-        void handleGetStampCardsAssociatedWithUser({
+            paginationIdxStart: getPaginationIdxStart(
+                currentPageIdx,
+                Constants.PAGINATION_BATCH_N,
+                Constants.PAGE_SIZE_POD_CARDS_ASSOCIATED_WITH_USER,
+            ),
+            paginationN: getPaginationN(
+                Constants.PAGE_SIZE_POD_CARDS_ASSOCIATED_WITH_USER,
+                Constants.PAGINATION_BATCH_N,
+            ),
+        };
+    };
+    const REQUEST_PARAMS_STAMP_CARDS = (currentPageIdx: number): any => {
+        return {
             id: String(idUser),
             filterNameOrDescription: stampCardState.filter.filterNameOrDescription,
             filterIsCollect: stampCardState.filter.filterIsCollect,
             filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
             filterIsPublic: true,
             filterIsNotPublic: true,
-        });
+            paginationIdxStart: getPaginationIdxStart(
+                currentPageIdx,
+                Constants.PAGINATION_BATCH_N,
+                Constants.PAGE_SIZE_STAMP_CARDS_ASSOCIATED_WITH_USER,
+            ),
+            paginationN: getPaginationN(
+                Constants.PAGE_SIZE_STAMP_CARDS_ASSOCIATED_WITH_USER,
+                Constants.PAGINATION_BATCH_N,
+            ),
+        };
+    };
+    useEffect(() => {
+        dispatch(slicePodCardsAssociatedWithUserActions.setPaginationCurrentPageIdx(0));
+        void handleGetPodCardsAssociatedWithUser(REQUEST_PARAMS_POD_CARDS(0));
         // eslint-disable-next-line
-    }, [stampCardState.filter, tabIdx]);
+    }, [podCardState.filter, tabIdx, idUser]);
+    useEffect(() => {
+        dispatch(sliceStampCardsAssociatedWithUserActions.setPaginationCurrentPageIdx(0));
+        void handleGetStampCardsAssociatedWithUser(REQUEST_PARAMS_STAMP_CARDS(0));
+        // eslint-disable-next-line
+    }, [stampCardState.filter, tabIdx, idUser]);
+
     const isErrorEditModeValueUserUsername =
         getInputText(userPageState.editMode.username.editModeValue).length <
             Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS ||
@@ -557,6 +605,8 @@ const PageUser: React.FC = () => {
                                                 void handleGetUserPage();
                                             } catch (e: any) {}
                                         }}
+                                        isAllowUnfollow={false}
+                                        handleUnfollowUser={() => {}}
                                     />
                                     <Divider
                                         orientation="vertical"
@@ -573,6 +623,19 @@ const PageUser: React.FC = () => {
                                         try {
                                             await ResourceClient.postResource(
                                                 'api/app/SendFollowUserRequest',
+                                                {
+                                                    id: idUser,
+                                                },
+                                                sliceAuthenticationStateData.getJwtToken(),
+                                            );
+                                            void handleGetUserPage();
+                                        } catch (e: any) {}
+                                    }}
+                                    isAllowUnfollow={true}
+                                    handleUnfollowUser={async () => {
+                                        try {
+                                            await ResourceClient.postResource(
+                                                'api/app/UnfollowUser',
                                                 {
                                                     id: idUser,
                                                 },
@@ -963,7 +1026,28 @@ const PageUser: React.FC = () => {
                             podCards={slicePodCardsAssociatedWithUserStateData}
                             isShowCreatePodModal={false}
                             isLoading={slicePodCardsAssociatedWithUserStateResponse.getIsLoading()}
-                            pageSize={Constants.PAGE_SIZE_POD_CARDS_ASSOCIATED_WITH_USER}
+                            paginationPageSize={Constants.PAGE_SIZE_POD_CARDS_ASSOCIATED_WITH_USER}
+                            paginationBatchN={Constants.PAGINATION_BATCH_N}
+                            paginationTotalN={slicePodCardsAssociatedWithUserState.pagination.totalN}
+                            paginationPageIdx={slicePodCardsAssociatedWithUserState.pagination.currentPageIdx}
+                            handleUpdatePaginationPageIdx={(newPaginationPageIdx: number) => {
+                                const isRequireRequestNewBatch =
+                                    Math.floor(newPaginationPageIdx / Constants.PAGINATION_BATCH_N) !==
+                                    Math.floor(
+                                        slicePodCardsAssociatedWithUserState.pagination.currentPageIdx /
+                                            Constants.PAGINATION_BATCH_N,
+                                    );
+                                dispatch(
+                                    slicePodCardsAssociatedWithUserActions.setPaginationCurrentPageIdx(
+                                        newPaginationPageIdx,
+                                    ),
+                                );
+                                if (isRequireRequestNewBatch) {
+                                    void handleGetPodCardsAssociatedWithUser(
+                                        REQUEST_PARAMS_POD_CARDS(newPaginationPageIdx),
+                                    );
+                                }
+                            }}
                         />
                     </Box>
                 </React.Fragment>
@@ -1008,17 +1092,42 @@ const PageUser: React.FC = () => {
                         />
                     </Box>
                     <Box sx={{ padding: '24px 96px 96px 96px', justifyContent: 'center', display: 'flex' }}>
-                        <TaskCardList
-                            tasks={taskState.data}
-                            isAuthorizedToComplete={false}
-                            isReadOnlyTaskBody={true}
-                            isReadOnlyTaskNotes={true}
-                            isDisplayViewPodLink={true}
-                            isDisplayOptionsStarPinDelete={false}
-                            isAuthorizedToDelete={false}
-                            handleSideEffectToggleTaskComplete={() => {}}
-                            handleSideEffectChangeNumberOfPoints={() => {}}
-                        />
+                        {taskResponse.getIsSuccess() ? (
+                            <TaskCardList
+                                tasks={taskState.data}
+                                isAuthorizedToComplete={false}
+                                isReadOnlyTaskBody={true}
+                                isReadOnlyTaskNotes={true}
+                                isDisplayViewPodLink={true}
+                                isDisplayOptionsStarPinDelete={false}
+                                isAuthorizedToDelete={false}
+                                handleSideEffectToggleTaskComplete={() => {}}
+                                handleSideEffectChangeNumberOfPoints={() => {}}
+                            />
+                        ) : taskResponse.getIsLoading() ? (
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    verticalAlign: 'middle',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <CircularProgress />
+                            </Box>
+                        ) : taskResponse.getIsError() ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                <Box>
+                                    <Grid container direction="column" sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Grid item sx={{}}>
+                                            <Typography variant="h5">
+                                                An error occurred during fetching Tasks. Please try again.
+                                            </Typography>
+                                        </Grid>
+                                    </Grid>
+                                </Box>
+                            </Box>
+                        ) : null}
                     </Box>
                 </React.Fragment>
             ) : null}
@@ -1050,9 +1159,12 @@ const PageUser: React.FC = () => {
                                     };
                                 });
                             }}
+                            isUseKeyStampPublic={true}
+                            isStampPublic={stampCardState.filter.filterIsPublic}
+                            isStampNotPublic={stampCardState.filter.filterIsNotPublic}
+                            isUseKeyStampCollected={true}
                             isStampCollected={stampCardState.filter.filterIsCollect}
                             isStampNotCollected={stampCardState.filter.filterIsNotCollect}
-                            isUseKeyStampCollected={true}
                         />
                     </Box>
                     <Box sx={{ padding: '24px 96px 96px 96px', justifyContent: 'center', display: 'flex' }}>
@@ -1060,7 +1172,28 @@ const PageUser: React.FC = () => {
                             stampCards={sliceStampCardsAssociatedWithUserStateData}
                             isShowCreateStampModal={false}
                             isLoading={sliceStampCardsAssociatedWithUserStateResponse.getIsLoading()}
-                            pageSize={Constants.PAGE_SIZE_STAMP_CARDS_ASSOCIATED_WITH_USER}
+                            paginationPageSize={Constants.PAGE_SIZE_STAMP_CARDS_ASSOCIATED_WITH_USER}
+                            paginationBatchN={Constants.PAGINATION_BATCH_N}
+                            paginationTotalN={sliceStampCardsAssociatedWithUserState.pagination.totalN}
+                            paginationPageIdx={sliceStampCardsAssociatedWithUserState.pagination.currentPageIdx}
+                            handleUpdatePaginationPageIdx={(newPaginationPageIdx: number) => {
+                                const isRequireRequestNewBatch =
+                                    Math.floor(newPaginationPageIdx / Constants.PAGINATION_BATCH_N) !==
+                                    Math.floor(
+                                        sliceStampCardsAssociatedWithUserState.pagination.currentPageIdx /
+                                            Constants.PAGINATION_BATCH_N,
+                                    );
+                                dispatch(
+                                    sliceStampCardsAssociatedWithUserActions.setPaginationCurrentPageIdx(
+                                        newPaginationPageIdx,
+                                    ),
+                                );
+                                if (isRequireRequestNewBatch) {
+                                    void handleGetStampCardsAssociatedWithUser(
+                                        REQUEST_PARAMS_STAMP_CARDS(newPaginationPageIdx),
+                                    );
+                                }
+                            }}
                         />
                     </Box>
                 </React.Fragment>

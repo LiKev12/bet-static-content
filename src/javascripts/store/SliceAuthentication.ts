@@ -15,6 +15,7 @@ const sliceAuthentication = createSlice({
     initialState: {
         data: {
             jwtToken: sessionStorage.getItem('jwtToken'),
+            idUser: sessionStorage.getItem('idUser'),
         },
         response: {
             state: Constants.RESPONSE_STATE_UNSTARTED,
@@ -24,9 +25,22 @@ const sliceAuthentication = createSlice({
     reducers: {
         setStateData(state: ISliceAuthenticationState, action: { payload: AuthenticationModel }) {
             sessionStorage.setItem('jwtToken', action.payload.jwtToken);
+            sessionStorage.setItem('idUser', action.payload.idUser);
             state.data = action.payload;
             state.response = {
                 state: Constants.RESPONSE_STATE_SUCCESS,
+                errorMessage: null,
+            };
+        },
+        clearStateData(state: ISliceAuthenticationState) {
+            sessionStorage.removeItem('jwtToken');
+            sessionStorage.removeItem('idUser');
+            state.data = {
+                jwtToken: '',
+                idUser: '',
+            };
+            state.response = {
+                state: Constants.RESPONSE_STATE_UNSTARTED,
                 errorMessage: null,
             };
         },

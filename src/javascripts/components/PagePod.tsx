@@ -2,7 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import _ from 'lodash';
 import { useParams } from 'react-router-dom';
-import { Box, Divider, Grid, Typography, Tab, Tabs, TextField, IconButton, Tooltip } from '@mui/material';
+import {
+    Box,
+    CircularProgress,
+    Divider,
+    Grid,
+    Typography,
+    Tab,
+    Tabs,
+    TextField,
+    IconButton,
+    Tooltip,
+} from '@mui/material';
 import { THEME } from 'src/javascripts/Theme';
 import FilterTasks from 'src/javascripts/components/FilterTasks';
 import FilterStamps from 'src/javascripts/components/FilterStamps';
@@ -19,12 +30,11 @@ import IconButtonManagePendingBecomePodModeratorRequestsModal from 'src/javascri
 import IconButtonSendBecomePodModeratorRequest from 'src/javascripts/components/IconButtonSendBecomePodModeratorRequest';
 import IconButtonLeavePod from 'src/javascripts/components/IconButtonLeavePod';
 import CreateTaskModalButton from 'src/javascripts/components/CreateTaskModalButton';
-import { getInputText, getUserListButtonText } from 'src/javascripts/utilities';
+import { getInputText, getUserListButtonText, getPaginationIdxStart, getPaginationN } from 'src/javascripts/utilities';
 import NumberOfPointsInTasksCompletedOverTimeVisualization from 'src/javascripts/components/NumberOfPointsInTasksCompletedOverTimeVisualization';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import TaskModel from 'src/javascripts/models/TaskModel';
 import StampCardModel from 'src/javascripts/models/StampCardModel';
-import { PAGE_SIZE_STAMP, PAGE_SIZE_TASK } from 'src/javascripts/clients/ResourceClientConfig';
 import PodPageModel from 'src/javascripts/models/PodPageModel';
 import ResponseModel from 'src/javascripts/models/ResponseModel';
 import NumberOfPointsInTasksCompletedOverTimeVisualizationModel from 'src/javascripts/models/NumberOfPointsInTasksCompletedOverTimeVisualizationModel';
@@ -36,7 +46,8 @@ import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 import { slicePagePodActions } from 'src/javascripts/store/SlicePagePod';
 import { sliceVisualizationActions } from 'src/javascripts/store/SliceVisualization';
 import { sliceStampCardsAssociatedWithPodActions } from 'src/javascripts/store/SliceStampCardsAssociatedWithPod';
-import { slicePaginationPageNumberActions } from 'src/javascripts/store/SlicePaginationPageNumber';
+import { sliceHeaderActiveTabActions } from 'src/javascripts/store/SliceHeaderActiveTab';
+import { sliceTasksAssociatedWithPodActions } from 'src/javascripts/store/SliceTasksAssociatedWithPod';
 
 import type { IRootState } from 'src/javascripts/store';
 const tabIdxToDisplayMap: any = {
@@ -62,11 +73,6 @@ export interface IPodPageState {
     };
 }
 export interface ITaskState {
-    data: any;
-    response: {
-        state: string;
-        errorMessage: string | null;
-    };
     filter: {
         filterNameOrDescription: string;
         filterIsComplete: boolean;
@@ -76,27 +82,14 @@ export interface ITaskState {
         filterIsPin: boolean;
         filterIsNotPin: boolean;
     };
-    pagination: {
-        pageNumber: number;
-        pageSize: number;
-        totalNumberOfPages: number;
-    };
 }
 export interface IStampCardState {
-    data: StampCardModel[];
-    response: {
-        state: string;
-        errorMessage: string | null;
-    };
     filter: {
         filterNameOrDescription: string;
+        filterIsPublic: boolean;
+        filterIsNotPublic: boolean;
         filterIsCollect: boolean;
         filterIsNotCollect: boolean;
-    };
-    pagination: {
-        pageNumber: number;
-        pageSize: number;
-        totalNumberOfPages: number;
     };
 }
 const PagePod: React.FC = () => {
@@ -119,6 +112,11 @@ const PagePod: React.FC = () => {
     const sliceStampCardsAssociatedWithPodStateResponse = new ResponseModel(
         sliceStampCardsAssociatedWithPodState.response,
     );
+    const sliceTasksAssociatedWithPodState = useSelector((state: IRootState) => state.tasksAssociatedWithPod);
+    const sliceTasksAssociatedWithPodStateData = sliceTasksAssociatedWithPodState.data.map(
+        (d: any) => new TaskModel(d),
+    );
+    const sliceTasksAssociatedWithPodResponse = new ResponseModel(sliceTasksAssociatedWithPodState.response);
     const [tabIdx, setTabIdx] = useState(0);
     const [podPageState, setPodPageState] = useState<IPodPageState>({
         editMode: {
@@ -139,11 +137,6 @@ const PagePod: React.FC = () => {
 
     // filter tasks
     const [taskState, setTaskState] = useState<ITaskState>({
-        data: [],
-        response: {
-            state: Constants.RESPONSE_STATE_LOADING,
-            errorMessage: null,
-        },
         filter: {
             filterNameOrDescription: '',
             filterIsComplete: true,
@@ -153,29 +146,16 @@ const PagePod: React.FC = () => {
             filterIsPin: true,
             filterIsNotPin: true,
         },
-        pagination: {
-            pageNumber: 0,
-            pageSize: Number(PAGE_SIZE_TASK),
-            totalNumberOfPages: 1,
-        },
     });
 
     // filter stamps
     const [stampCardState, setStampCardState] = useState<IStampCardState>({
-        data: [],
-        response: {
-            state: Constants.RESPONSE_STATE_LOADING,
-            errorMessage: null,
-        },
         filter: {
             filterNameOrDescription: '',
+            filterIsPublic: true,
+            filterIsNotPublic: true,
             filterIsCollect: true,
             filterIsNotCollect: true,
-        },
-        pagination: {
-            pageNumber: 0,
-            pageSize: Number(PAGE_SIZE_STAMP),
-            totalNumberOfPages: 1,
         },
     });
 
@@ -217,51 +197,32 @@ const PagePod: React.FC = () => {
     };
     const handleGetTasksAssociatedWithPod = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
         try {
+            dispatch(sliceTasksAssociatedWithPodActions.setStateResponseLoading());
             const response = await ResourceClient.postResource(
                 'api/app/GetTasksAssociatedWithPod',
                 requestBodyObject,
                 sliceAuthenticationStateData.getJwtToken(),
             );
-            setTaskState((prevState: ITaskState) => {
-                return {
-                    ...prevState,
-                    data: response.data.map((datapoint: any) => {
-                        return new TaskModel(datapoint);
-                    }),
-                    response: {
-                        ...prevState.response,
-                        state: Constants.RESPONSE_STATE_SUCCESS,
-                        errorMessage: null,
-                    },
-                    pagination: {
-                        ...prevState.pagination,
-                        totalNumberOfPages: response.data.totalPages,
-                    },
-                };
-            });
+            dispatch(sliceTasksAssociatedWithPodActions.setStateData(response.data));
         } catch (e: any) {
-            setTaskState((prevState: ITaskState) => {
-                return {
-                    ...prevState,
-                    response: {
-                        ...prevState.response,
-                        state: Constants.RESPONSE_STATE_ERROR,
-                        errorMessage: e?.response?.data?.message,
-                    },
-                };
-            });
+            dispatch(sliceTasksAssociatedWithPodActions.setStateResponseError(e?.response?.data?.message));
         }
     };
 
     const handleGetStampCardsAssociatedWithPod = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
         try {
-            dispatch(slicePaginationPageNumberActions.setStateData(1));
+            dispatch(sliceStampCardsAssociatedWithPodActions.setStateResponseLoading());
             const response = await ResourceClient.postResource(
                 'api/app/GetStampCardsAssociatedWithPod',
                 requestBodyObject,
                 sliceAuthenticationStateData.getJwtToken(),
             );
-            dispatch(sliceStampCardsAssociatedWithPodActions.setStateData(response.data));
+            dispatch(
+                sliceStampCardsAssociatedWithPodActions.setStateData({
+                    data: response.data.data,
+                    totalN: response.data.totalN,
+                }),
+            );
         } catch (e: any) {
             dispatch(sliceStampCardsAssociatedWithPodActions.setStateResponseError(e?.response?.data?.message));
         }
@@ -269,6 +230,7 @@ const PagePod: React.FC = () => {
 
     const setVisualizationStateData = async (): Promise<any> => {
         try {
+            dispatch(sliceVisualizationActions.setStateResponseLoading());
             const response = await ResourceClient.postResource(
                 'api/app/GetNumberOfPointsInTasksCompletedOverTimeVisualizationAssociatedWithPod',
                 { id: String(idPod) },
@@ -300,8 +262,29 @@ const PagePod: React.FC = () => {
         },
         500,
     );
+    const REQUEST_PARAMS_STAMP_CARDS = (currentPageIdx: number): any => {
+        return {
+            id: String(idPod),
+            filterNameOrDescription: stampCardState.filter.filterNameOrDescription,
+            filterIsCollect: stampCardState.filter.filterIsCollect,
+            filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
+            filterIsPublic: stampCardState.filter.filterIsPublic,
+            filterIsNotPublic: stampCardState.filter.filterIsNotPublic,
+            paginationIdxStart: getPaginationIdxStart(
+                currentPageIdx,
+                Constants.PAGINATION_BATCH_N,
+                Constants.PAGE_SIZE_STAMP_CARDS_ASSOCIATED_WITH_POD,
+            ),
+            paginationN: getPaginationN(
+                Constants.PAGE_SIZE_STAMP_CARDS_ASSOCIATED_WITH_POD,
+                Constants.PAGINATION_BATCH_N,
+            ),
+        };
+    };
     useEffect(() => {
+        void dispatch(sliceHeaderActiveTabActions.setStateData(Constants.HEADER_ACTIVE_TAB_IDX__NO_ACTIVE_TAB));
         void setPodPageStateData();
+        void setVisualizationStateData();
         // eslint-disable-next-line
     }, []);
     useEffect(() => {
@@ -316,18 +299,11 @@ const PagePod: React.FC = () => {
             filterIsNotPin: taskState.filter.filterIsNotPin,
         });
         // eslint-disable-next-line
-    }, [taskState.filter, tabIdx]);
+    }, [taskState.filter, tabIdx, idPod]);
     useEffect(() => {
-        void handleGetStampCardsAssociatedWithPod({
-            id: String(idPod),
-            filterNameOrDescription: stampCardState.filter.filterNameOrDescription,
-            filterIsCollect: stampCardState.filter.filterIsCollect,
-            filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
-            filterIsPublic: true,
-            filterIsNotPublic: true,
-        });
+        void handleGetStampCardsAssociatedWithPod(REQUEST_PARAMS_STAMP_CARDS(0));
         // eslint-disable-next-line
-    }, [stampCardState.filter, tabIdx]);
+    }, [stampCardState.filter, tabIdx, idPod]);
 
     const isErrorEditModeValuePodName =
         getInputText(podPageState.editMode.name.editModeValue).length < Constants.POD_NAME_MIN_LENGTH_CHARACTERS ||
@@ -947,23 +923,48 @@ const PagePod: React.FC = () => {
                         />
                     </Box>
                     <Box sx={{ padding: '24px 96px 96px 96px', justifyContent: 'center', display: 'flex' }}>
-                        <TaskCardList
-                            tasks={taskState.data}
-                            isAuthorizedToComplete={slicePagePodStateData.getIsPodMember()}
-                            isReadOnlyTaskBody={!slicePagePodStateData.getIsPodModerator()}
-                            isReadOnlyTaskNotes={!slicePagePodStateData.getIsPodMember()}
-                            isDisplayViewPodLink={false}
-                            isDisplayOptionsStarPinDelete={slicePagePodStateData.getIsPodMember()}
-                            isAuthorizedToDelete={slicePagePodStateData.getIsPodModerator()}
-                            handleSideEffectToggleTaskComplete={() => {
-                                void setPodPageStateData();
-                                void setVisualizationStateData();
-                            }}
-                            handleSideEffectChangeNumberOfPoints={() => {
-                                void setPodPageStateData();
-                                void setVisualizationStateData();
-                            }}
-                        />
+                        {sliceTasksAssociatedWithPodResponse.getIsSuccess() ? (
+                            <TaskCardList
+                                tasks={sliceTasksAssociatedWithPodStateData}
+                                isAuthorizedToComplete={slicePagePodStateData.getIsPodMember()}
+                                isReadOnlyTaskBody={!slicePagePodStateData.getIsPodModerator()}
+                                isReadOnlyTaskNotes={!slicePagePodStateData.getIsPodMember()}
+                                isDisplayViewPodLink={false}
+                                isDisplayOptionsStarPinDelete={slicePagePodStateData.getIsPodMember()}
+                                isAuthorizedToDelete={slicePagePodStateData.getIsPodModerator()}
+                                handleSideEffectToggleTaskComplete={() => {
+                                    void setPodPageStateData();
+                                    void setVisualizationStateData();
+                                }}
+                                handleSideEffectChangeNumberOfPoints={() => {
+                                    void setPodPageStateData();
+                                    void setVisualizationStateData();
+                                }}
+                            />
+                        ) : sliceTasksAssociatedWithPodResponse.getIsLoading() ? (
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    verticalAlign: 'middle',
+                                    alignItems: 'center',
+                                }}
+                            >
+                                <CircularProgress />
+                            </Box>
+                        ) : sliceTasksAssociatedWithPodResponse.getIsError() ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                <Box>
+                                    <Grid container direction="column" sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Grid item sx={{}}>
+                                            <Typography variant="h5">
+                                                An error occurred during fetching Tasks. Please try again.
+                                            </Typography>
+                                        </Grid>
+                                    </Grid>
+                                </Box>
+                            </Box>
+                        ) : null}
                     </Box>
                 </React.Fragment>
             ) : null}
@@ -995,9 +996,12 @@ const PagePod: React.FC = () => {
                                     };
                                 });
                             }}
+                            isUseKeyStampPublic={true}
+                            isStampPublic={stampCardState.filter.filterIsPublic}
+                            isStampNotPublic={stampCardState.filter.filterIsNotPublic}
+                            isUseKeyStampCollected={true}
                             isStampCollected={stampCardState.filter.filterIsCollect}
                             isStampNotCollected={stampCardState.filter.filterIsNotCollect}
-                            isUseKeyStampCollected={true}
                         />
                     </Box>
                     <Box sx={{ padding: '24px 96px 96px 96px', justifyContent: 'center', display: 'flex' }}>
@@ -1005,7 +1009,28 @@ const PagePod: React.FC = () => {
                             stampCards={sliceStampCardsAssociatedWithPodStateData}
                             isShowCreateStampModal={true}
                             isLoading={sliceStampCardsAssociatedWithPodStateResponse.getIsLoading()}
-                            pageSize={Constants.PAGE_SIZE_ASSOCIATED_STAMP_CARDS_ASSOCIATED_WITH_POD}
+                            paginationPageSize={Constants.PAGE_SIZE_STAMP_CARDS_ASSOCIATED_WITH_POD}
+                            paginationBatchN={Constants.PAGINATION_BATCH_N}
+                            paginationTotalN={sliceStampCardsAssociatedWithPodState.pagination.totalN}
+                            paginationPageIdx={sliceStampCardsAssociatedWithPodState.pagination.currentPageIdx}
+                            handleUpdatePaginationPageIdx={(newPaginationPageIdx: number) => {
+                                const isRequireRequestNewBatch =
+                                    Math.floor(newPaginationPageIdx / Constants.PAGINATION_BATCH_N) !==
+                                    Math.floor(
+                                        sliceStampCardsAssociatedWithPodState.pagination.currentPageIdx /
+                                            Constants.PAGINATION_BATCH_N,
+                                    );
+                                dispatch(
+                                    sliceStampCardsAssociatedWithPodActions.setPaginationCurrentPageIdx(
+                                        newPaginationPageIdx,
+                                    ),
+                                );
+                                if (isRequireRequestNewBatch) {
+                                    void handleGetStampCardsAssociatedWithPod(
+                                        REQUEST_PARAMS_STAMP_CARDS(newPaginationPageIdx),
+                                    );
+                                }
+                            }}
                         />
                     </Box>
                 </React.Fragment>

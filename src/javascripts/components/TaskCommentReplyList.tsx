@@ -59,7 +59,7 @@ const TaskCommentReplyList: React.FC<ITaskCommentReplyListProps> = (props: ITask
     ): Promise<any> => {
         try {
             const response = await ResourceClient.postResource(
-                'api/app/GetTaskCommentReplyReactions',
+                'api/app/GetTaskCommentReplyReactionsSample',
                 requestBodyObject,
                 sliceAuthenticationStateData.getJwtToken(),
             );
@@ -145,7 +145,6 @@ const TaskCommentReplyList: React.FC<ITaskCommentReplyListProps> = (props: ITask
                                                 void handleGetTaskCommentReplyReactions(
                                                     {
                                                         id: taskCommentReplyModel.getIdTaskCommentReply(),
-                                                        numberOfReactionsLimit: 3,
                                                     },
                                                     taskCommentReplyModel.getIdTaskCommentReply(),
                                                 );

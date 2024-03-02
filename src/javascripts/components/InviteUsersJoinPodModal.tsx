@@ -390,6 +390,8 @@ const InviteUsersJoinPodModal: React.FC<IInviteUsersJoinPodModalProps> = (props:
                                                         void handleGetUserBubblesInviteJoinPod();
                                                     } catch (e: any) {}
                                                 }}
+                                                isAllowUnfollow={false}
+                                                handleUnfollowUser={() => {}}
                                             />
                                         </ListItem>
                                         <Divider variant="fullWidth" />

@@ -192,10 +192,11 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
     ): Promise<any> => {
         try {
             const response = await ResourceClient.postResource(
-                'api/app/GetTaskCommentReactions',
+                'api/app/GetTaskCommentReactionsSample',
                 requestBodyObject,
                 sliceAuthenticationStateData.getJwtToken(),
             );
+
             setTaskCommentsReactionsState((prevState: ITaskCommentsReactionsState) => {
                 return {
                     ...prevState,
@@ -358,9 +359,7 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                             handleUpdateCallback={async () => {
                                                                 void handleGetTaskCommentReactions(
                                                                     {
-                                                                        idTaskComment:
-                                                                            taskCommentModel.getIdTaskComment(),
-                                                                        numberOfReactionsLimit: 3,
+                                                                        id: taskCommentModel.getIdTaskComment(),
                                                                     },
                                                                     taskCommentModel.getIdTaskComment(),
                                                                 );

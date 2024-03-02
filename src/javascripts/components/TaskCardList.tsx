@@ -27,7 +27,6 @@ const TaskCardList: React.FC<ITaskCardListProps> = (props: ITaskCardListProps) =
         handleSideEffectChangeNumberOfPoints,
     } = props;
 
-    console.log({ tasks });
     return tasks.length > 0 ? (
         <Box
             sx={{

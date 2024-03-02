@@ -416,6 +416,8 @@ const ManagePendingBecomePodModeratorRequestsModal: React.FC<IManageBecomePodMod
                                                         void handleGetUserBubblesPendingBecomePodModeratorRequest();
                                                     } catch (e: any) {}
                                                 }}
+                                                isAllowUnfollow={false}
+                                                handleUnfollowUser={() => {}}
                                             />
                                         </ListItem>
                                         <Divider variant="fullWidth" />

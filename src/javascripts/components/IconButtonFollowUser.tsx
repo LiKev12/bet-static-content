@@ -1,5 +1,5 @@
-import React from 'react';
-import { IconButton, Tooltip } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
 import { THEME } from 'src/javascripts/Theme';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import PersonIcon from '@mui/icons-material/Person';
@@ -10,10 +10,21 @@ export interface IIconButtonFollowUserProps {
     isFollowedByMe: boolean;
     isFollowRequestSentNotYetAccepted: boolean;
     handleSendFollowRequest: any;
+    isAllowUnfollow: boolean;
+    handleUnfollowUser: any;
 }
 
 const IconButtonFollowUser: React.FC<IIconButtonFollowUserProps> = (props: IIconButtonFollowUserProps) => {
-    const { isMe, isFollowedByMe, isFollowRequestSentNotYetAccepted, handleSendFollowRequest } = props;
+    const {
+        isMe,
+        isFollowedByMe,
+        isFollowRequestSentNotYetAccepted,
+        handleSendFollowRequest,
+        isAllowUnfollow,
+        handleUnfollowUser,
+    } = props;
+    const [anchorElUnfollowUserMenuItem, setAnchorElUnfollowUserMenuItem] = useState<null | HTMLElement>(null);
+    const isOpenMenuItemUnfollowUser = isAllowUnfollow && Boolean(anchorElUnfollowUserMenuItem);
     if (isMe) {
         return (
             <IconButton
@@ -32,14 +43,14 @@ const IconButtonFollowUser: React.FC<IIconButtonFollowUserProps> = (props: IIcon
         );
     }
 
-    if (isFollowedByMe) {
+    if (isFollowedByMe && !isAllowUnfollow) {
         return (
             <IconButton
                 edge="end"
-                aria-label="follow-user"
+                aria-label="following-user"
                 sx={{
-                    cursor: 'default',
                     color: THEME.palette.info.main,
+                    cursor: 'default',
                 }}
                 disableRipple={true}
             >
@@ -47,6 +58,47 @@ const IconButtonFollowUser: React.FC<IIconButtonFollowUserProps> = (props: IIcon
                     <PersonIcon />
                 </Tooltip>
             </IconButton>
+        );
+    }
+
+    if (isFollowedByMe && isAllowUnfollow) {
+        return (
+            <Box>
+                <Menu
+                    open={isOpenMenuItemUnfollowUser}
+                    anchorEl={anchorElUnfollowUserMenuItem}
+                    onClose={() => {
+                        setAnchorElUnfollowUserMenuItem(null);
+                    }}
+                >
+                    <MenuItem
+                        onClick={() => {
+                            handleUnfollowUser();
+                            setAnchorElUnfollowUserMenuItem(null);
+                        }}
+                        color="error"
+                    >
+                        Unfollow
+                    </MenuItem>
+                </Menu>
+                <IconButton
+                    edge="end"
+                    aria-label="following-user"
+                    sx={{
+                        color: THEME.palette.info.main,
+                    }}
+                    onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+                        setAnchorElUnfollowUserMenuItem(event.currentTarget);
+                    }}
+                    aria-controls={isOpenMenuItemUnfollowUser ? 'basic-menu' : undefined}
+                    aria-haspopup="true"
+                    aria-expanded={isOpenMenuItemUnfollowUser ? 'true' : undefined}
+                >
+                    <Tooltip title={'Followed by you'} placement="bottom">
+                        <PersonIcon />
+                    </Tooltip>
+                </IconButton>
+            </Box>
         );
     }
 

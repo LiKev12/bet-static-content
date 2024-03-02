@@ -282,6 +282,8 @@ const UserListModal: React.FC<IUserListModalProps> = (props: IUserListModalProps
                                                                 void handleGetUserBubbles();
                                                             } catch (e: any) {}
                                                         }}
+                                                        isAllowUnfollow={false}
+                                                        handleUnfollowUser={() => {}}
                                                     />
                                                 </React.Fragment>
                                             }

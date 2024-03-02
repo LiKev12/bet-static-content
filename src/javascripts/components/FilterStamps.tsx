@@ -5,14 +5,25 @@ import { Box, Button, Checkbox, FormGroup, FormControlLabel, Grid, TextField } f
 export interface IFilterStampsProps {
     handleChangeText: any;
     handleUpdateFilterState: any;
+    isUseKeyStampPublic: boolean;
+    isStampPublic: boolean;
+    isStampNotPublic: boolean;
+    isUseKeyStampCollected: boolean;
     isStampCollected: boolean;
     isStampNotCollected: boolean;
-    isUseKeyStampCollected: boolean;
 }
 
 const FilterStamps: React.FC<IFilterStampsProps> = (props: IFilterStampsProps) => {
-    const { handleChangeText, handleUpdateFilterState, isStampCollected, isStampNotCollected, isUseKeyStampCollected } =
-        props;
+    const {
+        handleChangeText,
+        handleUpdateFilterState,
+        isUseKeyStampPublic,
+        isStampPublic,
+        isStampNotPublic,
+        isUseKeyStampCollected,
+        isStampCollected,
+        isStampNotCollected,
+    } = props;
     const [isShowAdvancedFilterOptions, setShowAdvancedFilterOptions] = useState(false);
 
     return (
@@ -55,6 +66,36 @@ const FilterStamps: React.FC<IFilterStampsProps> = (props: IFilterStampsProps) =
                 {isShowAdvancedFilterOptions ? (
                     <Grid item>
                         <Grid container direction="row">
+                            {isUseKeyStampPublic ? (
+                                <Grid item>
+                                    <Box sx={{ width: '200px' }}>
+                                        <FormGroup>
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox
+                                                        checked={isStampPublic}
+                                                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                                            handleUpdateFilterState(event, 'filterIsPublic');
+                                                        }}
+                                                    />
+                                                }
+                                                label="Public"
+                                            />
+                                            <FormControlLabel
+                                                control={
+                                                    <Checkbox
+                                                        checked={isStampNotPublic}
+                                                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                                                            handleUpdateFilterState(event, 'filterIsNotPublic');
+                                                        }}
+                                                    />
+                                                }
+                                                label="Not public"
+                                            />
+                                        </FormGroup>
+                                    </Box>
+                                </Grid>
+                            ) : null}
                             {isUseKeyStampCollected ? (
                                 <Grid item>
                                     <Box sx={{ width: '200px' }}>

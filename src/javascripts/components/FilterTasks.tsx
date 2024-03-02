@@ -43,7 +43,7 @@ const FilterTasks: React.FC<IFilterTasksProps> = (props: IFilterTasksProps) => {
                         onChange={handleChangeText}
                         inputProps={{ maxLength: 50 }}
                         helperText={`Filter Tasks by name or description`}
-                        sx={{ width: '800px' }}
+                        sx={{ width: '680px' }}
                     />
                 </Grid>
                 <Grid item>

@@ -17,6 +17,10 @@ export default class ResponseModel {
         return this.errorMessage;
     }
 
+    getIsSuccess(): boolean {
+        return this.state === Constants.RESPONSE_STATE_SUCCESS;
+    }
+
     getIsLoading(): boolean {
         return this.state === Constants.RESPONSE_STATE_LOADING;
     }

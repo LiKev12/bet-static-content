@@ -51,3 +51,18 @@ export const getIdxStart = (pageSize: number, pageIdx: number): number => {
 export const getIdxEnd = (pageSize: number, pageIdx: number): number => {
     return pageSize * pageIdx;
 };
+
+export const getPaginationIdxStart = (currentPageIdx: number, paginationBatchN: number, pageSize: number): number => {
+    /**
+     * batchN = 5
+     * pageIdx  idxStart
+     * 0-4      0
+     * 5-9      5*10=50
+     * 10-14    10*10=100
+     */
+    return Math.floor(currentPageIdx / paginationBatchN) * pageSize * paginationBatchN;
+};
+
+export const getPaginationN = (pageSize: number, paginationBatchN: number): number => {
+    return pageSize * paginationBatchN;
+};

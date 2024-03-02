@@ -402,6 +402,8 @@ const ManagePendingFollowUserRequestsModal: React.FC<IManageBecomePodModeratorRe
                                                         void handleGetUserBubblesPendingFollowUserRequest();
                                                     } catch (e: any) {}
                                                 }}
+                                                isAllowUnfollow={false}
+                                                handleUnfollowUser={() => {}}
                                             />
                                         </ListItem>
                                         <Divider variant="fullWidth" />

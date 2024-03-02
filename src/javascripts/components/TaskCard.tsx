@@ -86,6 +86,7 @@ const getDateDescription = (
 export interface ITaskCardState {
     isShowDetails: boolean;
     isShowDeleteTaskConfirmationModal: boolean;
+    isShowPinTaskConfirmationModal: boolean;
     editMode: {
         name: {
             isEditMode: boolean;
@@ -145,6 +146,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
     const [taskCardState, setTaskCardState] = useState<ITaskCardState>({
         isShowDetails: false,
         isShowDeleteTaskConfirmationModal: false,
+        isShowPinTaskConfirmationModal: false,
         editMode: {
             name: {
                 isEditMode: false,
@@ -302,8 +304,8 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                 };
             });
             const response = await ResourceClient.postResource(
-                'api/app/GetTaskReactions',
-                { id: task.getId(), numberOfReactionsLimit: 3 },
+                'api/app/GetTaskReactionsSample',
+                { id: task.getId() },
                 sliceAuthenticationStateData.getJwtToken(),
             );
             setTaskReactionsState((prevState: ITaskReactionsState) => {
@@ -996,8 +998,22 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                         </Tooltip>
                                         <Divider orientation="vertical" flexItem />
                                         <IconButton
+                                            // onClick={async () => {
+                                            //     try {
+                                            //         const response = await ResourceClient.postResource(
+                                            //             'api/app/UpdateTask',
+
+                                            //             {
+                                            //                 id: task.getId(),
+                                            //                 isPin: !taskCardState.data.getIsPin(),
+                                            //             },
+                                            //             sliceAuthenticationStateData.getJwtToken(),
+                                            //         );
+                                            //         handleUpdateTask(response.data);
+                                            //     } catch (e: any) {}
+                                            // }}
                                             onClick={async () => {
-                                                try {
+                                                if (taskCardState.data.getIsPin()) {
                                                     const response = await ResourceClient.postResource(
                                                         'api/app/UpdateTask',
 
@@ -1008,7 +1024,14 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                         sliceAuthenticationStateData.getJwtToken(),
                                                     );
                                                     handleUpdateTask(response.data);
-                                                } catch (e: any) {}
+                                                } else {
+                                                    setTaskCardState((prevState: ITaskCardState) => {
+                                                        return {
+                                                            ...prevState,
+                                                            isShowPinTaskConfirmationModal: true,
+                                                        };
+                                                    });
+                                                }
                                             }}
                                         >
                                             {taskCardState.data.getIsPin() ? <PushPinIcon /> : <PushPinOutlinedIcon />}
@@ -1644,65 +1667,124 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                         )}
                     </Grid>
                 </Grid>
-                <Dialog
-                    open={taskCardState.isShowDeleteTaskConfirmationModal}
-                    onClose={() => {
-                        setTaskCardState((prevState: any) => {
-                            return {
-                                ...prevState,
-                                isShowDeleteTaskConfirmationModal: false,
-                            };
-                        });
-                    }}
-                    aria-labelledby="alert-dialog-title"
-                    aria-describedby="alert-dialog-description"
-                >
-                    <DialogTitle id="alert-dialog-title">{'Are you sure?'}</DialogTitle>
-                    <DialogContent>
-                        <DialogContentText id="alert-dialog-description">{`Are you sure you would like to delete this Task?${
-                            taskCardState.data.getIdPod() !== null && taskCardState.data.getIdPod() !== undefined
-                                ? ' Deleting a Task from a Pod also removes the Task from any Stamp which references the Task.'
-                                : ''
-                        }`}</DialogContentText>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button
-                            onClick={() => {
-                                setTaskCardState((prevState: any) => {
-                                    return {
-                                        ...prevState,
-                                        isShowDeleteTaskConfirmationModal: false,
-                                    };
-                                });
-                            }}
-                            autoFocus
-                        >
-                            Close
-                        </Button>
-                        <Button
-                            onClick={async () => {
-                                try {
-                                    await ResourceClient.postResource(
-                                        'api/app/DeleteTask',
-
-                                        {
-                                            id: task.getId(),
-                                        },
-                                        sliceAuthenticationStateData.getJwtToken(),
-                                    );
+                <React.Fragment>
+                    <Dialog
+                        open={taskCardState.isShowDeleteTaskConfirmationModal}
+                        onClose={() => {
+                            setTaskCardState((prevState: any) => {
+                                return {
+                                    ...prevState,
+                                    isShowDeleteTaskConfirmationModal: false,
+                                };
+                            });
+                        }}
+                        aria-labelledby="alert-dialog-title"
+                        aria-describedby="alert-dialog-description"
+                    >
+                        <DialogTitle id="alert-dialog-title">{'Are you sure?'}</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText id="alert-dialog-description">{`Are you sure you would like to delete this Task?${
+                                taskCardState.data.getIdPod() !== null && taskCardState.data.getIdPod() !== undefined
+                                    ? ' Deleting a Task from a Pod also removes the Task from any Stamp which references the Task.'
+                                    : ''
+                            }`}</DialogContentText>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button
+                                onClick={() => {
                                     setTaskCardState((prevState: any) => {
                                         return {
                                             ...prevState,
                                             isShowDeleteTaskConfirmationModal: false,
                                         };
                                     });
-                                } catch (e: any) {}
-                            }}
-                        >
-                            Delete
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                                }}
+                                autoFocus
+                            >
+                                Close
+                            </Button>
+                            <Button
+                                onClick={async () => {
+                                    try {
+                                        await ResourceClient.postResource(
+                                            'api/app/DeleteTask',
+
+                                            {
+                                                id: task.getId(),
+                                            },
+                                            sliceAuthenticationStateData.getJwtToken(),
+                                        );
+                                        setTaskCardState((prevState: any) => {
+                                            return {
+                                                ...prevState,
+                                                isShowDeleteTaskConfirmationModal: false,
+                                            };
+                                        });
+                                    } catch (e: any) {}
+                                }}
+                            >
+                                Delete
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+                    <Dialog
+                        open={taskCardState.isShowPinTaskConfirmationModal}
+                        onClose={() => {
+                            setTaskCardState((prevState: any) => {
+                                return {
+                                    ...prevState,
+                                    isShowPinTaskConfirmationModal: false,
+                                };
+                            });
+                        }}
+                        aria-labelledby="alert-dialog-title"
+                        aria-describedby="alert-dialog-description"
+                    >
+                        <DialogTitle id="alert-dialog-title">{'Are you sure?'}</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText id="alert-dialog-description">{`Are you sure you would like to pin this Task? Pinning a Task displays everything in the Task "My Notes" section for others to see.`}</DialogContentText>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button
+                                onClick={() => {
+                                    setTaskCardState((prevState: any) => {
+                                        return {
+                                            ...prevState,
+                                            isShowPinTaskConfirmationModal: false,
+                                        };
+                                    });
+                                }}
+                                autoFocus
+                            >
+                                Close
+                            </Button>
+                            <Button
+                                onClick={async () => {
+                                    try {
+                                        setTaskCardState((prevState: any) => {
+                                            return {
+                                                ...prevState,
+                                                isShowPinTaskConfirmationModal: false,
+                                            };
+                                        });
+                                        const response = await ResourceClient.postResource(
+                                            'api/app/UpdateTask',
+
+                                            {
+                                                id: task.getId(),
+                                                isPin: !taskCardState.data.getIsPin(),
+                                            },
+                                            sliceAuthenticationStateData.getJwtToken(),
+                                        );
+                                        handleUpdateTask(response.data);
+                                    } catch (e: any) {}
+                                }}
+                            >
+                                Pin
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+                </React.Fragment>
             </CardContent>
         </Card>
     );

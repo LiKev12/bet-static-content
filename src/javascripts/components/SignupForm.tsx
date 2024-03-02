@@ -1,10 +1,16 @@
 import { useState } from 'react';
-import { Button, FormControl, TextField, Grid, InputAdornment, IconButton } from '@mui/material';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { Alert, Button, FormControl, TextField, Grid, InputAdornment, IconButton } from '@mui/material';
 import Constants from 'src/javascripts/Constants';
 import { getInputText } from 'src/javascripts/utilities';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import { sliceAuthenticationActions } from 'src/javascripts/store/SliceAuthentication';
+import ResourceClient from 'src/javascripts/clients/ResourceClient';
+import ResponseModel from 'src/javascripts/models/ResponseModel';
 
+import type { IRootState } from 'src/javascripts/store';
 export interface ISignUpFormState {
     data: {
         username: { value: string; isBlurredInput: boolean };
@@ -19,13 +25,17 @@ export interface ISignUpFormState {
     };
 }
 const SignUpForm: React.FC = () => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
+    const sliceAuthenticationStateResponse = new ResponseModel(sliceAuthenticationState.response);
     const [signUpFormState, setSignUpFormState] = useState<ISignUpFormState>({
         data: {
-            username: { value: '', isBlurredInput: false },
-            name: { value: '', isBlurredInput: false },
-            email: { value: '', isBlurredInput: false },
-            password: { value: '', isBlurredInput: false, isShowVisible: false },
-            passwordConfirmed: { value: '', isBlurredInput: false, isShowVisible: false },
+            username: { value: 'teemo1', isBlurredInput: false },
+            name: { value: 'tee mo1', isBlurredInput: false },
+            email: { value: 'kevinli5825@yahoo.com', isBlurredInput: false },
+            password: { value: 'teemo1pwd', isBlurredInput: false, isShowVisible: false },
+            passwordConfirmed: { value: 'teemo1pwd', isBlurredInput: false, isShowVisible: false },
         },
         response: {
             state: Constants.RESPONSE_STATE_UNSTARTED,
@@ -33,24 +43,38 @@ const SignUpForm: React.FC = () => {
         },
     });
 
-    const handleOnSubmitSignUp = (): void => {
-        console.log('[SUBMITTING]', signUpFormState);
+    const handleOnSubmitSignUp = async (): Promise<any> => {
+        try {
+            dispatch(sliceAuthenticationActions.setStateResponseLoading());
+            const response = await ResourceClient.postResourceUnauthenticated('api/auth/Register', {
+                username: getInputText(signUpFormState.data.username.value),
+                name: getInputText(signUpFormState.data.name.value),
+                email: getInputText(signUpFormState.data.email.value),
+                password: signUpFormState.data.password.value,
+                passwordConfirmed: signUpFormState.data.passwordConfirmed.value,
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            });
+            dispatch(sliceAuthenticationActions.setStateData(response.data));
+            navigate('/me');
+        } catch (e: any) {
+            dispatch(sliceAuthenticationActions.setStateResponseError(e?.response?.data?.message));
+        }
     };
 
     const isErrorUsername =
         (signUpFormState.data.username.isBlurredInput &&
             getInputText(signUpFormState.data.username.value).length < Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS) ||
-        getInputText(signUpFormState.data.username.value).length > Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS;
+        getInputText(signUpFormState.data.username.value).length > Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS ||
+        !Constants.REGEX_USER_USERNAME.test(signUpFormState.data.username.value);
     const isErrorName =
         (signUpFormState.data.name.isBlurredInput &&
             getInputText(signUpFormState.data.name.value).length < Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS) ||
         getInputText(signUpFormState.data.name.value).length > Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS;
     const isErrorEmail =
-        signUpFormState.data.email.isBlurredInput &&
-        !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(signUpFormState.data.email.value);
+        signUpFormState.data.email.isBlurredInput && !Constants.REGEX_USER_EMAIL.test(signUpFormState.data.email.value);
     const isErrorPassword =
         signUpFormState.data.password.isBlurredInput &&
-        getInputText(signUpFormState.data.password.value).length < Constants.USER_PASSWORD_MIN_LENGTH_CHARACTERS;
+        signUpFormState.data.password.value.length < Constants.USER_PASSWORD_MIN_LENGTH_CHARACTERS;
     const isErrorPasswordConfirmed =
         signUpFormState.data.passwordConfirmed.isBlurredInput &&
         signUpFormState.data.password.value !== signUpFormState.data.passwordConfirmed.value;
@@ -59,7 +83,11 @@ const SignUpForm: React.FC = () => {
         isErrorUsername || isErrorName || isErrorEmail || isErrorPassword || isErrorPasswordConfirmed;
 
     return (
-        <FormControl onSubmit={handleOnSubmitSignUp}>
+        <FormControl
+            onSubmit={() => {
+                void handleOnSubmitSignUp();
+            }}
+        >
             <Grid direction="column" container spacing={2}>
                 <Grid item sx={{ marginBottom: '6px' }}>
                     <TextField
@@ -279,8 +307,26 @@ const SignUpForm: React.FC = () => {
                         sx={{ width: '316px' }}
                     />
                 </Grid>
+                {sliceAuthenticationStateResponse.getIsError() ? (
+                    <Grid item sx={{ width: '316px' }}>
+                        <Alert severity="error">
+                            {sliceAuthenticationStateResponse.getErrorMessage() === 'DUPLICATE_ACCOUNT_USERNAME'
+                                ? 'There is already an account with this username. Please login or try a different username.'
+                                : sliceAuthenticationStateResponse.getErrorMessage() === 'DUPLICATE_ACCOUNT_EMAIL'
+                                ? 'There is already an account with this email. Please login or try a different email.'
+                                : 'There was an issue creating an account. Please try again.'}
+                        </Alert>
+                    </Grid>
+                ) : null}
                 <Grid item>
-                    <Button onClick={handleOnSubmitSignUp} disabled={isErrorSignUpForm} variant="contained" fullWidth>
+                    <Button
+                        onClick={() => {
+                            void handleOnSubmitSignUp();
+                        }}
+                        disabled={isErrorSignUpForm}
+                        variant="contained"
+                        fullWidth
+                    >
                         Sign Up
                     </Button>
                 </Grid>

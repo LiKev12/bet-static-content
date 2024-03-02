@@ -389,6 +389,8 @@ const AddPodModeratorsModal: React.FC<IAddPodModeratorsModalProps> = (props: IAd
                                                         void handleGetUserBubblesAddPodModerator();
                                                     } catch {}
                                                 }}
+                                                isAllowUnfollow={false}
+                                                handleUnfollowUser={() => {}}
                                             />
                                         </ListItem>
                                         <Divider variant="fullWidth" />

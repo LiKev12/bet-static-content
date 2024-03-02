@@ -130,7 +130,6 @@ const UserBubbleReactionListModal: React.FC<IUserBubbleReactionListModalProps> =
                 apiPath,
                 {
                     id: apiReactionSourceEntityIdValue,
-                    numberOfReactionsLimit: -1,
                 },
                 sliceAuthenticationStateData.getJwtToken(),
             );
@@ -312,6 +311,8 @@ const UserBubbleReactionListModal: React.FC<IUserBubbleReactionListModalProps> =
                                                                 void handlePostResourceUserBubblesReaction();
                                                             } catch (e: any) {}
                                                         }}
+                                                        isAllowUnfollow={false}
+                                                        handleUnfollowUser={() => {}}
                                                     />
                                                 </React.Fragment>
                                             }
