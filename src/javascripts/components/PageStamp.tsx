@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import _ from 'lodash';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import {
     Box,
+    Button,
     CircularProgress,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
     Divider,
     Grid,
     Typography,
@@ -34,7 +39,6 @@ import CollectionsBookmarkRoundedIcon from '@mui/icons-material/CollectionsBookm
 import AddIcon from '@mui/icons-material/Add';
 import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 import ResponseModel from 'src/javascripts/models/ResponseModel';
-import NumberOfPointsInTasksCompletedOverTimeVisualizationModel from 'src/javascripts/models/NumberOfPointsInTasksCompletedOverTimeVisualizationModel';
 import { slicePageStampActions } from 'src/javascripts/store/SlicePageStamp';
 import { sliceVisualizationActions } from 'src/javascripts/store/SliceVisualization';
 import { slicePodCardsAssociatedWithStampActions } from 'src/javascripts/store/SlicePodCardsAssociatedWithStamp';
@@ -65,7 +69,7 @@ export interface IStampPageState {
 }
 export interface ITaskState {
     filter: {
-        filterNameOrDescription: string;
+        filterByName: string;
         filterIsComplete: boolean;
         filterIsNotComplete: boolean;
         filterIsStar: boolean;
@@ -76,7 +80,7 @@ export interface ITaskState {
 }
 export interface IPodCardState {
     filter: {
-        filterNameOrDescription: string;
+        filterByName: string;
         filterIsPublic: boolean;
         filterIsNotPublic: boolean;
         filterIsMember: boolean;
@@ -85,19 +89,18 @@ export interface IPodCardState {
         filterIsNotModerator: boolean;
     };
 }
+export interface IImageSizeWarningModalState {
+    isOpen: boolean;
+}
 const PageStamp: React.FC = () => {
     const { id: idStamp } = useParams();
+    const navigate = useNavigate();
     const dispatch = useDispatch();
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
     const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const slicePageStampState = useSelector((state: IRootState) => state.pageStamp);
     const slicePageStampStateData = new StampPageModel(slicePageStampState.data);
     const slicePageStampStateResponse = new ResponseModel(slicePageStampState.response);
-    const sliceVisualizationState = useSelector((state: IRootState) => state.visualization);
-    const sliceVisualizationStateData = new NumberOfPointsInTasksCompletedOverTimeVisualizationModel(
-        sliceVisualizationState.data,
-    );
-    const sliceVisualizationStateResponse = new ResponseModel(sliceVisualizationState.response);
     const slicePodCardsAssociatedWithStampState = useSelector((state: IRootState) => state.podCardsAssociatedWithStamp);
     const slicePodCardsAssociatedWithStampStateData = slicePodCardsAssociatedWithStampState.data.map(
         (d: any) => new PodCardModel(d),
@@ -132,7 +135,7 @@ const PageStamp: React.FC = () => {
     // tasks
     const [taskState, setTaskState] = useState<ITaskState>({
         filter: {
-            filterNameOrDescription: '',
+            filterByName: '',
             filterIsComplete: true,
             filterIsNotComplete: true,
             filterIsStar: true,
@@ -145,7 +148,7 @@ const PageStamp: React.FC = () => {
     // filter pods
     const [podCardState, setPodCardState] = useState<IPodCardState>({
         filter: {
-            filterNameOrDescription: '',
+            filterByName: '',
             filterIsPublic: true,
             filterIsNotPublic: true,
             filterIsMember: true,
@@ -154,6 +157,17 @@ const PageStamp: React.FC = () => {
             filterIsNotModerator: true,
         },
     });
+    const [imageSizeWarningModalState, setImageSizeWarningModalState] = useState<IImageSizeWarningModalState>({
+        isOpen: false,
+    });
+    const handleToggleImageSizeWarningModal = (isOpen: boolean): void => {
+        setImageSizeWarningModalState((prevState: IImageSizeWarningModalState) => {
+            return {
+                ...prevState,
+                isOpen,
+            };
+        });
+    };
     const setStampPageStateData = async (): Promise<any> => {
         try {
             dispatch(slicePageStampActions.setStateResponseLoading());
@@ -188,6 +202,9 @@ const PageStamp: React.FC = () => {
             });
         } catch (e: any) {
             dispatch(slicePageStampActions.setStateResponseError(e?.response?.data?.message));
+            if (e?.response?.data?.message === Constants.ERROR_CODE__UNAUTHORIZED_ACCESS) {
+                navigate('/page-not-found');
+            }
         }
     };
 
@@ -236,26 +253,23 @@ const PageStamp: React.FC = () => {
             dispatch(sliceVisualizationActions.setStateResponseError(e?.response?.data?.message));
         }
     };
-    const debouncedHandleChangeFilterNameOrDescription = _.debounce(
-        (event: React.ChangeEvent<HTMLInputElement>): void => {
-            if (tabIdxToDisplayMap[tabIdx] === 'task') {
-                setTaskState((prevState: ITaskState) => {
-                    return {
-                        ...prevState,
-                        filter: { ...prevState.filter, filterNameOrDescription: event.target.value },
-                    };
-                });
-            } else if (tabIdxToDisplayMap[tabIdx] === 'pod') {
-                setPodCardState((prevState: IPodCardState) => {
-                    return {
-                        ...prevState,
-                        filter: { ...prevState.filter, filterNameOrDescription: event.target.value },
-                    };
-                });
-            }
-        },
-        500,
-    );
+    const debouncedHandleChangefilterByName = _.debounce((event: React.ChangeEvent<HTMLInputElement>): void => {
+        if (tabIdxToDisplayMap[tabIdx] === 'task') {
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    filter: { ...prevState.filter, filterByName: event.target.value },
+                };
+            });
+        } else if (tabIdxToDisplayMap[tabIdx] === 'pod') {
+            setPodCardState((prevState: IPodCardState) => {
+                return {
+                    ...prevState,
+                    filter: { ...prevState.filter, filterByName: event.target.value },
+                };
+            });
+        }
+    }, 500);
     useEffect(() => {
         void dispatch(sliceHeaderActiveTabActions.setStateData(Constants.HEADER_ACTIVE_TAB_IDX__NO_ACTIVE_TAB));
         void setStampPageStateData();
@@ -265,7 +279,7 @@ const PageStamp: React.FC = () => {
     useEffect(() => {
         void handleGetTasksAssociatedWithStamp({
             id: String(idStamp),
-            filterNameOrDescription: taskState.filter.filterNameOrDescription,
+            filterByName: taskState.filter.filterByName,
             filterIsComplete: taskState.filter.filterIsComplete,
             filterIsNotComplete: taskState.filter.filterIsNotComplete,
             filterIsStar: taskState.filter.filterIsStar,
@@ -279,7 +293,7 @@ const PageStamp: React.FC = () => {
     const REQUEST_PARAMS_POD_CARDS = (currentPageIdx: number): any => {
         return {
             id: String(idStamp),
-            filterNameOrDescription: podCardState.filter.filterNameOrDescription,
+            filterByName: podCardState.filter.filterByName,
             filterIsPublic: podCardState.filter.filterIsPublic,
             filterIsNotPublic: podCardState.filter.filterIsNotPublic,
             filterIsMember: podCardState.filter.filterIsMember,
@@ -328,7 +342,9 @@ const PageStamp: React.FC = () => {
                                         sliceAuthenticationStateData.getJwtToken(),
                                     );
                                     dispatch(slicePageStampActions.setStateData(response.data));
-                                } catch (e: any) {}
+                                } catch (e: any) {
+                                    handleToggleImageSizeWarningModal(true);
+                                }
                             }}
                             imageLink={slicePageStampStateData.getImageLink()}
                             placeholderImage={PlaceholderImageStamp}
@@ -430,6 +446,7 @@ const PageStamp: React.FC = () => {
                                             slicePageStampStateData.getUserBubblesStampCollectTotalNumber(),
                                             'collected',
                                             'collected',
+                                            100,
                                         )}
                                         userBubbles={slicePageStampStateData.getUserBubblesStampCollect()}
                                         sortByTimestampLabel="time collect stamp"
@@ -757,7 +774,7 @@ const PageStamp: React.FC = () => {
                         }}
                     >
                         <FilterTasks
-                            handleChangeText={debouncedHandleChangeFilterNameOrDescription}
+                            handleChangeText={debouncedHandleChangefilterByName}
                             handleUpdateFilterState={(
                                 event: React.ChangeEvent<HTMLInputElement>,
                                 filterKey: string,
@@ -801,6 +818,7 @@ const PageStamp: React.FC = () => {
                                     void setStampPageStateData();
                                     void setVisualizationStateData();
                                 }}
+                                handleSideEffectDeleteTask={() => {}} // tasks cannot be deleted from Stamp page
                             />
                         ) : sliceTasksAssociatedWithStampResponse.getIsLoading() ? (
                             <Box
@@ -842,7 +860,7 @@ const PageStamp: React.FC = () => {
                         }}
                     >
                         <FilterPods
-                            handleChangeText={debouncedHandleChangeFilterNameOrDescription}
+                            handleChangeText={debouncedHandleChangefilterByName}
                             handleUpdateFilterState={(
                                 event: React.ChangeEvent<HTMLInputElement>,
                                 filterKey: string,
@@ -899,12 +917,31 @@ const PageStamp: React.FC = () => {
                     </Box>
                 </React.Fragment>
             ) : null}
-            {tabIdxToDisplayMap[tabIdx] === 'progress' ? (
-                <NumberOfPointsInTasksCompletedOverTimeVisualization
-                    data={sliceVisualizationStateData}
-                    response={sliceVisualizationStateResponse}
-                />
-            ) : null}
+            {tabIdxToDisplayMap[tabIdx] === 'progress' ? <NumberOfPointsInTasksCompletedOverTimeVisualization /> : null}
+            <Dialog
+                open={imageSizeWarningModalState.isOpen}
+                onClose={() => {
+                    handleToggleImageSizeWarningModal(false);
+                }}
+                fullWidth
+            >
+                <DialogTitle>{`Image Size Exceeded`}</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        The file size for this image exceeds our storage limits. Please try cropping the image or use an
+                        image with a smaller file size. Thank you.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => {
+                            handleToggleImageSizeWarningModal(false);
+                        }}
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

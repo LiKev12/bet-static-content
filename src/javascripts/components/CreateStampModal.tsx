@@ -135,13 +135,15 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                 'api/app/GetPodCardsAssociatedWithUser',
                 {
                     id: sliceAuthenticationStateData.getIdUser(),
-                    filterNameOrDescription: '',
+                    filterByName: createStampModalState.filterPodText,
                     filterIsPublic: true,
                     filterIsNotPublic: true,
                     filterIsMember: true,
                     filterIsNotMember: true,
                     filterIsModerator: true,
                     filterIsNotModerator: true,
+                    paginationIdxStart: 0,
+                    paginationN: Constants.NUMBER_OF_PODS_DISPLAYED_IN_STAMP_MODAL,
                 },
                 sliceAuthenticationStateData.getJwtToken(),
             );
@@ -149,7 +151,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
             setPodCardState((prevState: IPodCardState) => {
                 return {
                     ...prevState,
-                    data: response.data.map((datapoint: any) => {
+                    data: response.data.data.map((datapoint: any) => {
                         return new PodCardModel(datapoint);
                     }),
                     response: {
@@ -180,7 +182,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                 'api/app/GetTasksAssociatedWithPod',
                 {
                     id: createStampModalState.selectedPodId,
-                    filterNameOrDescription: '',
+                    filterByName: createStampModalState.filterTaskText,
                     filterIsComplete: true,
                     filterIsNotComplete: true,
                     filterIsStar: true,
@@ -220,7 +222,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
     useEffect(() => {
         void handleGetPodCardsAssociatedWithUser();
         // eslint-disable-next-line
-    }, []);
+    }, [createStampModalState.filterPodText]);
 
     useEffect(() => {
         if (createStampModalState.selectedPodId === null) {
@@ -301,7 +303,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                                     </DialogContentText>
                                 </Grid>
                                 <Grid item>
-                                    <Tooltip title={'required, can modify after creation'} placement="right">
+                                    <Tooltip title={'Required, can modify after creation'} placement="right">
                                         <InfoOutlinedIcon
                                             sx={{
                                                 paddingLeft: '4px',
@@ -313,7 +315,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                             </Grid>
                             <TextField
                                 id="create-stamp-enter-name"
-                                label="name"
+                                label="Name"
                                 sx={{ width: '100%', marginBottom: '12px' }}
                                 value={createStampModalState.data.name}
                                 required
@@ -324,6 +326,11 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                                             data: {
                                                 ...prevState.data,
                                                 name: event.target.value,
+                                            },
+                                            response: {
+                                                ...prevState.response,
+                                                state: Constants.RESPONSE_STATE_UNSTARTED,
+                                                errorMessage: null,
                                             },
                                         };
                                     });
@@ -348,7 +355,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                                     </DialogContentText>
                                 </Grid>
                                 <Grid item>
-                                    <Tooltip title={'not required, can modify after creation'} placement="right">
+                                    <Tooltip title={'Not required, can modify after creation'} placement="right">
                                         <InfoOutlinedIcon
                                             sx={{
                                                 paddingLeft: '4px',
@@ -360,7 +367,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                             </Grid>
                             <TextField
                                 id="create-stamp-enter-description"
-                                label="description"
+                                label="Description"
                                 multiline
                                 minRows={10}
                                 maxRows={10}
@@ -395,6 +402,11 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                                     {'Stamp successfully created. Click '}
                                     <Link to={`/stamps/${String(createStampModalState.data.id)}`}>{'here'}</Link>
                                     {' to view.'}
+                                </Alert>
+                            ) : null}
+                            {createStampModalState.response.state === Constants.RESPONSE_STATE_ERROR ? (
+                                <Alert severity="error">
+                                    {Constants.RESPONSE_GET_ERROR_MESSAGE(createStampModalState.response.errorMessage)}
                                 </Alert>
                             ) : null}
                         </Grid>
@@ -575,6 +587,12 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                                 ) : tasksFilteredByName.length > 0 ? (
                                     <List dense={false}>
                                         {tasksFilteredByName.map((task: TaskModel, idx: number) => {
+                                            const isReachedNumberOfTasksLimit =
+                                                createStampModalState.data.selectedTaskIds.size >=
+                                                Constants.LIMIT_NUMBER_OF_TOTAL_TASKS_STAMP;
+                                            const isTaskSelected = createStampModalState.data.selectedTaskIds.has(
+                                                task.getId(),
+                                            );
                                             return (
                                                 <React.Fragment key={`${idx}_${String(task.getId())}`}>
                                                     <ListItem
@@ -590,13 +608,20 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                                                                         if (selectedTaskIds.has(task.getId())) {
                                                                             selectedTaskIds.delete(task.getId());
                                                                         } else {
-                                                                            selectedTaskIds.add(task.getId());
+                                                                            if (!isReachedNumberOfTasksLimit) {
+                                                                                selectedTaskIds.add(task.getId());
+                                                                            }
                                                                         }
                                                                         return {
                                                                             ...prevState,
                                                                             data: {
                                                                                 ...prevState.data,
                                                                                 selectedTaskIds,
+                                                                            },
+                                                                            response: {
+                                                                                ...prevState.response,
+                                                                                state: Constants.RESPONSE_STATE_UNSTARTED,
+                                                                                errorMessage: null,
                                                                             },
                                                                         };
                                                                     },
@@ -606,10 +631,11 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                                                             <ListItemIcon>
                                                                 <Checkbox
                                                                     edge="start"
-                                                                    checked={createStampModalState.data.selectedTaskIds.has(
-                                                                        task.getId(),
-                                                                    )}
+                                                                    checked={isTaskSelected}
                                                                     disableRipple
+                                                                    disabled={
+                                                                        isReachedNumberOfTasksLimit && !isTaskSelected
+                                                                    }
                                                                 />
                                                             </ListItemIcon>
                                                             <ListItemText primary={task.getName()} />
@@ -676,7 +702,8 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                         }}
                         disabled={
                             isErrorCreateStamp ||
-                            createStampModalState.response.state !== Constants.RESPONSE_STATE_UNSTARTED
+                            createStampModalState.response.state === Constants.RESPONSE_STATE_SUCCESS ||
+                            createStampModalState.response.state === Constants.RESPONSE_STATE_ERROR
                         }
                     >
                         Create

@@ -63,6 +63,7 @@ export interface ITaskCardProps {
     isAuthorizedToDelete: boolean;
     handleSideEffectToggleTaskComplete: any;
     handleSideEffectChangeNumberOfPoints: any;
+    handleSideEffectDeleteTask: any;
 }
 
 const getDateDescription = (
@@ -140,6 +141,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
         isAuthorizedToDelete,
         handleSideEffectToggleTaskComplete,
         handleSideEffectChangeNumberOfPoints,
+        handleSideEffectDeleteTask,
     } = props;
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
     const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
@@ -996,60 +998,54 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                 fontSize="small"
                                             />
                                         </Tooltip>
-                                        <Divider orientation="vertical" flexItem />
-                                        <IconButton
-                                            // onClick={async () => {
-                                            //     try {
-                                            //         const response = await ResourceClient.postResource(
-                                            //             'api/app/UpdateTask',
+                                        {!taskCardState.data.getIsTaskPodPrivate() ? (
+                                            <React.Fragment>
+                                                <Divider orientation="vertical" flexItem />
+                                                <IconButton
+                                                    onClick={async () => {
+                                                        if (taskCardState.data.getIsPin()) {
+                                                            const response = await ResourceClient.postResource(
+                                                                'api/app/UpdateTask',
 
-                                            //             {
-                                            //                 id: task.getId(),
-                                            //                 isPin: !taskCardState.data.getIsPin(),
-                                            //             },
-                                            //             sliceAuthenticationStateData.getJwtToken(),
-                                            //         );
-                                            //         handleUpdateTask(response.data);
-                                            //     } catch (e: any) {}
-                                            // }}
-                                            onClick={async () => {
-                                                if (taskCardState.data.getIsPin()) {
-                                                    const response = await ResourceClient.postResource(
-                                                        'api/app/UpdateTask',
-
-                                                        {
-                                                            id: task.getId(),
-                                                            isPin: !taskCardState.data.getIsPin(),
-                                                        },
-                                                        sliceAuthenticationStateData.getJwtToken(),
-                                                    );
-                                                    handleUpdateTask(response.data);
-                                                } else {
-                                                    setTaskCardState((prevState: ITaskCardState) => {
-                                                        return {
-                                                            ...prevState,
-                                                            isShowPinTaskConfirmationModal: true,
-                                                        };
-                                                    });
-                                                }
-                                            }}
-                                        >
-                                            {taskCardState.data.getIsPin() ? <PushPinIcon /> : <PushPinOutlinedIcon />}
-                                        </IconButton>
-                                        <Tooltip
-                                            title={'Pinning a Task displays the task on your public profile'}
-                                            placement="right"
-                                        >
-                                            <InfoOutlinedIcon
-                                                sx={{
-                                                    paddingLeft: '4px',
-                                                    paddingRight: '8px',
-                                                    paddingTop: '10px',
-                                                    paddingBottom: '10px',
-                                                }}
-                                                fontSize="small"
-                                            />
-                                        </Tooltip>
+                                                                {
+                                                                    id: task.getId(),
+                                                                    isPin: !taskCardState.data.getIsPin(),
+                                                                },
+                                                                sliceAuthenticationStateData.getJwtToken(),
+                                                            );
+                                                            handleUpdateTask(response.data);
+                                                        } else {
+                                                            setTaskCardState((prevState: ITaskCardState) => {
+                                                                return {
+                                                                    ...prevState,
+                                                                    isShowPinTaskConfirmationModal: true,
+                                                                };
+                                                            });
+                                                        }
+                                                    }}
+                                                >
+                                                    {taskCardState.data.getIsPin() ? (
+                                                        <PushPinIcon />
+                                                    ) : (
+                                                        <PushPinOutlinedIcon />
+                                                    )}
+                                                </IconButton>
+                                                <Tooltip
+                                                    title={'Pinning a Task displays the task on your public profile'}
+                                                    placement="right"
+                                                >
+                                                    <InfoOutlinedIcon
+                                                        sx={{
+                                                            paddingLeft: '4px',
+                                                            paddingRight: '8px',
+                                                            paddingTop: '10px',
+                                                            paddingBottom: '10px',
+                                                        }}
+                                                        fontSize="small"
+                                                    />
+                                                </Tooltip>
+                                            </React.Fragment>
+                                        ) : null}
                                         {isAuthorizedToDelete ? (
                                             <React.Fragment>
                                                 <Divider orientation="vertical" flexItem />
@@ -1154,6 +1150,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                 taskCardState.data.getUserBubblesTaskCompleteTotalNumber(),
                                                 'completed',
                                                 'completed',
+                                                100,
                                             )}
                                             userBubbles={taskCardState.data.getUserBubblesTaskComplete() ?? []}
                                             sortByTimestampLabel="time completed"
@@ -1592,6 +1589,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                                 taskReactionsState.data.getUserBubblesReactionTotalNumber(),
                                                                 'task reaction',
                                                                 'task reactions',
+                                                                100,
                                                             )}
                                                             userBubbles={taskReactionsState.data.getUserBubblesReaction()}
                                                             sortByTimestampLabel="time of reaction"
@@ -1720,6 +1718,7 @@ const TaskCard: React.FC<ITaskCardProps> = (props: ITaskCardProps) => {
                                                 isShowDeleteTaskConfirmationModal: false,
                                             };
                                         });
+                                        handleSideEffectDeleteTask();
                                     } catch (e: any) {}
                                 }}
                             >

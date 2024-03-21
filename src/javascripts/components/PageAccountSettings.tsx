@@ -72,6 +72,10 @@ export interface IPageAccountSettingsState {
     };
 }
 
+export interface IImageSizeWarningModalState {
+    isOpen: boolean;
+}
+
 const PageAccountSettings: React.FC = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -104,9 +108,18 @@ const PageAccountSettings: React.FC = () => {
             isShow: false,
         },
     });
+    const [imageSizeWarningModalState, setImageSizeWarningModalState] = useState<IImageSizeWarningModalState>({
+        isOpen: false,
+    });
 
-    // const slicePageAccountSettingsStateResponse = new ResponseModel(slicePageAccountSettingsState.response);
-
+    const handleToggleImageSizeWarningModal = (isOpen: boolean): void => {
+        setImageSizeWarningModalState((prevState: IImageSizeWarningModalState) => {
+            return {
+                ...prevState,
+                isOpen,
+            };
+        });
+    };
     const setPageAccountSettingsStateData = async (): Promise<any> => {
         try {
             const response = await ResourceClient.postResource(
@@ -151,7 +164,9 @@ const PageAccountSettings: React.FC = () => {
                                     sliceAuthenticationStateData.getJwtToken(),
                                 );
                                 dispatch(slicePageAccountSettingsActions.setStateData(response.data));
-                            } catch (e: any) {}
+                            } catch (e: any) {
+                                handleToggleImageSizeWarningModal(true);
+                            }
                         }}
                         imageLink={slicePageAccountSettingsStateData.getImageLink()}
                         placeholderImage={PlaceholderImageUser}
@@ -771,6 +786,30 @@ const PageAccountSettings: React.FC = () => {
                         disabled={isErrorChangePassword}
                     >
                         Confirm
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog
+                open={imageSizeWarningModalState.isOpen}
+                onClose={() => {
+                    handleToggleImageSizeWarningModal(false);
+                }}
+                fullWidth
+            >
+                <DialogTitle>{`Image Size Exceeded`}</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        The file size for this image exceeds our storage limits. Please try cropping the image or use an
+                        image with a smaller file size. Thank you.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => {
+                            handleToggleImageSizeWarningModal(false);
+                        }}
+                    >
+                        Close
                     </Button>
                 </DialogActions>
             </Dialog>

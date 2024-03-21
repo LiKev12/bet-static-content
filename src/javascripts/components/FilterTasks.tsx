@@ -42,7 +42,7 @@ const FilterTasks: React.FC<IFilterTasksProps> = (props: IFilterTasksProps) => {
                         variant="standard"
                         onChange={handleChangeText}
                         inputProps={{ maxLength: 50 }}
-                        helperText={`Filter Tasks by name or description`}
+                        helperText={`Filter Tasks by name`}
                         sx={{ width: '680px' }}
                     />
                 </Grid>
@@ -65,7 +65,7 @@ const FilterTasks: React.FC<IFilterTasksProps> = (props: IFilterTasksProps) => {
                                 setShowAdvancedFilterOptions(true);
                             }}
                         >
-                            show advanced filter options
+                            Show advanced filter options
                         </Button>
                     )}
                 </Grid>

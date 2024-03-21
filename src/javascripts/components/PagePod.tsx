@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import _ from 'lodash';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
     Box,
+    Button,
     CircularProgress,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
     Divider,
     Grid,
     Typography,
@@ -37,7 +42,6 @@ import TaskModel from 'src/javascripts/models/TaskModel';
 import StampCardModel from 'src/javascripts/models/StampCardModel';
 import PodPageModel from 'src/javascripts/models/PodPageModel';
 import ResponseModel from 'src/javascripts/models/ResponseModel';
-import NumberOfPointsInTasksCompletedOverTimeVisualizationModel from 'src/javascripts/models/NumberOfPointsInTasksCompletedOverTimeVisualizationModel';
 import Constants from 'src/javascripts/Constants';
 import PlaceholderImagePod from 'src/assets/PlaceholderImagePod.png';
 import PersonIcon from '@mui/icons-material/Person';
@@ -74,7 +78,7 @@ export interface IPodPageState {
 }
 export interface ITaskState {
     filter: {
-        filterNameOrDescription: string;
+        filterByName: string;
         filterIsComplete: boolean;
         filterIsNotComplete: boolean;
         filterIsStar: boolean;
@@ -85,26 +89,25 @@ export interface ITaskState {
 }
 export interface IStampCardState {
     filter: {
-        filterNameOrDescription: string;
+        filterByName: string;
         filterIsPublic: boolean;
         filterIsNotPublic: boolean;
         filterIsCollect: boolean;
         filterIsNotCollect: boolean;
     };
 }
+export interface IImageSizeWarningModalState {
+    isOpen: boolean;
+}
 const PagePod: React.FC = () => {
     const { id: idPod } = useParams();
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
     const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const slicePagePodState = useSelector((state: IRootState) => state.pagePod);
     const slicePagePodStateData = new PodPageModel(slicePagePodState.data);
     const slicePagePodStateResponse = new ResponseModel(slicePagePodState.response);
-    const sliceVisualizationState = useSelector((state: IRootState) => state.visualization);
-    const sliceVisualizationStateData = new NumberOfPointsInTasksCompletedOverTimeVisualizationModel(
-        sliceVisualizationState.data,
-    );
-    const sliceVisualizationStateResponse = new ResponseModel(sliceVisualizationState.response);
     const sliceStampCardsAssociatedWithPodState = useSelector((state: IRootState) => state.stampCardsAssociatedWithPod);
     const sliceStampCardsAssociatedWithPodStateData = sliceStampCardsAssociatedWithPodState.data.map(
         (d: any) => new StampCardModel(d),
@@ -138,7 +141,7 @@ const PagePod: React.FC = () => {
     // filter tasks
     const [taskState, setTaskState] = useState<ITaskState>({
         filter: {
-            filterNameOrDescription: '',
+            filterByName: '',
             filterIsComplete: true,
             filterIsNotComplete: true,
             filterIsStar: true,
@@ -151,13 +154,24 @@ const PagePod: React.FC = () => {
     // filter stamps
     const [stampCardState, setStampCardState] = useState<IStampCardState>({
         filter: {
-            filterNameOrDescription: '',
+            filterByName: '',
             filterIsPublic: true,
             filterIsNotPublic: true,
             filterIsCollect: true,
             filterIsNotCollect: true,
         },
     });
+    const [imageSizeWarningModalState, setImageSizeWarningModalState] = useState<IImageSizeWarningModalState>({
+        isOpen: false,
+    });
+    const handleToggleImageSizeWarningModal = (isOpen: boolean): void => {
+        setImageSizeWarningModalState((prevState: IImageSizeWarningModalState) => {
+            return {
+                ...prevState,
+                isOpen,
+            };
+        });
+    };
 
     const setPodPageStateData = async (): Promise<any> => {
         try {
@@ -193,6 +207,9 @@ const PagePod: React.FC = () => {
             });
         } catch (e: any) {
             dispatch(slicePagePodActions.setStateResponseError(e?.response?.data?.message));
+            if (e?.response?.data?.message === Constants.ERROR_CODE__UNAUTHORIZED_ACCESS) {
+                navigate('/page-not-found');
+            }
         }
     };
     const handleGetTasksAssociatedWithPod = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
@@ -242,30 +259,27 @@ const PagePod: React.FC = () => {
         }
     };
 
-    const debouncedHandleChangeFilterNameOrDescription = _.debounce(
-        (event: React.ChangeEvent<HTMLInputElement>): void => {
-            if (tabIdxToDisplayMap[tabIdx] === 'task') {
-                setTaskState((prevState: ITaskState) => {
-                    return {
-                        ...prevState,
-                        filter: { ...prevState.filter, filterNameOrDescription: event.target.value },
-                    };
-                });
-            } else if (tabIdxToDisplayMap[tabIdx] === 'stamp') {
-                setStampCardState((prevState: IStampCardState) => {
-                    return {
-                        ...prevState,
-                        filter: { ...prevState.filter, filterNameOrDescription: event.target.value },
-                    };
-                });
-            }
-        },
-        500,
-    );
+    const debouncedHandleChangefilterByName = _.debounce((event: React.ChangeEvent<HTMLInputElement>): void => {
+        if (tabIdxToDisplayMap[tabIdx] === 'task') {
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    filter: { ...prevState.filter, filterByName: event.target.value },
+                };
+            });
+        } else if (tabIdxToDisplayMap[tabIdx] === 'stamp') {
+            setStampCardState((prevState: IStampCardState) => {
+                return {
+                    ...prevState,
+                    filter: { ...prevState.filter, filterByName: event.target.value },
+                };
+            });
+        }
+    }, 500);
     const REQUEST_PARAMS_STAMP_CARDS = (currentPageIdx: number): any => {
         return {
             id: String(idPod),
-            filterNameOrDescription: stampCardState.filter.filterNameOrDescription,
+            filterByName: stampCardState.filter.filterByName,
             filterIsCollect: stampCardState.filter.filterIsCollect,
             filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
             filterIsPublic: stampCardState.filter.filterIsPublic,
@@ -290,7 +304,7 @@ const PagePod: React.FC = () => {
     useEffect(() => {
         void handleGetTasksAssociatedWithPod({
             id: String(idPod),
-            filterNameOrDescription: taskState.filter.filterNameOrDescription,
+            filterByName: taskState.filter.filterByName,
             filterIsComplete: taskState.filter.filterIsComplete,
             filterIsNotComplete: taskState.filter.filterIsNotComplete,
             filterIsStar: taskState.filter.filterIsStar,
@@ -349,7 +363,9 @@ const PagePod: React.FC = () => {
                                         sliceAuthenticationStateData.getJwtToken(),
                                     );
                                     dispatch(slicePagePodActions.setStateData(response.data));
-                                } catch (e: any) {}
+                                } catch (e: any) {
+                                    handleToggleImageSizeWarningModal(true);
+                                }
                             }}
                             imageLink={slicePagePodStateData.getImageLink()}
                             placeholderImage={PlaceholderImagePod}
@@ -377,6 +393,16 @@ const PagePod: React.FC = () => {
                                                 sliceAuthenticationStateData.getJwtToken(),
                                             );
                                             void setPodPageStateData();
+                                            void handleGetTasksAssociatedWithPod({
+                                                id: String(idPod),
+                                                filterByName: taskState.filter.filterByName,
+                                                filterIsComplete: taskState.filter.filterIsComplete,
+                                                filterIsNotComplete: taskState.filter.filterIsNotComplete,
+                                                filterIsStar: taskState.filter.filterIsStar,
+                                                filterIsNotStar: taskState.filter.filterIsNotStar,
+                                                filterIsPin: taskState.filter.filterIsPin,
+                                                filterIsNotPin: taskState.filter.filterIsNotPin,
+                                            });
                                         } catch (e: any) {}
                                     }}
                                 />
@@ -496,9 +522,27 @@ const PagePod: React.FC = () => {
                                                 },
                                                 sliceAuthenticationStateData.getJwtToken(),
                                             );
-                                            void setPodPageStateData();
+                                            if (!slicePagePodStateData.getIsPublic()) {
+                                                navigate('/discover'); // because you cannot view a private pod as a non-member
+                                            } else {
+                                                void setPodPageStateData();
+                                                void handleGetTasksAssociatedWithPod({
+                                                    id: String(idPod),
+                                                    filterByName: taskState.filter.filterByName,
+                                                    filterIsComplete: taskState.filter.filterIsComplete,
+                                                    filterIsNotComplete: taskState.filter.filterIsNotComplete,
+                                                    filterIsStar: taskState.filter.filterIsStar,
+                                                    filterIsNotStar: taskState.filter.filterIsNotStar,
+                                                    filterIsPin: taskState.filter.filterIsPin,
+                                                    filterIsNotPin: taskState.filter.filterIsNotPin,
+                                                });
+                                            }
                                         } catch (e: any) {}
                                     }}
+                                    isDisabledOnlyModerator={
+                                        slicePagePodStateData.getIsPodModerator() &&
+                                        slicePagePodStateData.getUserBubblesPodModeratorTotalNumber() === 1
+                                    }
                                 />
                             ) : null}
                         </Box>
@@ -510,6 +554,7 @@ const PagePod: React.FC = () => {
                                             slicePagePodStateData.getUserBubblesPodMemberTotalNumber(),
                                             'member',
                                             'members',
+                                            100,
                                         )}
                                         userBubbles={slicePagePodStateData.getUserBubblesPodMember()}
                                         sortByTimestampLabel="time become member"
@@ -525,6 +570,7 @@ const PagePod: React.FC = () => {
                                             slicePagePodStateData.getUserBubblesPodModeratorTotalNumber(),
                                             'moderator',
                                             'moderators',
+                                            100,
                                         )}
                                         userBubbles={slicePagePodStateData.getUserBubblesPodModerator()}
                                         sortByTimestampLabel="time become moderator"
@@ -536,26 +582,7 @@ const PagePod: React.FC = () => {
                                 </Box>
                             </React.Fragment>
                         ) : null}
-                        {/* {!slicePagePodStateResponse.getIsLoading() &&
-                        slicePagePodStateData.getUserBubblesPodModerator() !== null ? (
-                            <Grid container direction="row" sx={{ marginBottom: '12px' }}>
-                                <Grid item sx={{ display: 'flex', width: '100%' }}>
-                                    <UserListButton
-                                        labelText={getUserListButtonText(
-                                            slicePagePodStateData.getUserBubblesPodModeratorTotalNumber(),
-                                            'moderator',
-                                            'moderators',
-                                        )}
-                                        userBubbles={slicePagePodStateData.getUserBubblesPodModerator()}
-                                        sortByTimestampLabel="time become moderator"
-                                        apiPath={'api/app/GetUserBubblesPodModerator'}
-                                        apiPayload={{ id: String(idPod) }}
-                                        modalTitle="Pod Moderators"
-                                        isUseDateTimeDateAndTime={false}
-                                    />
-                                </Grid>
-                            </Grid>
-                        ) : null} */}
+
                         {slicePagePodStateData.getIsPodMember() ? (
                             <Box sx={{ marginBottom: '12px' }}>
                                 <CreateStampModalButton idPod={idPod === undefined || idPod === null ? null : idPod} />
@@ -566,8 +593,10 @@ const PagePod: React.FC = () => {
                                 <CreateTaskModalButton
                                     idPod={idPod ?? null}
                                     handleUpdate={() => {
+                                        void setPodPageStateData();
                                         void handleGetTasksAssociatedWithPod({
-                                            filterNameOrDescription: taskState.filter.filterNameOrDescription,
+                                            id: String(idPod),
+                                            filterByName: taskState.filter.filterByName,
                                             filterIsComplete: taskState.filter.filterIsComplete,
                                             filterIsNotComplete: taskState.filter.filterIsNotComplete,
                                             filterIsStar: taskState.filter.filterIsStar,
@@ -576,6 +605,10 @@ const PagePod: React.FC = () => {
                                             filterIsNotPin: taskState.filter.filterIsNotPin,
                                         });
                                     }}
+                                    isDisabled={slicePagePodStateData.getIsReachedNumberOfTasksLimit()}
+                                    disabledTooltipMessage={`You may only have up to ${String(
+                                        Constants.LIMIT_NUMBER_OF_TOTAL_TASKS_POD,
+                                    )} Tasks total in a Pod.`}
                                 />
                             </Box>
                         ) : null}
@@ -896,7 +929,7 @@ const PagePod: React.FC = () => {
                         }}
                     >
                         <FilterTasks
-                            handleChangeText={debouncedHandleChangeFilterNameOrDescription}
+                            handleChangeText={debouncedHandleChangefilterByName}
                             handleUpdateFilterState={(
                                 event: React.ChangeEvent<HTMLInputElement>,
                                 filterKey: string,
@@ -937,6 +970,20 @@ const PagePod: React.FC = () => {
                                     void setVisualizationStateData();
                                 }}
                                 handleSideEffectChangeNumberOfPoints={() => {
+                                    void setPodPageStateData();
+                                    void setVisualizationStateData();
+                                }}
+                                handleSideEffectDeleteTask={() => {
+                                    void handleGetTasksAssociatedWithPod({
+                                        id: String(idPod),
+                                        filterByName: taskState.filter.filterByName,
+                                        filterIsComplete: taskState.filter.filterIsComplete,
+                                        filterIsNotComplete: taskState.filter.filterIsNotComplete,
+                                        filterIsStar: taskState.filter.filterIsStar,
+                                        filterIsNotStar: taskState.filter.filterIsNotStar,
+                                        filterIsPin: taskState.filter.filterIsPin,
+                                        filterIsNotPin: taskState.filter.filterIsNotPin,
+                                    });
                                     void setPodPageStateData();
                                     void setVisualizationStateData();
                                 }}
@@ -981,7 +1028,7 @@ const PagePod: React.FC = () => {
                         }}
                     >
                         <FilterStamps
-                            handleChangeText={debouncedHandleChangeFilterNameOrDescription}
+                            handleChangeText={debouncedHandleChangefilterByName}
                             handleUpdateFilterState={(
                                 event: React.ChangeEvent<HTMLInputElement>,
                                 filterKey: string,
@@ -1035,12 +1082,31 @@ const PagePod: React.FC = () => {
                     </Box>
                 </React.Fragment>
             ) : null}
-            {tabIdxToDisplayMap[tabIdx] === 'progress' ? (
-                <NumberOfPointsInTasksCompletedOverTimeVisualization
-                    data={sliceVisualizationStateData}
-                    response={sliceVisualizationStateResponse}
-                />
-            ) : null}
+            {tabIdxToDisplayMap[tabIdx] === 'progress' ? <NumberOfPointsInTasksCompletedOverTimeVisualization /> : null}
+            <Dialog
+                open={imageSizeWarningModalState.isOpen}
+                onClose={() => {
+                    handleToggleImageSizeWarningModal(false);
+                }}
+                fullWidth
+            >
+                <DialogTitle>{`Image Size Exceeded`}</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        The file size for this image exceeds our storage limits. Please try cropping the image or use an
+                        image with a smaller file size. Thank you.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => {
+                            handleToggleImageSizeWarningModal(false);
+                        }}
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

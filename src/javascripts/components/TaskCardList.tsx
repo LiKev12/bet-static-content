@@ -12,6 +12,7 @@ export interface ITaskCardListProps {
     isAuthorizedToDelete: boolean;
     handleSideEffectToggleTaskComplete: any;
     handleSideEffectChangeNumberOfPoints: any;
+    handleSideEffectDeleteTask: any;
 }
 
 const TaskCardList: React.FC<ITaskCardListProps> = (props: ITaskCardListProps) => {
@@ -25,6 +26,7 @@ const TaskCardList: React.FC<ITaskCardListProps> = (props: ITaskCardListProps) =
         isAuthorizedToDelete,
         handleSideEffectToggleTaskComplete,
         handleSideEffectChangeNumberOfPoints,
+        handleSideEffectDeleteTask,
     } = props;
 
     return tasks.length > 0 ? (
@@ -49,6 +51,7 @@ const TaskCardList: React.FC<ITaskCardListProps> = (props: ITaskCardListProps) =
                             isAuthorizedToDelete={isAuthorizedToDelete}
                             handleSideEffectToggleTaskComplete={handleSideEffectToggleTaskComplete}
                             handleSideEffectChangeNumberOfPoints={handleSideEffectChangeNumberOfPoints}
+                            handleSideEffectDeleteTask={handleSideEffectDeleteTask}
                         />
                     </Grid>
                 ))}

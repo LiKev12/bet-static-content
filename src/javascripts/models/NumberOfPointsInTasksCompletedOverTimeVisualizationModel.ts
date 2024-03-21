@@ -29,7 +29,6 @@ export default class NumberOfPointsInTasksCompletedOverTimeVisualizationModel {
             (datapoint: any) =>
                 new NumberOfPointsInTasksCompletedOverTimeVisualizationModel__HeatmapChartDataPointModel(datapoint),
         );
-
         this.dataLineChartAggregateDayNotCumulative =
             numberOfPointsInTasksCompletedOverTimeVisualizationModel.dataLineChart_AggregateDay_NotCumulative.map(
                 (datapoint: any) =>

@@ -10,10 +10,6 @@ import { THEME } from 'src/javascripts/Theme';
 
 import type { IRootState } from 'src/javascripts/store';
 
-export interface IPageHomeProps {
-    setActiveTabIdx: string;
-}
-
 const PageHome: React.FC = () => {
     const navigate = useNavigate();
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
@@ -36,23 +32,20 @@ const PageHome: React.FC = () => {
                 }}
             >
                 <Grid container direction="row" spacing={2}>
-                    <Grid item xs={8}>
-                        <Grid container direction="column">
-                            <Box
-                                sx={{
-                                    width: '800px',
-                                    height: '100%',
-                                    padding: '0px 24px',
-                                    marginRight: '96px',
-                                }}
-                            >
-                                <Grid item>
-                                    <img src={LogoWithNameAndSlogan} alt="logo with name and slogan" width="800px" />
-                                </Grid>
-                            </Box>
-                        </Grid>
+                    <Grid item xs={8} sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <Box
+                            sx={{
+                                width: '1000px',
+                                height: '100%',
+                                padding: '0px 24px',
+                            }}
+                        >
+                            <Grid item>
+                                <img src={LogoWithNameAndSlogan} alt="logo with name and slogan" width="1000px" />
+                            </Grid>
+                        </Box>
                     </Grid>
-                    <Grid item>
+                    <Grid item sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         <LoginAndSignupForms />
                     </Grid>
                 </Grid>

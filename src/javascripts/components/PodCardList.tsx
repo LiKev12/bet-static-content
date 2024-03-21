@@ -1,6 +1,6 @@
 import React from 'react';
 import PodCard from 'src/javascripts/components/PodCard';
-import { CircularProgress, Typography, Box, Grid, Pagination, Stack } from '@mui/material';
+import { Chip, CircularProgress, Typography, Box, Grid, Pagination, Stack } from '@mui/material';
 import CreatePodModal from 'src/javascripts/components/CreatePodModal';
 import { getTotalNumberOfPages } from 'src/javascripts/utilities';
 
@@ -31,9 +31,9 @@ const PodCardList: React.FC<IPodCardListProps> = (props: IPodCardListProps) => {
 
     const idxStart = (paginationPageIdx % paginationBatchN) * paginationPageSize;
     const idxEnd = idxStart + paginationPageSize;
-    // console.log({ podCards, paginationPageIdx, idxStart, idxEnd });
 
-    return isLoading ? (
+    // only show loading indicator upon first load (when podCards is []), otherwise it will be a jumpy UI everytime search input changes
+    return isLoading && podCards.length === 0 ? (
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             <CircularProgress />
         </Box>
@@ -55,6 +55,11 @@ const PodCardList: React.FC<IPodCardListProps> = (props: IPodCardListProps) => {
                                     )}
                                 />
                             </Stack>
+                        </Box>
+                    </Grid>
+                    <Grid item>
+                        <Box sx={{ marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
+                            <Chip label={`${String(paginationTotalN)} total`} />
                         </Box>
                     </Grid>
                     <Grid item>

@@ -36,7 +36,7 @@ const FilterStamps: React.FC<IFilterStampsProps> = (props: IFilterStampsProps) =
                         variant="standard"
                         onChange={handleChangeText}
                         inputProps={{ maxLength: 50 }}
-                        helperText={`Filter Stamps by name or description`}
+                        helperText={`Filter Stamps by name`}
                         sx={{ width: '800px' }}
                     />
                 </Grid>
@@ -59,7 +59,7 @@ const FilterStamps: React.FC<IFilterStampsProps> = (props: IFilterStampsProps) =
                                 setShowAdvancedFilterOptions(true);
                             }}
                         >
-                            show advanced filter options
+                            Show advanced filter options
                         </Button>
                     )}
                 </Grid>

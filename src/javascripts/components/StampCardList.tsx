@@ -1,6 +1,6 @@
 import React from 'react';
 import StampCard from 'src/javascripts/components/StampCard';
-import { Box, CircularProgress, Typography, Grid, Stack, Pagination } from '@mui/material';
+import { Box, Chip, CircularProgress, Typography, Grid, Stack, Pagination } from '@mui/material';
 import CreateStampModalButton from 'src/javascripts/components/CreateStampModalButton';
 import { getTotalNumberOfPages } from 'src/javascripts/utilities';
 
@@ -29,7 +29,8 @@ const StampCardList: React.FC<IStampCardListProps> = (props: IStampCardListProps
         handleUpdatePaginationPageIdx,
     } = props;
 
-    return isLoading ? (
+    // only show loading indicator upon first load (when stampCards is []), otherwise it will be a jumpy UI everytime search input changes
+    return isLoading && stampCards.length === 0 ? (
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             <CircularProgress />
         </Box>
@@ -51,6 +52,11 @@ const StampCardList: React.FC<IStampCardListProps> = (props: IStampCardListProps
                                     )}
                                 />
                             </Stack>
+                        </Box>
+                    </Grid>
+                    <Grid item>
+                        <Box sx={{ marginBottom: '24px', display: 'flex', justifyContent: 'center' }}>
+                            <Chip label={`${String(paginationTotalN)} total`} />
                         </Box>
                     </Grid>
                     <Grid container direction="row">

@@ -251,6 +251,7 @@ const NumberOfPointsInTasksCompletedOverTimeVisualizationLineChart: React.FC<IPo
             );
         }
     }
+    const minimumValue = Math.min(...data) >= 0 ? 0 : Math.min(...data);
 
     const aggregatePointsSwitch = (
         <Switch
@@ -294,8 +295,8 @@ const NumberOfPointsInTasksCompletedOverTimeVisualizationLineChart: React.FC<IPo
                     },
                     scales: {
                         y: {
-                            beginAtZero: true,
-                            min: 0,
+                            // beginAtZero: true,
+                            min: minimumValue,
                         },
                     },
                 }}

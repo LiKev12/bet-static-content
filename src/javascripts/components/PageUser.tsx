@@ -1,8 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import _ from 'lodash';
-import { useParams } from 'react-router-dom';
-import { Box, CircularProgress, Divider, Grid, Typography, Tab, Tabs, TextField } from '@mui/material';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+    Box,
+    Button,
+    CircularProgress,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Divider,
+    Grid,
+    Typography,
+    Tab,
+    Tabs,
+    TextField,
+} from '@mui/material';
 import { THEME } from 'src/javascripts/Theme';
 import AvatarImageEditor from 'src/javascripts/components/AvatarImageEditor';
 import PodCardList from 'src/javascripts/components/PodCardList';
@@ -63,7 +77,7 @@ export interface ITaskState {
         errorMessage: string | null;
     };
     filter: {
-        filterNameOrDescription: string;
+        filterByName: string;
         filterIsComplete: boolean;
         filterIsNotComplete: boolean;
         filterIsStar: boolean;
@@ -79,7 +93,7 @@ export interface ITaskState {
 }
 export interface IPodCardState {
     filter: {
-        filterNameOrDescription: string;
+        filterByName: string;
         filterIsPublic: boolean;
         filterIsNotPublic: boolean;
         filterIsMember: boolean;
@@ -95,7 +109,7 @@ export interface IStampCardState {
         errorMessage: string | null;
     };
     filter: {
-        filterNameOrDescription: string;
+        filterByName: string;
         filterIsPublic: boolean;
         filterIsNotPublic: boolean;
         filterIsCollect: boolean;
@@ -107,9 +121,13 @@ export interface IStampCardState {
         totalNumberOfPages: number;
     };
 }
+export interface IImageSizeWarningModalState {
+    isOpen: boolean;
+}
 const PageUser: React.FC = () => {
     const { id: idUser } = useParams();
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
     const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const slicePageUserState = useSelector((state: IRootState) => state.pageUser);
@@ -156,7 +174,7 @@ const PageUser: React.FC = () => {
     // filter pods
     const [podCardState, setPodCardState] = useState<IPodCardState>({
         filter: {
-            filterNameOrDescription: '',
+            filterByName: '',
             filterIsPublic: true,
             filterIsNotPublic: true,
             filterIsMember: true,
@@ -173,7 +191,7 @@ const PageUser: React.FC = () => {
             errorMessage: null,
         },
         filter: {
-            filterNameOrDescription: '',
+            filterByName: '',
             filterIsPublic: true,
             filterIsNotPublic: true,
             filterIsCollect: true,
@@ -193,7 +211,7 @@ const PageUser: React.FC = () => {
             errorMessage: null,
         },
         filter: {
-            filterNameOrDescription: '',
+            filterByName: '',
             filterIsComplete: true,
             filterIsNotComplete: true,
             filterIsStar: true,
@@ -207,6 +225,17 @@ const PageUser: React.FC = () => {
             totalNumberOfPages: 1,
         },
     });
+    const [imageSizeWarningModalState, setImageSizeWarningModalState] = useState<IImageSizeWarningModalState>({
+        isOpen: false,
+    });
+    const handleToggleImageSizeWarningModal = (isOpen: boolean): void => {
+        setImageSizeWarningModalState((prevState: IImageSizeWarningModalState) => {
+            return {
+                ...prevState,
+                isOpen,
+            };
+        });
+    };
     const taskResponse = new ResponseModel(taskState.response);
     const handleGetUserPage = async (): Promise<any> => {
         try {
@@ -244,6 +273,9 @@ const PageUser: React.FC = () => {
             });
         } catch (e: any) {
             dispatch(slicePageUserActions.setStateResponseError(e?.response?.data?.message));
+            if (e?.response?.data?.message === Constants.ERROR_CODE__UNAUTHORIZED_ACCESS) {
+                navigate('/page-not-found');
+            }
         }
     };
     const handleGetPinnedTasksAssociatedWithUser = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
@@ -318,33 +350,30 @@ const PageUser: React.FC = () => {
             dispatch(sliceStampCardsAssociatedWithUserActions.setStateResponseError(e?.response?.data?.message));
         }
     };
-    const debouncedHandleChangeFilterNameOrDescription = _.debounce(
-        (event: React.ChangeEvent<HTMLInputElement>): void => {
-            if (tabIdxToDisplayMap[tabIdx] === 'task') {
-                setTaskState((prevState: ITaskState) => {
-                    return {
-                        ...prevState,
-                        filter: { ...prevState.filter, filterNameOrDescription: event.target.value },
-                    };
-                });
-            } else if (tabIdxToDisplayMap[tabIdx] === 'pod') {
-                setPodCardState((prevState: IPodCardState) => {
-                    return {
-                        ...prevState,
-                        filter: { ...prevState.filter, filterNameOrDescription: event.target.value },
-                    };
-                });
-            } else if (tabIdxToDisplayMap[tabIdx] === 'stamp') {
-                setStampCardState((prevState: IStampCardState) => {
-                    return {
-                        ...prevState,
-                        filter: { ...prevState.filter, filterNameOrDescription: event.target.value },
-                    };
-                });
-            }
-        },
-        500,
-    );
+    const debouncedHandleChangefilterByName = _.debounce((event: React.ChangeEvent<HTMLInputElement>): void => {
+        if (tabIdxToDisplayMap[tabIdx] === 'task') {
+            setTaskState((prevState: ITaskState) => {
+                return {
+                    ...prevState,
+                    filter: { ...prevState.filter, filterByName: event.target.value },
+                };
+            });
+        } else if (tabIdxToDisplayMap[tabIdx] === 'pod') {
+            setPodCardState((prevState: IPodCardState) => {
+                return {
+                    ...prevState,
+                    filter: { ...prevState.filter, filterByName: event.target.value },
+                };
+            });
+        } else if (tabIdxToDisplayMap[tabIdx] === 'stamp') {
+            setStampCardState((prevState: IStampCardState) => {
+                return {
+                    ...prevState,
+                    filter: { ...prevState.filter, filterByName: event.target.value },
+                };
+            });
+        }
+    }, 500);
     useEffect(() => {
         if (sliceAuthenticationStateData.getIdUser() === idUser) {
             void dispatch(sliceHeaderActiveTabActions.setStateData(Constants.HEADER_ACTIVE_TAB_IDX__PAGE_USER));
@@ -357,7 +386,7 @@ const PageUser: React.FC = () => {
     useEffect(() => {
         void handleGetPinnedTasksAssociatedWithUser({
             id: String(idUser),
-            filterNameOrDescription: taskState.filter.filterNameOrDescription,
+            filterByName: taskState.filter.filterByName,
             filterIsComplete: taskState.filter.filterIsComplete,
             filterIsNotComplete: taskState.filter.filterIsNotComplete,
             filterIsStar: taskState.filter.filterIsStar,
@@ -371,7 +400,7 @@ const PageUser: React.FC = () => {
     const REQUEST_PARAMS_POD_CARDS = (currentPageIdx: number): any => {
         return {
             id: String(idUser),
-            filterNameOrDescription: podCardState.filter.filterNameOrDescription,
+            filterByName: podCardState.filter.filterByName,
             filterIsPublic: podCardState.filter.filterIsPublic,
             filterIsNotPublic: podCardState.filter.filterIsNotPublic,
             filterIsMember: podCardState.filter.filterIsMember,
@@ -392,7 +421,7 @@ const PageUser: React.FC = () => {
     const REQUEST_PARAMS_STAMP_CARDS = (currentPageIdx: number): any => {
         return {
             id: String(idUser),
-            filterNameOrDescription: stampCardState.filter.filterNameOrDescription,
+            filterByName: stampCardState.filter.filterByName,
             filterIsCollect: stampCardState.filter.filterIsCollect,
             filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
             filterIsPublic: true,
@@ -424,7 +453,8 @@ const PageUser: React.FC = () => {
             Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS ||
         getInputText(userPageState.editMode.username.editModeValue).length >
             Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS ||
-        !/^\w+$/.test(userPageState.editMode.username.editModeValue);
+        !Constants.REGEX_USER_USERNAME.test(userPageState.editMode.username.editModeValue);
+
     const isErrorEditModeValueUserName =
         getInputText(userPageState.editMode.name.editModeValue).length < Constants.USER_NAME_MIN_LENGTH_CHARACTERS ||
         getInputText(userPageState.editMode.name.editModeValue).length > Constants.USER_NAME_MAX_LENGTH_CHARACTERS;
@@ -442,13 +472,14 @@ const PageUser: React.FC = () => {
                                     const response = await ResourceClient.postResource(
                                         'api/app/UpdateUserPage',
                                         {
-                                            id: idUser,
                                             imageAsBase64String: getInputText(imageAsBase64String),
                                         },
                                         sliceAuthenticationStateData.getJwtToken(),
                                     );
                                     dispatch(slicePageUserActions.setStateData(response.data));
-                                } catch (e: any) {}
+                                } catch (e: any) {
+                                    handleToggleImageSizeWarningModal(true);
+                                }
                             }}
                             imageLink={slicePageUserStateData.getImageLink()}
                             placeholderImage={PlaceholderImageUser}
@@ -492,7 +523,6 @@ const PageUser: React.FC = () => {
                                                 const response = await ResourceClient.postResource(
                                                     'api/app/UpdateUserPage',
                                                     {
-                                                        id: idUser,
                                                         name: getInputText(userPageState.editMode.name.editModeValue),
                                                     },
                                                     sliceAuthenticationStateData.getJwtToken(),
@@ -539,7 +569,6 @@ const PageUser: React.FC = () => {
                                                     const response = await ResourceClient.postResource(
                                                         'api/app/UpdateUserPage',
                                                         {
-                                                            id: idUser,
                                                             name: getInputText(
                                                                 userPageState.editMode.name.editModeValue,
                                                             ),
@@ -663,6 +692,7 @@ const PageUser: React.FC = () => {
                                             slicePageUserStateData.getUserBubblesFollowerTotalNumber(),
                                             'follower',
                                             'followers',
+                                            1000,
                                         )}
                                         userBubbles={slicePageUserStateData.getUserBubblesFollower()}
                                         sortByTimestampLabel="time of follow"
@@ -675,9 +705,10 @@ const PageUser: React.FC = () => {
                                 <Box sx={{ display: 'flex', width: '100%', marginBottom: '12px' }}>
                                     <UserListButton
                                         labelText={getUserListButtonText(
-                                            slicePageUserStateData.getUserBubblesFollowingTotalNumber(),
+                                            slicePageUserStateData.getUserBubblesFollowerTotalNumber(),
                                             'following',
                                             'following',
+                                            100,
                                         )}
                                         userBubbles={slicePageUserStateData.getUserBubblesFollowing()}
                                         sortByTimestampLabel="time of follow"
@@ -723,7 +754,6 @@ const PageUser: React.FC = () => {
                                                     const response = await ResourceClient.postResource(
                                                         'api/app/UpdateUserPage',
                                                         {
-                                                            id: idUser,
                                                             username: getInputText(
                                                                 userPageState.editMode.username.editModeValue,
                                                             ),
@@ -779,7 +809,6 @@ const PageUser: React.FC = () => {
                                                         const response = await ResourceClient.postResource(
                                                             'api/app/UpdateUserPage',
                                                             {
-                                                                id: idUser,
                                                                 username: getInputText(
                                                                     userPageState.editMode.username.editModeValue,
                                                                 ),
@@ -861,7 +890,6 @@ const PageUser: React.FC = () => {
                                                     const response = await ResourceClient.postResource(
                                                         'api/app/UpdateUserPage',
                                                         {
-                                                            id: idUser,
                                                             bio:
                                                                 getInputText(userPageState.editMode.bio.editModeValue)
                                                                     .length === 0
@@ -915,7 +943,6 @@ const PageUser: React.FC = () => {
                                                         const response = await ResourceClient.postResource(
                                                             'api/app/UpdateUserPage',
                                                             {
-                                                                id: idUser,
                                                                 bio:
                                                                     getInputText(
                                                                         userPageState.editMode.bio.editModeValue,
@@ -995,7 +1022,7 @@ const PageUser: React.FC = () => {
                         }}
                     >
                         <FilterPods
-                            handleChangeText={debouncedHandleChangeFilterNameOrDescription}
+                            handleChangeText={debouncedHandleChangefilterByName}
                             handleUpdateFilterState={(
                                 event: React.ChangeEvent<HTMLInputElement>,
                                 filterKey: string,
@@ -1065,7 +1092,7 @@ const PageUser: React.FC = () => {
                         }}
                     >
                         <FilterTasks
-                            handleChangeText={debouncedHandleChangeFilterNameOrDescription}
+                            handleChangeText={debouncedHandleChangefilterByName}
                             handleUpdateFilterState={(
                                 event: React.ChangeEvent<HTMLInputElement>,
                                 filterKey: string,
@@ -1103,6 +1130,7 @@ const PageUser: React.FC = () => {
                                 isAuthorizedToDelete={false}
                                 handleSideEffectToggleTaskComplete={() => {}}
                                 handleSideEffectChangeNumberOfPoints={() => {}}
+                                handleSideEffectDeleteTask={() => {}}
                             />
                         ) : taskResponse.getIsLoading() ? (
                             <Box
@@ -1144,7 +1172,7 @@ const PageUser: React.FC = () => {
                         }}
                     >
                         <FilterStamps
-                            handleChangeText={debouncedHandleChangeFilterNameOrDescription}
+                            handleChangeText={debouncedHandleChangefilterByName}
                             handleUpdateFilterState={(
                                 event: React.ChangeEvent<HTMLInputElement>,
                                 filterKey: string,
@@ -1198,6 +1226,30 @@ const PageUser: React.FC = () => {
                     </Box>
                 </React.Fragment>
             ) : null}
+            <Dialog
+                open={imageSizeWarningModalState.isOpen}
+                onClose={() => {
+                    handleToggleImageSizeWarningModal(false);
+                }}
+                fullWidth
+            >
+                <DialogTitle>{`Image Size Exceeded`}</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        The file size for this image exceeds our storage limits. Please try cropping the image or use an
+                        image with a smaller file size. Thank you.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => {
+                            handleToggleImageSizeWarningModal(false);
+                        }}
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

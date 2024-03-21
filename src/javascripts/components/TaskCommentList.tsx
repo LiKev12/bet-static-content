@@ -398,6 +398,7 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                                     : 0,
                                                                 'reaction',
                                                                 'reactions',
+                                                                100,
                                                             )}
                                                             userBubbles={
                                                                 taskCommentModel.getIdTaskComment() in
@@ -469,7 +470,12 @@ const TaskCommentList: React.FC<ITaskCommentListProps> = (props: ITaskCommentLis
                                                             ) : null}
                                                         </AccordionDetails>
                                                     </Accordion>
-                                                ) : null}
+                                                ) : (
+                                                    <Divider
+                                                        variant="fullWidth"
+                                                        sx={{ marginTop: '12px', marginBottom: '12px' }}
+                                                    />
+                                                )}
                                             </Grid>
                                         );
                                     })}

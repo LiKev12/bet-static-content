@@ -17,7 +17,7 @@ const SearchEntities: React.FC<ISearchEntitiesProps> = (props: ISearchEntitiesPr
                     <TextField
                         id="search-entities"
                         label={`Search ${props.chosenEntity}`}
-                        placeholder={`Search ${props.chosenEntity} by name or description`}
+                        placeholder={`Search ${props.chosenEntity} by name`}
                         multiline
                         minRows={4}
                         maxRows={4}

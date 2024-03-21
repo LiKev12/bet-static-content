@@ -135,7 +135,7 @@ export default class Constants {
     static USER_INPUT_USERNAME_HELPER_TEXT = (numChars: number): string =>
         `Username must be between ${Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS}-${
             Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS
-        } chars, inclusive (${numChars.toString()} chars currently). Alphanumeric and underscores only.`;
+        } chars, inclusive (${numChars.toString()} chars currently). Lowercase letters, numbers, underscores, periods only.`;
 
     static USER_INPUT_NAME_HELPER_TEXT = (numChars: number): string =>
         `Name must be between ${Constants.USER_NAME_MIN_LENGTH_CHARACTERS}-${
@@ -150,7 +150,7 @@ export default class Constants {
     static USER_SIGN_UP_INPUT_USERNAME_HELPER_TEXT = (numChars: number): string =>
         `${Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS}-${
             Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS
-        } chars, inclusive (${numChars.toString()} chars currently). Alphanumeric and underscores only.`;
+        } chars, inclusive (${numChars.toString()} chars currently). Lowercase letters, numbers, underscores, periods only.`;
 
     static USER_SIGN_UP_INPUT_PASSWORD_HELPER_TEXT = (numChars: number): string =>
         `At least ${Constants.USER_PASSWORD_MIN_LENGTH_CHARACTERS} chars (${numChars.toString()} chars currently)`;
@@ -177,7 +177,10 @@ export default class Constants {
     static HEADER_ACTIVE_TAB_IDX__PAGE_USER = 2;
     static HEADER_ACTIVE_TAB_IDX__PAGE_ACCOUNT_SETTINGS = 3;
 
-    static REGEX_USER_USERNAME = /^\w+$/;
+    // https://stackoverflow.com/questions/32543090/instagram-username-regex-php
+    static REGEX_USER_USERNAME = /^[a-z0-9_](?!.*?\.{2})[a-z0-9_.]{1,28}[a-z0-9_]$/;
+    // static REGEX_USER_USERNAME = /^[a-z0-9_\\.]+$/;
+
     static REGEX_USER_EMAIL = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
 
     static PAGINATION_BATCH_N = 5;
@@ -792,4 +795,10 @@ export default class Constants {
         'WET',
         'Zulu',
     ];
+
+    static NUMBER_OF_PODS_DISPLAYED_IN_STAMP_MODAL = 200;
+    static ERROR_CODE__UNAUTHORIZED_ACCESS = 'UNAUTHORIZED_ACCESS';
+    static LIMIT_NUMBER_OF_INCOMPLETE_TASKS_PERSONAL = 1000;
+    static LIMIT_NUMBER_OF_TOTAL_TASKS_POD = 1000;
+    static LIMIT_NUMBER_OF_TOTAL_TASKS_STAMP = 1000;
 }

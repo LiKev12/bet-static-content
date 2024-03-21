@@ -41,7 +41,7 @@ const FilterPods: React.FC<IFilterPodsProps> = (props: IFilterPodsProps) => {
                         variant="standard"
                         onChange={handleChangeText}
                         inputProps={{ maxLength: 50 }}
-                        helperText={`Filter Pods by name or description`}
+                        helperText={`Filter Pods by name`}
                         sx={{ width: '800px' }}
                     />
                 </Grid>
@@ -64,7 +64,7 @@ const FilterPods: React.FC<IFilterPodsProps> = (props: IFilterPodsProps) => {
                                 setShowAdvancedFilterOptions(true);
                             }}
                         >
-                            show advanced filter options
+                            Show advanced filter options
                         </Button>
                     )}
                 </Grid>

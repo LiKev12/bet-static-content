@@ -30,13 +30,14 @@ export const getUserListButtonText = (
     totalNumberUsers: number,
     labelUserSingular: string,
     labelUserPlural: string,
+    labelLimit: number,
 ): string => {
     if (totalNumberUsers === 1) {
         return `1 ${labelUserSingular}`;
-    } else if (totalNumberUsers <= 3) {
+    } else if (totalNumberUsers <= labelLimit) {
         return `${totalNumberUsers} ${labelUserPlural}`;
     } else {
-        return `3+ ${labelUserPlural}`;
+        return `${labelLimit}+ ${labelUserPlural}`;
     }
 };
 

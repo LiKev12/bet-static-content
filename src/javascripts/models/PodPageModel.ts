@@ -4,9 +4,11 @@ export default class PodPageModel {
     name: string = '';
     description: string | null = null;
     imageLink: string | null = null;
+    isPublic: boolean = false;
     isPodMember: boolean = false;
     isPodModerator: boolean = false;
     isSentBecomePodModeratorRequest: boolean = false;
+    isReachedNumberOfTasksLimit: boolean = false;
     numberOfPendingBecomeModeratorRequests: number = 0;
     userBubblesPodMember: UserBubbleModel[] = [];
     userBubblesPodMemberTotalNumber: number = 0;
@@ -21,9 +23,11 @@ export default class PodPageModel {
         this.name = podPageModel.name;
         this.description = podPageModel.description;
         this.imageLink = podPageModel.imageLink;
+        this.isPublic = podPageModel.isPublic;
         this.isPodMember = podPageModel.isPodMember;
         this.isPodModerator = podPageModel.isPodModerator;
         this.isSentBecomePodModeratorRequest = podPageModel.isSentBecomePodModeratorRequest;
+        this.isReachedNumberOfTasksLimit = podPageModel.isReachedNumberOfTasksLimit;
         this.numberOfPendingBecomeModeratorRequests = podPageModel.numberOfPendingBecomeModeratorRequests;
         this.userBubblesPodMember = podPageModel.userBubblesPodMember.map(
             (userBubblePodMember: any) => new UserBubbleModel(userBubblePodMember),
@@ -49,6 +53,10 @@ export default class PodPageModel {
 
     getImageLink(): string | null {
         return this.imageLink;
+    }
+
+    getIsPublic(): boolean {
+        return this.isPublic;
     }
 
     getIsPodMember(): boolean {
@@ -81,5 +89,9 @@ export default class PodPageModel {
 
     getUserBubblesPodModeratorTotalNumber(): number {
         return this.userBubblesPodModeratorTotalNumber;
+    }
+
+    getIsReachedNumberOfTasksLimit(): boolean {
+        return this.isReachedNumberOfTasksLimit;
     }
 }

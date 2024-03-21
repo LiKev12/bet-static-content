@@ -125,20 +125,22 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                 'api/app/GetPodCardsAssociatedWithUser',
                 {
                     id: sliceAuthenticationStateData.getIdUser(),
-                    filterNameOrDescription: '',
+                    filterByName: editStampModalState.filterPodText,
                     filterIsPublic: true,
                     filterIsNotPublic: true,
                     filterIsMember: true,
                     filterIsNotMember: true,
                     filterIsModerator: true,
                     filterIsNotModerator: true,
+                    paginationIdxStart: 0,
+                    paginationN: Constants.NUMBER_OF_PODS_DISPLAYED_IN_STAMP_MODAL,
                 },
                 sliceAuthenticationStateData.getJwtToken(),
             );
             setPodCardState((prevState: IPodCardState) => {
                 return {
                     ...prevState,
-                    data: response.data.map((datapoint: any) => {
+                    data: response.data.data.map((datapoint: any) => {
                         return new PodCardModel(datapoint);
                     }),
                     response: {
@@ -169,7 +171,7 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                 'api/app/GetTasksAssociatedWithPod',
                 {
                     id: editStampModalState.selectedPodId,
-                    filterNameOrDescription: '',
+                    filterByName: '',
                     filterIsComplete: true,
                     filterIsNotComplete: true,
                     filterIsStar: true,
@@ -243,12 +245,12 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
     useEffect(() => {
         void handleGetPodCardsAssociatedWithUser();
         // eslint-disable-next-line
-    }, []);
+    }, [editStampModalState.filterPodText]);
 
     useEffect(() => {
         void handleGetTasksAssociatedWithStamp({
             id: idStamp,
-            filterNameOrDescription: '',
+            filterByName: '',
             filterIsComplete: true,
             filterIsNotComplete: true,
             filterIsStar: true,
@@ -492,6 +494,12 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                                 ) : tasksFilteredByName.length > 0 ? (
                                     <List dense={false}>
                                         {tasksFilteredByName.map((task: TaskModel, idx: number) => {
+                                            const isReachedNumberOfTasksLimit =
+                                                editStampModalState.data.selectedTaskIds.size >=
+                                                Constants.LIMIT_NUMBER_OF_TOTAL_TASKS_STAMP;
+                                            const isTaskSelected = editStampModalState.data.selectedTaskIds.has(
+                                                task.getId(),
+                                            );
                                             return (
                                                 <React.Fragment key={`${idx}_${String(task.getId())}`}>
                                                     <ListItem
@@ -507,7 +515,9 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                                                                         if (selectedTaskIds.has(task.getId())) {
                                                                             selectedTaskIds.delete(task.getId());
                                                                         } else {
-                                                                            selectedTaskIds.add(task.getId());
+                                                                            if (!isReachedNumberOfTasksLimit) {
+                                                                                selectedTaskIds.add(task.getId());
+                                                                            }
                                                                         }
                                                                         return {
                                                                             ...prevState,
@@ -523,10 +533,11 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                                                             <ListItemIcon>
                                                                 <Checkbox
                                                                     edge="start"
-                                                                    checked={editStampModalState.data.selectedTaskIds.has(
-                                                                        task.getId(),
-                                                                    )}
+                                                                    checked={isTaskSelected}
                                                                     disableRipple
+                                                                    disabled={
+                                                                        isReachedNumberOfTasksLimit && !isTaskSelected
+                                                                    }
                                                                 />
                                                             </ListItemIcon>
                                                             <ListItemText primary={task.getName()} />
@@ -587,7 +598,7 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                                         'api/app/GetTasksAssociatedWithStamp',
                                         {
                                             id: idStamp,
-                                            filterNameOrDescription: '',
+                                            filterByName: '',
                                             filterIsComplete: true,
                                             filterIsNotComplete: true,
                                             filterIsStar: true,

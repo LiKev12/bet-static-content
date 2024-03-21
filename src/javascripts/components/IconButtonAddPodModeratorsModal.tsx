@@ -16,7 +16,7 @@ const IconButtonAddPodModeratorsModal: React.FC<IIconButtonAddPodModeratorsModal
 
     return (
         <React.Fragment>
-            <Tooltip title={'Add Pod moderators'} placement="bottom">
+            <Tooltip title={'Add moderators'} placement="bottom">
                 <IconButton
                     edge="end"
                     aria-label="icon-button-addPodModerators"

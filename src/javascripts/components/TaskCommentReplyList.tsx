@@ -176,6 +176,7 @@ const TaskCommentReplyList: React.FC<ITaskCommentReplyListProps> = (props: ITask
                                                 ].getUserBubblesReactionTotalNumber(),
                                                 'reaction',
                                                 'reactions',
+                                                100,
                                             )}
                                             userBubbles={taskCommentRepliesReactionsState.data[
                                                 taskCommentReplyModel.getIdTaskCommentReply()

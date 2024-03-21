@@ -94,7 +94,7 @@ const CreatePodModal: React.FC = () => {
                             <DialogContentText sx={{ marginBottom: '12px' }}>{`Enter name of Pod:`}</DialogContentText>
                         </Grid>
                         <Grid item>
-                            <Tooltip title={'required, can modify after creation'} placement="right">
+                            <Tooltip title={'Required, can modify after creation'} placement="right">
                                 <InfoOutlinedIcon
                                     sx={{
                                         paddingLeft: '4px',
@@ -106,7 +106,7 @@ const CreatePodModal: React.FC = () => {
                     </Grid>
                     <TextField
                         id="create-pod-enter-name"
-                        label="name"
+                        label="Name"
                         sx={{ width: '100%', marginBottom: '12px' }}
                         value={createPodModalState.data.name}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,6 +116,11 @@ const CreatePodModal: React.FC = () => {
                                     data: {
                                         ...prevState.data,
                                         name: event.target.value,
+                                    },
+                                    response: {
+                                        ...prevState.response,
+                                        state: Constants.RESPONSE_STATE_UNSTARTED,
+                                        errorMessage: null,
                                     },
                                 };
                             });
@@ -140,7 +145,7 @@ const CreatePodModal: React.FC = () => {
                             >{`Enter description of Pod:`}</DialogContentText>
                         </Grid>
                         <Grid item>
-                            <Tooltip title={'required, can modify after creation'} placement="right">
+                            <Tooltip title={'Required, can modify after creation'} placement="right">
                                 <InfoOutlinedIcon
                                     sx={{
                                         paddingLeft: '4px',
@@ -152,7 +157,7 @@ const CreatePodModal: React.FC = () => {
                     </Grid>
                     <TextField
                         id="create-pod-enter-description"
-                        label="description"
+                        label="Description"
                         multiline
                         minRows={4}
                         maxRows={4}
@@ -224,7 +229,9 @@ const CreatePodModal: React.FC = () => {
                         </RadioGroup>
                     </FormControl>
                     {createPodModalState.response.state === Constants.RESPONSE_STATE_ERROR ? (
-                        <Alert severity="error">{createPodModalState.response.errorMessage}</Alert>
+                        <Alert severity="error">
+                            {Constants.RESPONSE_GET_ERROR_MESSAGE(createPodModalState.response.errorMessage)}
+                        </Alert>
                     ) : null}
                     {createPodModalState.response.state === Constants.RESPONSE_STATE_SUCCESS ? (
                         <Alert severity="success">
@@ -291,7 +298,8 @@ const CreatePodModal: React.FC = () => {
                         }}
                         disabled={
                             isErrorCreatePod ||
-                            createPodModalState.response.state !== Constants.RESPONSE_STATE_UNSTARTED
+                            createPodModalState.response.state === Constants.RESPONSE_STATE_SUCCESS ||
+                            createPodModalState.response.state === Constants.RESPONSE_STATE_ERROR
                         }
                     >
                         Create

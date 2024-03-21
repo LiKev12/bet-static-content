@@ -33,7 +33,7 @@ const LoginForm: React.FC = () => {
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
     const sliceAuthenticationStateResponse = new ResponseModel(sliceAuthenticationState.response);
     const [loginFormState, setLoginFormState] = useState<ILoginFormState>({
-        data: { username: 'chenpachi', password: 'chenpachipwd' },
+        data: { username: 'mikey_g', password: 'chenpachipwd' },
         isShowVisiblePassword: false,
         isShowOptionsForgotPassword: false,
         isShowOptionsForgotUsername: false,

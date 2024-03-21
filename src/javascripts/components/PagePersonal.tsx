@@ -9,23 +9,15 @@ import NumberOfPointsInTasksCompletedOverTimeVisualization from 'src/javascripts
 import FilterTasks from 'src/javascripts/components/FilterTasks';
 import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import TaskModel from 'src/javascripts/models/TaskModel';
-import type PersonalPageModel from 'src/javascripts/models/PersonalPageModel';
-import NumberOfPointsInTasksCompletedOverTimeVisualizationModel from 'src/javascripts/models/NumberOfPointsInTasksCompletedOverTimeVisualizationModel';
+import PersonalPageModel from 'src/javascripts/models/PersonalPageModel';
 import Constants from 'src/javascripts/Constants';
 // import PlaceholderImageUser from 'src/assets/PlaceholderImageUser.png';
 import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
-import ResponseModel from 'src/javascripts/models/ResponseModel';
 import { sliceVisualizationActions } from 'src/javascripts/store/SliceVisualization';
+import { slicePagePersonalActions } from 'src/javascripts/store/SlicePagePersonal';
 import { sliceHeaderActiveTabActions } from 'src/javascripts/store/SliceHeaderActiveTab';
 
 import type { IRootState } from 'src/javascripts/store';
-export interface IPagePersonalState {
-    data: PersonalPageModel;
-    response: {
-        state: string;
-        errorMessage: string | null;
-    };
-}
 export interface ITaskState {
     data: any;
     response: {
@@ -33,7 +25,7 @@ export interface ITaskState {
         errorMessage: string | null;
     };
     filter: {
-        filterNameOrDescription: string;
+        filterByName: string;
         filterIsComplete: boolean;
         filterIsNotComplete: boolean;
         filterIsStar: boolean;
@@ -46,15 +38,12 @@ const PagePersonal: React.FC = () => {
     const dispatch = useDispatch();
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
     const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
-    const sliceVisualizationState = useSelector((state: IRootState) => state.visualization);
-    const sliceVisualizationStateData = new NumberOfPointsInTasksCompletedOverTimeVisualizationModel(
-        sliceVisualizationState.data,
-    );
-    const sliceVisualizationStateResponse = new ResponseModel(sliceVisualizationState.response);
+    const slicePagePersonalState = useSelector((state: IRootState) => state.pagePersonal);
+    const slicePagePersonalStateData = new PersonalPageModel(slicePagePersonalState.data);
     const [taskState, setTaskState] = useState<ITaskState>({
         data: [],
         filter: {
-            filterNameOrDescription: '',
+            filterByName: '',
             filterIsComplete: true,
             filterIsNotComplete: true,
             filterIsStar: true,
@@ -68,48 +57,12 @@ const PagePersonal: React.FC = () => {
         },
     });
 
-    // const [pagePersonalState, setPagePersonalState] = useState<IPagePersonalState>({
-    //     data: new PersonalPageModel(null),
-    //     response: {
-    //         state: Constants.RESPONSE_STATE_LOADING,
-    //         errorMessage: null,
-    //     },
-    // });
-
-    const handleChangeFilterNameOrDescription = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const handleChangefilterByName = (event: React.ChangeEvent<HTMLInputElement>): void => {
         setTaskState((prevState: ITaskState) => {
-            return { ...prevState, filter: { ...prevState.filter, filterNameOrDescription: event.target.value } };
+            return { ...prevState, filter: { ...prevState.filter, filterByName: event.target.value } };
         });
     };
-    const debouncedHandleChangeFilterNameOrDescription = _.debounce(handleChangeFilterNameOrDescription, 500);
-
-    // const setPersonalPageStateData = async (): Promise<any> => {
-    //     try {
-    //         const response = await ResourceClient.postResource(
-    //             'api/app/GetPersonalPage',
-    //             {},
-    //             sliceAuthenticationStateData.getJwtToken(),
-    //         );
-    //         setPagePersonalState((prevState: IPagePersonalState) => {
-    //             return {
-    //                 ...prevState,
-    //                 data: new PersonalPageModel(response.data),
-    //                 selectedTimeZone: new PersonalPageModel(response.data).getTimeZone(),
-    //             };
-    //         });
-    //     } catch (e: any) {
-    //         setPagePersonalState((prevState: IPagePersonalState) => {
-    //             return {
-    //                 ...prevState,
-    //                 response: {
-    //                     ...prevState.response,
-    //                     state: Constants.RESPONSE_STATE_ERROR,
-    //                     errorMessage: e?.response?.data?.message,
-    //                 },
-    //             };
-    //         });
-    //     }
-    // };
+    const debouncedHandleChangefilterByName = _.debounce(handleChangefilterByName, 500);
 
     const handleGetTasksPersonal = async (requestBodyObject: Record<string, unknown>): Promise<any> => {
         try {
@@ -169,9 +122,23 @@ const PagePersonal: React.FC = () => {
         }
     };
 
+    const setPersonalPageStateData = async (): Promise<any> => {
+        try {
+            dispatch(slicePagePersonalActions.setStateResponseLoading());
+            const response = await ResourceClient.postResource(
+                'api/app/GetPersonalPage',
+                {},
+                sliceAuthenticationStateData.getJwtToken(),
+            );
+            dispatch(slicePagePersonalActions.setStateData(response.data));
+        } catch (e: any) {
+            dispatch(slicePagePersonalActions.setStateResponseError(e?.response?.data?.message));
+        }
+    };
+
     useEffect(() => {
         void handleGetTasksPersonal({
-            filterNameOrDescription: taskState.filter.filterNameOrDescription,
+            filterByName: taskState.filter.filterByName,
             filterIsComplete: taskState.filter.filterIsComplete,
             filterIsNotComplete: taskState.filter.filterIsNotComplete,
             filterIsStar: taskState.filter.filterIsStar,
@@ -184,7 +151,7 @@ const PagePersonal: React.FC = () => {
 
     useEffect(() => {
         void dispatch(sliceHeaderActiveTabActions.setStateData(Constants.HEADER_ACTIVE_TAB_IDX__PAGE_PERSONAL));
-        // void setPersonalPageStateData();
+        void setPersonalPageStateData();
         void setVisualizationStateData();
         // eslint-disable-next-line
     }, []);
@@ -225,8 +192,9 @@ const PagePersonal: React.FC = () => {
                                 <CreateTaskModalButton
                                     idPod={null}
                                     handleUpdate={() => {
+                                        void setPersonalPageStateData();
                                         void handleGetTasksPersonal({
-                                            filterNameOrDescription: taskState.filter.filterNameOrDescription,
+                                            filterByName: taskState.filter.filterByName,
                                             filterIsComplete: taskState.filter.filterIsComplete,
                                             filterIsNotComplete: taskState.filter.filterIsNotComplete,
                                             filterIsStar: taskState.filter.filterIsStar,
@@ -235,6 +203,10 @@ const PagePersonal: React.FC = () => {
                                             filterIsNotPin: taskState.filter.filterIsNotPin,
                                         });
                                     }}
+                                    isDisabled={slicePagePersonalStateData.getIsReachedNumberOfTasksLimit()}
+                                    disabledTooltipMessage={`You may only have up to ${String(
+                                        Constants.LIMIT_NUMBER_OF_INCOMPLETE_TASKS_PERSONAL,
+                                    )} incomplete Tasks. Please complete your Tasks before creating any more.`}
                                 />
                             </Box>
                         </Grid>
@@ -248,7 +220,7 @@ const PagePersonal: React.FC = () => {
                                 }}
                             >
                                 <FilterTasks
-                                    handleChangeText={debouncedHandleChangeFilterNameOrDescription}
+                                    handleChangeText={debouncedHandleChangefilterByName}
                                     handleUpdateFilterState={(
                                         event: React.ChangeEvent<HTMLInputElement>,
                                         filterKey: string,
@@ -286,11 +258,23 @@ const PagePersonal: React.FC = () => {
                                     isDisplayOptionsStarPinDelete={true}
                                     isAuthorizedToDelete={true}
                                     handleSideEffectToggleTaskComplete={() => {
-                                        // void setPersonalPageStateData();
+                                        void setPersonalPageStateData();
                                         void setVisualizationStateData();
                                     }}
                                     handleSideEffectChangeNumberOfPoints={() => {
-                                        // void setPersonalPageStateData();
+                                        void setVisualizationStateData();
+                                    }}
+                                    handleSideEffectDeleteTask={() => {
+                                        void handleGetTasksPersonal({
+                                            filterByName: taskState.filter.filterByName,
+                                            filterIsComplete: taskState.filter.filterIsComplete,
+                                            filterIsNotComplete: taskState.filter.filterIsNotComplete,
+                                            filterIsStar: taskState.filter.filterIsStar,
+                                            filterIsNotStar: taskState.filter.filterIsNotStar,
+                                            filterIsPin: taskState.filter.filterIsPin,
+                                            filterIsNotPin: taskState.filter.filterIsNotPin,
+                                        });
+                                        void setPersonalPageStateData();
                                         void setVisualizationStateData();
                                     }}
                                 />
@@ -426,10 +410,7 @@ const PagePersonal: React.FC = () => {
                             </Box>
                         </Grid> */}
                         <Grid item>
-                            <NumberOfPointsInTasksCompletedOverTimeVisualization
-                                data={sliceVisualizationStateData}
-                                response={sliceVisualizationStateResponse}
-                            />
+                            <NumberOfPointsInTasksCompletedOverTimeVisualization />
                         </Grid>
                     </Grid>
                 </Grid>

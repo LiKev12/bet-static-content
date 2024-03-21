@@ -33,8 +33,8 @@ const CropperModal: React.FC<ICropperModalProps> = (props: ICropperModalProps) =
     const handleSave = async (): Promise<any> => {
         // @ts-expect-error expected
         const imageAsBase64String = cropRef.current.getImage().toDataURL();
-        imageUploadHandler(imageAsBase64String);
         setModalOpen(false);
+        imageUploadHandler(imageAsBase64String);
     };
 
     return (

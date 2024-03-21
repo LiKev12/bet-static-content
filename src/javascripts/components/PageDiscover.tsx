@@ -20,8 +20,8 @@ import { getPaginationIdxStart, getPaginationN } from 'src/javascripts/utilities
 
 import type { IRootState } from 'src/javascripts/store';
 
-const DEFAULT_SEARCH_ENTITY = 'pod';
-const SEARCH_ENTITY_CHOICES = ['pod', 'stamp'];
+const DEFAULT_SEARCH_ENTITY = 'Pods';
+const SEARCH_ENTITY_CHOICES = ['Pods', 'Stamps'];
 
 const PageDiscover: React.FC = () => {
     const dispatch = useDispatch();
@@ -100,7 +100,7 @@ const PageDiscover: React.FC = () => {
 
     const REQUEST_PARAMS_POD_CARDS = (currentPageIdx: number): any => {
         return {
-            filterNameOrDescription: searchText,
+            filterByName: searchText,
             filterIsMember: podCardState.filter.filterIsMember,
             filterIsNotMember: podCardState.filter.filterIsNotMember,
             filterIsModerator: podCardState.filter.filterIsModerator,
@@ -118,7 +118,7 @@ const PageDiscover: React.FC = () => {
 
     const REQUEST_PARAMS_STAMP_CARDS = (currentPageIdx: number): any => {
         return {
-            filterNameOrDescription: searchText,
+            filterByName: searchText,
             filterIsCollect: stampCardState.filter.filterIsCollect,
             filterIsNotCollect: stampCardState.filter.filterIsNotCollect,
             filterIsPublic: stampCardState.filter.filterIsPublic,
@@ -141,7 +141,7 @@ const PageDiscover: React.FC = () => {
         >
             <Grid container direction="column">
                 <Grid item sx={{ padding: '0px 96px 24px 96px' }}>
-                    {searchEntity === 'pod' ? <CreatePodModal /> : <CreateStampModalButton idPod={null} />}
+                    {searchEntity === 'Pods' ? <CreatePodModal /> : <CreateStampModalButton idPod={null} />}
                 </Grid>
                 <Grid item>
                     <SearchEntities
@@ -154,9 +154,9 @@ const PageDiscover: React.FC = () => {
                         handleSearch={() => {
                             void dispatch(slicePodCardsDiscoverPageActions.setPaginationCurrentPageIdx(0));
                             void dispatch(sliceStampCardsDiscoverPageActions.setPaginationCurrentPageIdx(0));
-                            if (searchEntity === 'pod') {
+                            if (searchEntity === 'Pods') {
                                 void handleGetPodCardsDiscover(REQUEST_PARAMS_POD_CARDS(0));
-                            } else if (searchEntity === 'stamp') {
+                            } else if (searchEntity === 'Stamps') {
                                 void handleGetStampCardsDiscover(REQUEST_PARAMS_STAMP_CARDS(0));
                             }
                         }}
@@ -165,7 +165,7 @@ const PageDiscover: React.FC = () => {
                     />
                 </Grid>
                 <Grid item sx={{ padding: '24px 96px 96px 96px' }}>
-                    {searchEntity === 'pod' ? (
+                    {searchEntity === 'Pods' ? (
                         <Grid container direction="column">
                             <Grid item>
                                 {podCardState.filter.isShowAdvancedFilterOptions ? (
@@ -359,7 +359,7 @@ const PageDiscover: React.FC = () => {
                             ) : null}
                         </Grid>
                     ) : null}
-                    {searchEntity === 'stamp' ? (
+                    {searchEntity === 'Stamps' ? (
                         <Grid container direction="column">
                             <Grid item>
                                 {stampCardState.filter.isShowAdvancedFilterOptions ? (
@@ -505,7 +505,7 @@ const PageDiscover: React.FC = () => {
                             ) : null}
                         </Grid>
                     ) : null}
-                    {searchEntity === 'pod' ? (
+                    {searchEntity === 'Pods' ? (
                         <PodCardList
                             podCards={slicePodCardsDiscoverPageStateData}
                             isShowCreatePodModal={true}
@@ -530,7 +530,7 @@ const PageDiscover: React.FC = () => {
                             }}
                         />
                     ) : null}
-                    {searchEntity === 'stamp' ? (
+                    {searchEntity === 'Stamps' ? (
                         <StampCardList
                             stampCards={sliceStampCardsDiscoverPageStateData}
                             isShowCreateStampModal={true}

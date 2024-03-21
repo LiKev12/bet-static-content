@@ -16,7 +16,7 @@ const IconButtonInviteUsersJoinPodModal: React.FC<IIconButtonInviteUsersJoinPodM
 
     return (
         <React.Fragment>
-            <Tooltip title={'Invite users to join Pod'} placement="bottom">
+            <Tooltip title={'Invite users to join'} placement="bottom">
                 <IconButton
                     edge="end"
                     aria-label="icon-button-inviteUsersJoinPod"

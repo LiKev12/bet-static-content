@@ -19,6 +19,7 @@ export default class TaskModel {
     userBubblesTaskComplete: UserBubbleModel[] | null = null;
     userBubblesTaskCompleteTotalNumber: number = 0;
     isMemberOfTaskPod: boolean = false;
+    isTaskPodPrivate: boolean = false;
 
     constructor(taskModel: any) {
         if (taskModel === null) {
@@ -47,6 +48,7 @@ export default class TaskModel {
                   );
         this.userBubblesTaskCompleteTotalNumber = taskModel.userBubblesTaskCompleteTotalNumber;
         this.isMemberOfTaskPod = taskModel.isMemberOfTaskPod;
+        this.isTaskPodPrivate = taskModel.isTaskPodPrivate;
     }
 
     getId(): string {
@@ -119,5 +121,9 @@ export default class TaskModel {
 
     getIsMemberOfTaskPod(): boolean {
         return this.isMemberOfTaskPod;
+    }
+
+    getIsTaskPodPrivate(): boolean {
+        return this.isTaskPodPrivate;
     }
 }

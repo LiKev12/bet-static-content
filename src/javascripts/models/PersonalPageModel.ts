@@ -6,6 +6,7 @@ export default class PersonalPageModel {
     numberOfPointsTaskCompleteToday: number = 0;
     timeZone: string = '';
     isSelectedTimeZone: boolean = true;
+    isReachedNumberOfTasksLimit: boolean = false;
 
     constructor(personalPageModel: any) {
         if (personalPageModel === null) {
@@ -18,6 +19,7 @@ export default class PersonalPageModel {
         this.numberOfPointsTaskCompleteToday = personalPageModel.numberOfPointsTaskCompleteToday;
         this.timeZone = personalPageModel.timeZone;
         this.isSelectedTimeZone = personalPageModel.isSelectedTimeZone;
+        this.isReachedNumberOfTasksLimit = personalPageModel.isReachedNumberOfTasksLimit;
     }
 
     getId(): string {
@@ -46,5 +48,9 @@ export default class PersonalPageModel {
 
     getIsSelectedTimeZone(): boolean {
         return this.isSelectedTimeZone;
+    }
+
+    getIsReachedNumberOfTasksLimit(): boolean {
+        return this.isReachedNumberOfTasksLimit;
     }
 }

@@ -9,11 +9,10 @@ const PageNotFound: React.FC = () => {
                 minHeight: '100vh',
                 background: THEME.palette.other.gradient,
                 paddingLeft: '36px',
-                paddingTop: '36px',
             }}
         >
-            <Typography variant="h4">
-                Page not found. Please ensure the URL is correct or go back <Link to="/">here</Link>.
+            <Typography variant="h5">
+                Page not found. Please ensure the URL is correct or go back <Link to="/">home</Link>.
             </Typography>
         </Box>
     );

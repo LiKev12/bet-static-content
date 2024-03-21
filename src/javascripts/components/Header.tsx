@@ -3,12 +3,13 @@ import { useSelector, useDispatch } from 'react-redux';
 
 import useScrollTrigger from '@mui/material/useScrollTrigger';
 import { THEME } from 'src/javascripts/Theme';
-import { AppBar, Box, Tab, Tabs, Toolbar } from '@mui/material';
+import { AppBar, Box, Grid, Tab, Tabs, Toolbar } from '@mui/material';
 import { styled } from '@mui/system';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import IconButtonOpenNotificationListModal from 'src/javascripts/components/IconButtonOpenNotificationListModal';
 import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 import { sliceHeaderActiveTabActions } from 'src/javascripts/store/SliceHeaderActiveTab';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import type { IRootState } from 'src/javascripts/store';
 
@@ -41,6 +42,7 @@ const StyledTab = styled(Tab)<any>(({ theme }: any) => ({
 
 const Header: React.FC = (props) => {
     const dispatch = useDispatch();
+    const location = useLocation();
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
     const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const sliceHeaderActiveTabState = useSelector((state: IRootState) => state.headerActiveTab);
@@ -87,6 +89,27 @@ const Header: React.FC = (props) => {
                                     <IconButtonOpenNotificationListModal />
                                 </Box>
                             </React.Fragment>
+                        ) : location.pathname !== '/' ? (
+                            <Link to={'/'} style={{ textDecoration: 'none' }}>
+                                <Grid
+                                    container
+                                    direction="row"
+                                    sx={{
+                                        fontFamily: 'Raleway',
+                                        textTransform: 'none',
+                                        color: THEME.palette.grey.A500,
+                                        ...THEME.typography.tab,
+                                        marginLeft: '24px',
+                                    }}
+                                >
+                                    <Grid item sx={{ marginRight: '4px' }}>
+                                        <ArrowBackIcon />
+                                    </Grid>
+                                    <Grid item sx={{ paddingTop: '4px' }}>
+                                        Back
+                                    </Grid>
+                                </Grid>
+                            </Link>
                         ) : null}
                     </Toolbar>
                 </AppBar>

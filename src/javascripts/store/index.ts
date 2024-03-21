@@ -3,6 +3,7 @@ import sliceAuthentication from 'src/javascripts/store/SliceAuthentication';
 import slicePagePod from 'src/javascripts/store/SlicePagePod';
 import slicePageStamp from 'src/javascripts/store/SlicePageStamp';
 import slicePageUser from 'src/javascripts/store/SlicePageUser';
+import slicePagePersonal from 'src/javascripts/store/SlicePagePersonal';
 import slicePageAccountSettings from 'src/javascripts/store/SlicePageAccountSettings';
 import sliceVisualization from 'src/javascripts/store/SliceVisualization';
 import sliceHeaderActiveTab from 'src/javascripts/store/SliceHeaderActiveTab';
@@ -21,6 +22,7 @@ const store = configureStore({
         pagePod: slicePagePod.reducer,
         pageStamp: slicePageStamp.reducer,
         pageUser: slicePageUser.reducer,
+        pagePersonal: slicePagePersonal.reducer,
         pageAccountSettings: slicePageAccountSettings.reducer,
         visualization: sliceVisualization.reducer,
         headerActiveTab: sliceHeaderActiveTab.reducer,
