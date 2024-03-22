@@ -31,11 +31,11 @@ const SignUpForm: React.FC = () => {
     const sliceAuthenticationStateResponse = new ResponseModel(sliceAuthenticationState.response);
     const [signUpFormState, setSignUpFormState] = useState<ISignUpFormState>({
         data: {
-            username: { value: 'teemo1', isBlurredInput: false },
-            name: { value: 'tee mo1', isBlurredInput: false },
-            email: { value: 'kevinli5825@yahoo.com', isBlurredInput: false },
-            password: { value: 'teemo1pwd', isBlurredInput: false, isShowVisible: false },
-            passwordConfirmed: { value: 'teemo1pwd', isBlurredInput: false, isShowVisible: false },
+            username: { value: '', isBlurredInput: false },
+            name: { value: '', isBlurredInput: false },
+            email: { value: '', isBlurredInput: false },
+            password: { value: '', isBlurredInput: false, isShowVisible: false },
+            passwordConfirmed: { value: '', isBlurredInput: false, isShowVisible: false },
         },
         response: {
             state: Constants.RESPONSE_STATE_UNSTARTED,
