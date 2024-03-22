@@ -8,10 +8,10 @@ jobs:
         name: Build and Deploy
         runs-on: ubuntu-latest
         env:
-            BUCKET: <bucket-name>
+            BUCKET: www.bet-app.io
             DIST: build
             REGION: us-west-2
-            DIST_ID: <ID>
+            DIST_ID: E2HAO2C5UJVAA7
 
         steps:
             - name: Checkout

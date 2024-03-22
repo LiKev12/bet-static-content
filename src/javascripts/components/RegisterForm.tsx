@@ -11,7 +11,7 @@ import ResourceClient from 'src/javascripts/clients/ResourceClient';
 import ResponseModel from 'src/javascripts/models/ResponseModel';
 
 import type { IRootState } from 'src/javascripts/store';
-export interface ISignUpFormState {
+export interface IRegisterFormState {
     data: {
         username: { value: string; isBlurredInput: boolean };
         name: { value: string; isBlurredInput: boolean };
@@ -24,12 +24,12 @@ export interface ISignUpFormState {
         errorMessage: string | null;
     };
 }
-const SignUpForm: React.FC = () => {
+const RegisterForm: React.FC = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
     const sliceAuthenticationStateResponse = new ResponseModel(sliceAuthenticationState.response);
-    const [signUpFormState, setSignUpFormState] = useState<ISignUpFormState>({
+    const [signUpFormState, setRegisterFormState] = useState<IRegisterFormState>({
         data: {
             username: { value: '', isBlurredInput: false },
             name: { value: '', isBlurredInput: false },
@@ -79,7 +79,7 @@ const SignUpForm: React.FC = () => {
         signUpFormState.data.passwordConfirmed.isBlurredInput &&
         signUpFormState.data.password.value !== signUpFormState.data.passwordConfirmed.value;
 
-    const isErrorSignUpForm =
+    const isErrorRegisterForm =
         isErrorUsername || isErrorName || isErrorEmail || isErrorPassword || isErrorPasswordConfirmed;
 
     return (
@@ -97,7 +97,7 @@ const SignUpForm: React.FC = () => {
                         required
                         value={signUpFormState.data.username.value}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                            setSignUpFormState((prevState: ISignUpFormState) => {
+                            setRegisterFormState((prevState: IRegisterFormState) => {
                                 return {
                                     ...prevState,
                                     data: {
@@ -130,7 +130,7 @@ const SignUpForm: React.FC = () => {
                         required
                         value={signUpFormState.data.name.value}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                            setSignUpFormState((prevState: ISignUpFormState) => {
+                            setRegisterFormState((prevState: IRegisterFormState) => {
                                 return {
                                     ...prevState,
                                     data: {
@@ -163,7 +163,7 @@ const SignUpForm: React.FC = () => {
                         required
                         value={signUpFormState.data.email.value}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                            setSignUpFormState((prevState: ISignUpFormState) => {
+                            setRegisterFormState((prevState: IRegisterFormState) => {
                                 return {
                                     ...prevState,
                                     data: {
@@ -189,7 +189,7 @@ const SignUpForm: React.FC = () => {
                         required
                         value={signUpFormState.data.password.value}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                            setSignUpFormState((prevState: ISignUpFormState) => {
+                            setRegisterFormState((prevState: IRegisterFormState) => {
                                 return {
                                     ...prevState,
                                     data: {
@@ -217,7 +217,7 @@ const SignUpForm: React.FC = () => {
                                     <IconButton
                                         aria-label="toggle password visibility"
                                         onClick={() => {
-                                            setSignUpFormState((prevState: ISignUpFormState) => {
+                                            setRegisterFormState((prevState: IRegisterFormState) => {
                                                 return {
                                                     ...prevState,
                                                     data: {
@@ -255,7 +255,7 @@ const SignUpForm: React.FC = () => {
                         required
                         value={signUpFormState.data.passwordConfirmed.value}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                            setSignUpFormState((prevState: ISignUpFormState) => {
+                            setRegisterFormState((prevState: IRegisterFormState) => {
                                 return {
                                     ...prevState,
                                     data: {
@@ -276,7 +276,7 @@ const SignUpForm: React.FC = () => {
                                     <IconButton
                                         aria-label="toggle confirm-password visibility"
                                         onClick={() => {
-                                            setSignUpFormState((prevState: ISignUpFormState) => {
+                                            setRegisterFormState((prevState: IRegisterFormState) => {
                                                 return {
                                                     ...prevState,
                                                     data: {
@@ -323,7 +323,7 @@ const SignUpForm: React.FC = () => {
                         onClick={() => {
                             void handleOnSubmitSignUp();
                         }}
-                        disabled={isErrorSignUpForm}
+                        disabled={isErrorRegisterForm}
                         variant="contained"
                         fullWidth
                     >
@@ -335,4 +335,4 @@ const SignUpForm: React.FC = () => {
     );
 };
 
-export default SignUpForm;
+export default RegisterForm;

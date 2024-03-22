@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Grid, Tab, Tabs } from '@mui/material';
 import LoginForm from 'src/javascripts/components/LoginForm';
-// import SignUpForm from 'src/javascripts/components/SignUpForm';
+import RegisterForm from 'src/javascripts/components/RegisterForm';
 import { THEME } from 'src/javascripts/Theme';
 const LoginAndSignupForms: React.FC = () => {
     const [isLoginTabActive, setLoginTabActive] = useState(true);
@@ -34,8 +34,7 @@ const LoginAndSignupForms: React.FC = () => {
                     <Tab sx={{ width: '150px' }} label="Sign Up" />
                 </Tabs>
             </Grid>
-            {isLoginTabActive ? <LoginForm /> : <LoginForm />}
-            {/* <SignUpForm />} todo add back */}
+            {isLoginTabActive ? <LoginForm /> : <RegisterForm />}
         </Grid>
     );
 };
