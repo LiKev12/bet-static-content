@@ -7,10 +7,6 @@ const MY_MOCK_JWT_TOKEN =
 class ResourceClient {
     extraVar: string = 'filler'; // to combat eslint "Unexpected class with only static properties"
 
-    static _getPathBase(): string {
-        return 'http://localhost:8080';
-    }
-
     static _getRecordFromQueryParamsObject(queryParamsObject: any): Record<string, string> {
         Object.keys(queryParamsObject).forEach((k) => {
             if (typeof queryParamsObject[k] === 'object') {
