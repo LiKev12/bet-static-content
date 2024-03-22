@@ -295,7 +295,6 @@ const NumberOfPointsInTasksCompletedOverTimeVisualizationLineChart: React.FC<IPo
                     },
                     scales: {
                         y: {
-                            // beginAtZero: true,
                             min: minimumValue,
                         },
                     },
