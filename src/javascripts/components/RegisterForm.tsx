@@ -29,7 +29,7 @@ const RegisterForm: React.FC = () => {
     const navigate = useNavigate();
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
     const sliceAuthenticationStateResponse = new ResponseModel(sliceAuthenticationState.response);
-    const [signUpFormState, setRegisterFormState] = useState<IRegisterFormState>({
+    const [registerFormState, setRegisterFormState] = useState<IRegisterFormState>({
         data: {
             username: { value: '', isBlurredInput: false },
             name: { value: '', isBlurredInput: false },
@@ -47,11 +47,11 @@ const RegisterForm: React.FC = () => {
         try {
             dispatch(sliceAuthenticationActions.setStateResponseLoading());
             const response = await ResourceClient.postResourceUnauthenticated('api/auth/Register', {
-                username: getInputText(signUpFormState.data.username.value),
-                name: getInputText(signUpFormState.data.name.value),
-                email: getInputText(signUpFormState.data.email.value),
-                password: signUpFormState.data.password.value,
-                passwordConfirmed: signUpFormState.data.passwordConfirmed.value,
+                username: getInputText(registerFormState.data.username.value),
+                name: getInputText(registerFormState.data.name.value),
+                email: getInputText(registerFormState.data.email.value),
+                password: registerFormState.data.password.value,
+                passwordConfirmed: registerFormState.data.passwordConfirmed.value,
                 timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             });
             dispatch(sliceAuthenticationActions.setStateData(response.data));
@@ -62,22 +62,24 @@ const RegisterForm: React.FC = () => {
     };
 
     const isErrorUsername =
-        (signUpFormState.data.username.isBlurredInput &&
-            getInputText(signUpFormState.data.username.value).length < Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS) ||
-        getInputText(signUpFormState.data.username.value).length > Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS ||
-        !Constants.REGEX_USER_USERNAME.test(signUpFormState.data.username.value);
+        registerFormState.data.username.isBlurredInput &&
+        (getInputText(registerFormState.data.username.value).length < Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS ||
+            getInputText(registerFormState.data.username.value).length >
+                Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS ||
+            !Constants.REGEX_USER_USERNAME.test(registerFormState.data.username.value));
     const isErrorName =
-        (signUpFormState.data.name.isBlurredInput &&
-            getInputText(signUpFormState.data.name.value).length < Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS) ||
-        getInputText(signUpFormState.data.name.value).length > Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS;
+        (registerFormState.data.name.isBlurredInput &&
+            getInputText(registerFormState.data.name.value).length < Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS) ||
+        getInputText(registerFormState.data.name.value).length > Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS;
     const isErrorEmail =
-        signUpFormState.data.email.isBlurredInput && !Constants.REGEX_USER_EMAIL.test(signUpFormState.data.email.value);
+        registerFormState.data.email.isBlurredInput &&
+        !Constants.REGEX_USER_EMAIL.test(registerFormState.data.email.value);
     const isErrorPassword =
-        signUpFormState.data.password.isBlurredInput &&
-        signUpFormState.data.password.value.length < Constants.USER_PASSWORD_MIN_LENGTH_CHARACTERS;
+        registerFormState.data.password.isBlurredInput &&
+        registerFormState.data.password.value.length < Constants.USER_PASSWORD_MIN_LENGTH_CHARACTERS;
     const isErrorPasswordConfirmed =
-        signUpFormState.data.passwordConfirmed.isBlurredInput &&
-        signUpFormState.data.password.value !== signUpFormState.data.passwordConfirmed.value;
+        registerFormState.data.passwordConfirmed.isBlurredInput &&
+        registerFormState.data.password.value !== registerFormState.data.passwordConfirmed.value;
 
     const isErrorRegisterForm =
         isErrorUsername || isErrorName || isErrorEmail || isErrorPassword || isErrorPasswordConfirmed;
@@ -95,7 +97,7 @@ const RegisterForm: React.FC = () => {
                         label="Username"
                         type="text"
                         required
-                        value={signUpFormState.data.username.value}
+                        value={registerFormState.data.username.value}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                             setRegisterFormState((prevState: IRegisterFormState) => {
                                 return {
@@ -112,9 +114,9 @@ const RegisterForm: React.FC = () => {
                             });
                         }}
                         helperText={
-                            getInputText(signUpFormState.data.username.value).length > 0
+                            getInputText(registerFormState.data.username.value).length > 0
                                 ? Constants.USER_SIGN_UP_INPUT_USERNAME_HELPER_TEXT(
-                                      getInputText(signUpFormState.data.username.value).length,
+                                      getInputText(registerFormState.data.username.value).length,
                                   )
                                 : null
                         }
@@ -128,7 +130,7 @@ const RegisterForm: React.FC = () => {
                         label="Name"
                         type="text"
                         required
-                        value={signUpFormState.data.name.value}
+                        value={registerFormState.data.name.value}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                             setRegisterFormState((prevState: IRegisterFormState) => {
                                 return {
@@ -145,9 +147,9 @@ const RegisterForm: React.FC = () => {
                             });
                         }}
                         helperText={
-                            getInputText(signUpFormState.data.name.value).length > 0
+                            getInputText(registerFormState.data.name.value).length > 0
                                 ? Constants.USER_SIGN_UP_INPUT_NAME_HELPER_TEXT(
-                                      getInputText(signUpFormState.data.name.value).length,
+                                      getInputText(registerFormState.data.name.value).length,
                                   )
                                 : null
                         }
@@ -161,7 +163,7 @@ const RegisterForm: React.FC = () => {
                         label="Email"
                         type="email"
                         required
-                        value={signUpFormState.data.email.value}
+                        value={registerFormState.data.email.value}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                             setRegisterFormState((prevState: IRegisterFormState) => {
                                 return {
@@ -185,9 +187,9 @@ const RegisterForm: React.FC = () => {
                     <TextField
                         id="sign-up-password"
                         label="Password"
-                        type={signUpFormState.data.password.isShowVisible ? 'text' : 'password'}
+                        type={registerFormState.data.password.isShowVisible ? 'text' : 'password'}
                         required
-                        value={signUpFormState.data.password.value}
+                        value={registerFormState.data.password.value}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                             setRegisterFormState((prevState: IRegisterFormState) => {
                                 return {
@@ -204,9 +206,9 @@ const RegisterForm: React.FC = () => {
                             });
                         }}
                         helperText={
-                            getInputText(signUpFormState.data.password.value).length > 0
+                            getInputText(registerFormState.data.password.value).length > 0
                                 ? Constants.USER_SIGN_UP_INPUT_PASSWORD_HELPER_TEXT(
-                                      getInputText(signUpFormState.data.password.value).length,
+                                      getInputText(registerFormState.data.password.value).length,
                                   )
                                 : null
                         }
@@ -235,7 +237,7 @@ const RegisterForm: React.FC = () => {
                                         }}
                                         edge="end"
                                     >
-                                        {signUpFormState.data.password.isShowVisible ? (
+                                        {registerFormState.data.password.isShowVisible ? (
                                             <VisibilityOff />
                                         ) : (
                                             <Visibility />
@@ -251,9 +253,9 @@ const RegisterForm: React.FC = () => {
                     <TextField
                         id="sign-up-password-confirmed"
                         label="Confirm password"
-                        type={signUpFormState.data.passwordConfirmed.isShowVisible ? 'text' : 'password'}
+                        type={registerFormState.data.passwordConfirmed.isShowVisible ? 'text' : 'password'}
                         required
-                        value={signUpFormState.data.passwordConfirmed.value}
+                        value={registerFormState.data.passwordConfirmed.value}
                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                             setRegisterFormState((prevState: IRegisterFormState) => {
                                 return {
@@ -295,7 +297,7 @@ const RegisterForm: React.FC = () => {
                                         }}
                                         edge="end"
                                     >
-                                        {signUpFormState.data.passwordConfirmed.isShowVisible ? (
+                                        {registerFormState.data.passwordConfirmed.isShowVisible ? (
                                             <VisibilityOff />
                                         ) : (
                                             <Visibility />

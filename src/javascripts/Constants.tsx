@@ -135,7 +135,7 @@ export default class Constants {
     static USER_INPUT_USERNAME_HELPER_TEXT = (numChars: number): string =>
         `Username must be between ${Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS}-${
             Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS
-        } chars, inclusive (${numChars.toString()} chars currently). Lowercase letters, numbers, underscores, periods only.`;
+        } chars, inclusive (${numChars.toString()} chars currently). Lowercase letters, numbers, "_", "." only.`;
 
     static USER_INPUT_NAME_HELPER_TEXT = (numChars: number): string =>
         `Name must be between ${Constants.USER_NAME_MIN_LENGTH_CHARACTERS}-${
@@ -150,7 +150,7 @@ export default class Constants {
     static USER_SIGN_UP_INPUT_USERNAME_HELPER_TEXT = (numChars: number): string =>
         `${Constants.USER_USERNAME_MIN_LENGTH_CHARACTERS}-${
             Constants.USER_USERNAME_MAX_LENGTH_CHARACTERS
-        } chars, inclusive (${numChars.toString()} chars currently). Lowercase letters, numbers, underscores, periods only.`;
+        } chars, inclusive (${numChars.toString()} chars currently). Lowercase letters, numbers, "_", "." only.`;
 
     static USER_SIGN_UP_INPUT_PASSWORD_HELPER_TEXT = (numChars: number): string =>
         `At least ${Constants.USER_PASSWORD_MIN_LENGTH_CHARACTERS} chars (${numChars.toString()} chars currently)`;
