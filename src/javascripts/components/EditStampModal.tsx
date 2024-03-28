@@ -216,7 +216,6 @@ const EditStampModal: React.FC<IEditStampModalProps> = (props: IEditStampModalPr
                 requestBodyObject,
                 sliceAuthenticationStateData.getJwtToken(),
             );
-            console.log({ response });
             setEditStampModalState((prevState) => {
                 return {
                     ...prevState,
