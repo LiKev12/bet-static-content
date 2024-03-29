@@ -32,6 +32,7 @@ class ResourceClient {
             headers: {
                 // Authorization: MY_MOCK_JWT_TOKEN,
             },
+            withCredentials: true,
         });
         if (response.status !== 200) {
             // TODO: handle error (log, surface, etc.)
@@ -54,6 +55,7 @@ class ResourceClient {
                 'Content-Type': 'application/json;charset=UTF-8',
                 'Access-Control-Allow-Origin': '*',
             },
+            withCredentials: true,
             data: requestBodyObject,
         };
         return await axios(options);
@@ -74,6 +76,7 @@ class ResourceClient {
                 'Access-Control-Allow-Origin': '*',
                 Authorization: `Bearer ${jwtToken}`,
             },
+            withCredentials: true,
             data: requestBodyObject,
         };
         return await axios(options);
