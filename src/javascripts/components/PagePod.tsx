@@ -585,7 +585,10 @@ const PagePod: React.FC = () => {
 
                         {slicePagePodStateData.getIsPodMember() ? (
                             <Box sx={{ marginBottom: '12px' }}>
-                                <CreateStampModalButton idPod={idPod === undefined || idPod === null ? null : idPod} />
+                                <CreateStampModalButton
+                                    idPod={idPod === undefined || idPod === null ? null : idPod}
+                                    sideEffect={() => {}}
+                                />
                             </Box>
                         ) : null}
                         {slicePagePodStateData.getIsPodModerator() ? (
@@ -1078,6 +1081,7 @@ const PagePod: React.FC = () => {
                                     );
                                 }
                             }}
+                            sideEffect={() => {}}
                         />
                     </Box>
                 </React.Fragment>

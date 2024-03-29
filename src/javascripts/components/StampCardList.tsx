@@ -15,6 +15,7 @@ export interface IStampCardListProps {
     paginationPageIdx: number;
     paginationBatchN: number;
     handleUpdatePaginationPageIdx: any;
+    sideEffect: any;
 }
 
 const StampCardList: React.FC<IStampCardListProps> = (props: IStampCardListProps) => {
@@ -27,6 +28,7 @@ const StampCardList: React.FC<IStampCardListProps> = (props: IStampCardListProps
         paginationPageSize,
         paginationPageIdx,
         handleUpdatePaginationPageIdx,
+        sideEffect,
     } = props;
 
     // only show loading indicator upon first load (when stampCards is []), otherwise it will be a jumpy UI everytime search input changes
@@ -91,7 +93,7 @@ const StampCardList: React.FC<IStampCardListProps> = (props: IStampCardListProps
                             {isShowCreateStampModal ? (
                                 <Grid item>
                                     <Box sx={{ width: '200px' }}>
-                                        <CreateStampModalButton idPod={null} />
+                                        <CreateStampModalButton idPod={null} sideEffect={sideEffect} />
                                     </Box>
                                 </Grid>
                             ) : null}

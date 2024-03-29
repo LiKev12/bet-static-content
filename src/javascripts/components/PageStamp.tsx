@@ -913,6 +913,7 @@ const PageStamp: React.FC = () => {
                                     );
                                 }
                             }}
+                            sideEffect={() => {}}
                         />
                     </Box>
                 </React.Fragment>

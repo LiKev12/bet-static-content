@@ -15,6 +15,7 @@ export interface IPodCardListProps {
     paginationPageIdx: number;
     paginationBatchN: number;
     handleUpdatePaginationPageIdx: any;
+    sideEffect: any;
 }
 
 const PodCardList: React.FC<IPodCardListProps> = (props: IPodCardListProps) => {
@@ -27,6 +28,7 @@ const PodCardList: React.FC<IPodCardListProps> = (props: IPodCardListProps) => {
         paginationPageSize,
         paginationPageIdx,
         handleUpdatePaginationPageIdx,
+        sideEffect,
     } = props;
 
     const idxStart = (paginationPageIdx % paginationBatchN) * paginationPageSize;
@@ -92,7 +94,7 @@ const PodCardList: React.FC<IPodCardListProps> = (props: IPodCardListProps) => {
                             {isShowCreatePodModal ? (
                                 <Grid item>
                                     <Box sx={{ width: '200px' }}>
-                                        <CreatePodModal />
+                                        <CreatePodModal sideEffect={sideEffect} />
                                     </Box>
                                 </Grid>
                             ) : null}
