@@ -1075,6 +1075,7 @@ const PageUser: React.FC = () => {
                                     );
                                 }
                             }}
+                            sideEffect={() => {}}
                         />
                     </Box>
                 </React.Fragment>
@@ -1222,6 +1223,7 @@ const PageUser: React.FC = () => {
                                     );
                                 }
                             }}
+                            sideEffect={() => {}}
                         />
                     </Box>
                 </React.Fragment>

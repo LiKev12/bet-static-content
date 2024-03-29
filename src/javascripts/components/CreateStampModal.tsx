@@ -41,6 +41,7 @@ import type { IRootState } from 'src/javascripts/store';
 export interface ICreateStampModalProps {
     idPod: string | null;
     handleClose: any;
+    sideEffect: any;
 }
 
 export interface ICreateStampModalState {
@@ -92,7 +93,7 @@ const getTasksFilteredByName = (filterTextRaw: string, tasks: TaskModel[]): Task
 };
 
 const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampModalProps) => {
-    const { idPod, handleClose } = props;
+    const { idPod, handleClose, sideEffect } = props;
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
     const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [createStampModalState, setCreateStampModalState] = useState<ICreateStampModalState>({
@@ -688,6 +689,7 @@ const CreateStampModal: React.FC<ICreateStampModalProps> = (props: ICreateStampM
                                         },
                                     };
                                 });
+                                sideEffect();
                             } catch (e: any) {
                                 setCreateStampModalState((prevState: any) => {
                                     return {

@@ -1,9 +1,6 @@
 import { PATH_BASE } from 'src/javascripts/clients/ResourceClientConfig';
 import axios from 'axios';
 
-// const MY_MOCK_JWT_TOKEN =
-//     'Bearer eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJzZWxmIiwic3ViIjoiOTg1YTkyYjMtYzBmMy00ODZhLThkOTUtMWMyYjAyMGNhODBkIiwiaWF0IjoxNzA4Mjk0NTc5LCJyb2xlcyI6IlVTRVIifQ.A8nFDA3Ju6v356gGrMFaqVA3ANLepPH61b4TWc9nqq8lRuQMUqBmJtHeSFBjp7Rk8aMuFYiPdmyXzmNhOvL5QmXZUVtSSX9oesTtQIbdopwmji4fNqvwvJjyTYWS4JG__UnP4L7vnuyFU5HoPqZihfN_KhDq9jrCIwHLWExeT--VGzzJMtA64_hen8DLiorOz_QAuyCTlgYM0iH8x7M-PTf9Ep1pF4iIaR25j3Mv-wYKO8hpjnv_kYrofEQSd3utg-XjR2MTjHmN3m1nEalRJe2uZUgblRloieYqou3bDH_gmH9ycD8ubDG6jj98phAw2kDsVEV0ml-zJIeo_RrXtw';
-
 class ResourceClient {
     extraVar: string = 'filler'; // to combat eslint "Unexpected class with only static properties"
 

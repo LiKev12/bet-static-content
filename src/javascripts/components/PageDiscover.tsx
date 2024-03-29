@@ -141,7 +141,20 @@ const PageDiscover: React.FC = () => {
         >
             <Grid container direction="column">
                 <Grid item sx={{ padding: '0px 96px 24px 96px' }}>
-                    {searchEntity === 'Pods' ? <CreatePodModal /> : <CreateStampModalButton idPod={null} />}
+                    {searchEntity === 'Pods' ? (
+                        <CreatePodModal
+                            sideEffect={() => {
+                                void handleGetPodCardsDiscover(REQUEST_PARAMS_POD_CARDS(0));
+                            }}
+                        />
+                    ) : (
+                        <CreateStampModalButton
+                            idPod={null}
+                            sideEffect={() => {
+                                void handleGetStampCardsDiscover(REQUEST_PARAMS_STAMP_CARDS(0));
+                            }}
+                        />
+                    )}
                 </Grid>
                 <Grid item>
                     <SearchEntities
@@ -528,6 +541,9 @@ const PageDiscover: React.FC = () => {
                                     void handleGetPodCardsDiscover(REQUEST_PARAMS_POD_CARDS(newPaginationPageIdx));
                                 }
                             }}
+                            sideEffect={() => {
+                                void handleGetPodCardsDiscover(REQUEST_PARAMS_POD_CARDS(0));
+                            }}
                         />
                     ) : null}
                     {searchEntity === 'Stamps' ? (
@@ -554,6 +570,9 @@ const PageDiscover: React.FC = () => {
                                 if (isRequireRequestNewBatch) {
                                     void handleGetStampCardsDiscover(REQUEST_PARAMS_STAMP_CARDS(newPaginationPageIdx));
                                 }
+                            }}
+                            sideEffect={() => {
+                                void handleGetStampCardsDiscover(REQUEST_PARAMS_STAMP_CARDS(0));
                             }}
                         />
                     ) : null}

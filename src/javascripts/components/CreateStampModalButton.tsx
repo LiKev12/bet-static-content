@@ -4,10 +4,11 @@ import CreateStampModal from 'src/javascripts/components/CreateStampModal';
 
 export interface ICreateStampModalButtonProps {
     idPod: string | null;
+    sideEffect: any;
 }
 
 const CreateStampModalButton: React.FC<ICreateStampModalButtonProps> = (props: ICreateStampModalButtonProps) => {
-    const { idPod } = props;
+    const { idPod, sideEffect } = props;
     const [isModalOpen, setModalOpen] = useState(false);
 
     return (
@@ -27,6 +28,7 @@ const CreateStampModalButton: React.FC<ICreateStampModalButtonProps> = (props: I
                         setModalOpen(false);
                     }}
                     idPod={idPod}
+                    sideEffect={sideEffect}
                 />
             ) : null}
         </React.Fragment>

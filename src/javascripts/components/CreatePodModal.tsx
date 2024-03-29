@@ -44,7 +44,12 @@ export interface ICreatePodModalState {
     };
 }
 
-const CreatePodModal: React.FC = () => {
+export interface ICreatePodModalProps {
+    sideEffect: any;
+}
+
+const CreatePodModal: React.FC<ICreatePodModalProps> = (props: ICreatePodModalProps) => {
+    const { sideEffect } = props;
     const sliceAuthenticationState = useSelector((state: IRootState) => state.authentication);
     const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const [createPodModalState, setCreatePodModalState] = useState<ICreatePodModalState>({
@@ -283,6 +288,7 @@ const CreatePodModal: React.FC = () => {
                                         },
                                     };
                                 });
+                                sideEffect();
                             } catch (e: any) {
                                 setCreatePodModalState((prevState: any) => {
                                     return {
