@@ -10,6 +10,12 @@ import '@mui/material/styles/createPalette';
 // }
 
 const THEME: any = createTheme({
+    breakpoints: {
+        values: {
+            // @ts-expect-error expected
+            home: '1456px',
+        },
+    },
     palette: {
         primary: {
             main: '#02b9ff',

@@ -47,12 +47,16 @@ const Header: React.FC = (props) => {
     const sliceAuthenticationStateData = new AuthenticationModel(sliceAuthenticationState.data);
     const sliceHeaderActiveTabState = useSelector((state: IRootState) => state.headerActiveTab);
     const sliceHeaderActiveTabStateData = sliceHeaderActiveTabState.data;
+
+    const isHomePage = location.pathname === '/';
     return (
         <React.Fragment>
-            <ElevationScroll>
-                <AppBar color="inherit" sx={{ background: THEME.palette.other.gradient }}>
-                    <Toolbar disableGutters>
-                        {/* <Button
+            {!isHomePage ? (
+                <React.Fragment>
+                    <ElevationScroll>
+                        <AppBar color="inherit" sx={{ background: THEME.palette.other.gradient }}>
+                            <Toolbar disableGutters>
+                                {/* <Button
                             component={Link}
                             to="/"
                             sx={{
@@ -66,61 +70,63 @@ const Header: React.FC = (props) => {
                             <img src={Logo} alt="bet logo" width="64px" height="64px" />
                             <Box sx={{ width: '12px' }}></Box>
                         </Button> */}
-                        {sliceAuthenticationStateData.hasJwtToken() ? (
-                            <React.Fragment>
-                                <Tabs
-                                    value={sliceHeaderActiveTabStateData}
-                                    onChange={(e, activeTabIdx) => {
-                                        dispatch(sliceHeaderActiveTabActions.setStateData(activeTabIdx));
-                                    }}
-                                    style={{ marginLeft: 'auto' }}
-                                    indicatorColor="primary"
-                                >
-                                    <StyledTab component={Link} to="/me" label="Me" />
-                                    <StyledTab component={Link} to="/discover" label="Discover" />
-                                    <StyledTab
-                                        component={Link}
-                                        to={`/profiles/${String(sliceAuthenticationStateData.getIdUser())}`}
-                                        label="Profile"
-                                    />
-                                    <StyledTab component={Link} to="/account" label="Account" />
-                                </Tabs>
-                                <Box sx={{ marginRight: '48px' }}>
-                                    <IconButtonOpenNotificationListModal />
-                                </Box>
-                            </React.Fragment>
-                        ) : location.pathname !== '/' ? (
-                            <Link to={'/'} style={{ textDecoration: 'none' }}>
-                                <Grid
-                                    container
-                                    direction="row"
-                                    sx={{
-                                        fontFamily: 'Raleway',
-                                        textTransform: 'none',
-                                        color: THEME.palette.grey.A500,
-                                        ...THEME.typography.tab,
-                                        marginLeft: '24px',
-                                    }}
-                                >
-                                    <Grid item sx={{ marginRight: '4px' }}>
-                                        <ArrowBackIcon />
-                                    </Grid>
-                                    <Grid item sx={{ paddingTop: '4px' }}>
-                                        Back
-                                    </Grid>
-                                </Grid>
-                            </Link>
-                        ) : null}
-                    </Toolbar>
-                </AppBar>
-            </ElevationScroll>
-            <div
-                style={{
-                    ...THEME.mixins.toolbar,
-                    paddingBottom: '4rem',
-                    background: THEME.palette.other.gradient,
-                }}
-            />
+                                {sliceAuthenticationStateData.hasJwtToken() ? (
+                                    <React.Fragment>
+                                        <Tabs
+                                            value={sliceHeaderActiveTabStateData}
+                                            onChange={(e, activeTabIdx) => {
+                                                dispatch(sliceHeaderActiveTabActions.setStateData(activeTabIdx));
+                                            }}
+                                            style={{ marginLeft: 'auto' }}
+                                            indicatorColor="primary"
+                                        >
+                                            <StyledTab component={Link} to="/me" label="Me" />
+                                            <StyledTab component={Link} to="/discover" label="Discover" />
+                                            <StyledTab
+                                                component={Link}
+                                                to={`/profiles/${String(sliceAuthenticationStateData.getIdUser())}`}
+                                                label="Profile"
+                                            />
+                                            <StyledTab component={Link} to="/account" label="Account" />
+                                        </Tabs>
+                                        <Box sx={{ marginRight: '48px' }}>
+                                            <IconButtonOpenNotificationListModal />
+                                        </Box>
+                                    </React.Fragment>
+                                ) : (
+                                    <Link to={'/'} style={{ textDecoration: 'none' }}>
+                                        <Grid
+                                            container
+                                            direction="row"
+                                            sx={{
+                                                fontFamily: 'Raleway',
+                                                textTransform: 'none',
+                                                color: THEME.palette.grey.A500,
+                                                ...THEME.typography.tab,
+                                                marginLeft: '24px',
+                                            }}
+                                        >
+                                            <Grid item sx={{ marginRight: '4px' }}>
+                                                <ArrowBackIcon />
+                                            </Grid>
+                                            <Grid item sx={{ paddingTop: '4px' }}>
+                                                Back
+                                            </Grid>
+                                        </Grid>
+                                    </Link>
+                                )}
+                            </Toolbar>
+                        </AppBar>
+                    </ElevationScroll>
+                    <div
+                        style={{
+                            ...THEME.mixins.toolbar,
+                            paddingBottom: '4rem',
+                            background: THEME.palette.other.gradient,
+                        }}
+                    />
+                </React.Fragment>
+            ) : null}
             <Outlet />
         </React.Fragment>
     );

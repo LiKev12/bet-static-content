@@ -215,7 +215,7 @@ const PageDiscover: React.FC = () => {
                                             });
                                         }}
                                     >
-                                        show advanced search options
+                                        Show advanced search options
                                     </Button>
                                 )}
                             </Grid>
@@ -409,7 +409,7 @@ const PageDiscover: React.FC = () => {
                                             });
                                         }}
                                     >
-                                        show advanced search options
+                                        Show advanced search options
                                     </Button>
                                 )}
                             </Grid>

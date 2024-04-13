@@ -15,6 +15,7 @@ const LoginAndSignupForms: React.FC = () => {
                 borderRadius: '16px',
                 boxShadow: '0px 5px 10px 0px rgba(151, 226, 255, 0.5)',
                 padding: '16px',
+                width: '356px',
             }}
         >
             <Grid item sx={{ paddingBottom: '12px' }}>

@@ -7,6 +7,7 @@ import Footer from 'src/javascripts/components/Footer';
 import LogoWithNameAndSlogan from 'src/assets/logo_with_slogan.png';
 import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 import { THEME } from 'src/javascripts/Theme';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 import type { IRootState } from 'src/javascripts/store';
 
@@ -21,37 +22,69 @@ const PageHome: React.FC = () => {
         // eslint-disable-next-line
     }, [sliceAuthenticationStateData]);
 
+    const isScreenSmall = !useMediaQuery(THEME.breakpoints.up(1480));
+
     return (
-        <React.Fragment>
+        <Box
+            style={{
+                minHeight: '100vh',
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                background: THEME.palette.other.gradient,
+                justifyContent: 'center',
+            }}
+        >
             <Box
-                style={{
-                    minHeight: '100vh',
-                    paddingLeft: '24px',
-                    paddingRight: '24px',
-                    background: THEME.palette.other.gradient,
+                sx={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    display: 'flex',
+                    verticalAlign: 'middle',
                 }}
             >
-                <Grid container direction="row" spacing={2}>
-                    <Grid item xs={8} sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <Box
-                            sx={{
-                                width: '1000px',
-                                height: '100%',
-                                padding: '0px 24px',
-                            }}
-                        >
-                            <Grid item>
-                                <img src={LogoWithNameAndSlogan} alt="logo with name and slogan" width="1000px" />
+                {!isScreenSmall ? (
+                    <Box sx={{ justifyContent: 'center' }}>
+                        <Grid container>
+                            <Grid item sx={{ justifyContent: 'center' }}>
+                                <Box
+                                    sx={{
+                                        width: '1100px',
+                                        height: '100%',
+                                        padding: '0px 24px 0px 0px',
+                                    }}
+                                >
+                                    <img src={LogoWithNameAndSlogan} alt="logo with name and slogan" width="1100px" />
+                                </Box>
                             </Grid>
-                        </Box>
+                            <Grid item sx={{ alignItems: 'center', display: 'flex' }}>
+                                <LoginAndSignupForms />
+                            </Grid>
+                        </Grid>
+                    </Box>
+                ) : (
+                    <Grid container direction="column">
+                        <Grid item sx={{ display: 'flex', justifyContent: 'center', paddingBottom: '48px' }}>
+                            <Box
+                                sx={{
+                                    width: '100%',
+                                    height: '100%',
+                                    justifyContent: 'center',
+                                    display: 'flex',
+                                }}
+                            >
+                                <img src={LogoWithNameAndSlogan} alt="logo with name and slogan" width="80%" />
+                            </Box>
+                        </Grid>
+                        <Grid item sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <LoginAndSignupForms />
+                        </Grid>
                     </Grid>
-                    <Grid item sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <LoginAndSignupForms />
-                    </Grid>
-                </Grid>
+                )}
             </Box>
             <Footer />
-        </React.Fragment>
+        </Box>
     );
 };
 
