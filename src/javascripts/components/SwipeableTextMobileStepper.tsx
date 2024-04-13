@@ -53,7 +53,8 @@ const SwipeableTextMobileStepper: React.FC<ISwipeableTextMobileStepperProps> = (
                 sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    height: 50,
+                    // minHeight: 50,
+                    padding: '8px',
                     pl: 2,
                     bgcolor: 'background.default',
                 }}
@@ -72,7 +73,7 @@ const SwipeableTextMobileStepper: React.FC<ISwipeableTextMobileStepperProps> = (
                             <Box
                                 component="img"
                                 sx={{
-                                    height: 720,
+                                    height: '100%',
                                     display: 'block',
                                     maxWidth: 720,
                                     overflow: 'hidden',

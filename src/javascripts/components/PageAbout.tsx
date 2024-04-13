@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Grid, Typography, List, ListItem } from '@mui/material';
+import { Box, Card, CardContent, CardMedia, Grid, Typography, List, ListItem } from '@mui/material';
 import { THEME } from 'src/javascripts/Theme';
 import SwipeableTextMobileStepper from 'src/javascripts/components/SwipeableTextMobileStepper';
 import PageAbout1a from 'src/assets/PageAbout1a.jpg';
@@ -20,7 +20,11 @@ const PageAbout: React.FC = () => {
                 background: THEME.palette.other.gradient,
             }}
         >
-            <Grid container direction="column" sx={{ paddingLeft: '96px', paddingBottom: '96px' }}>
+            <Grid
+                container
+                direction="column"
+                sx={{ paddingLeft: '96px', paddingBottom: '96px', paddingRight: '96px' }}
+            >
                 <Grid item sx={{ marginBottom: '36px' }}>
                     <Grid container direction="row" spacing={2}>
                         {/* <Grid item xs={6}>
@@ -32,7 +36,7 @@ const PageAbout: React.FC = () => {
                                 }}
                             ></Box>
                         </Grid> */}
-                        <Grid item xs={6}>
+                        <Grid item xs={6} sx={{ marginRight: 'auto' }}>
                             <SwipeableTextMobileStepper
                                 imagesWithLabels={[
                                     { image: PageAbout1a, label: 'View real-time stats and trends for your progress' },
@@ -77,7 +81,7 @@ const PageAbout: React.FC = () => {
                 </Grid>
                 <Grid sx={{ marginBottom: '36px' }}>
                     <Grid container direction="row" spacing={2}>
-                        <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', marginRight: 'auto' }}>
                             <Grid container direction="column">
                                 <Grid item>
                                     <Typography variant="h2">Do More, Together with Friends</Typography>
@@ -120,9 +124,9 @@ const PageAbout: React.FC = () => {
                         </Grid>
                     </Grid>
                 </Grid>
-                <Grid sx={{ marginBottom: '36px' }}>
+                <Grid sx={{ marginBottom: '64px' }}>
                     <Grid container direction="row" spacing={2}>
-                        <Grid item xs={6}>
+                        <Grid item xs={6} sx={{ marginRight: 'auto' }}>
                             <SwipeableTextMobileStepper
                                 imagesWithLabels={[
                                     {
@@ -166,6 +170,24 @@ const PageAbout: React.FC = () => {
                                 </Grid>
                             </Grid>
                         </Grid>
+                    </Grid>
+                </Grid>
+                <Grid container direction="column" sx={{ display: 'flex' }}>
+                    <Grid item sx={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+                        <Typography variant="h2">Watch a demo and learn more here!</Typography>
+                    </Grid>
+                    <Grid item sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                        <Card sx={{ width: '80%', minWidth: '320px' }}>
+                            <CardContent>
+                                <CardMedia
+                                    component="iframe"
+                                    src="https://www.youtube.com/embed/xjLadRYXAH0?si=VZDNBAbdJnDu8W7b"
+                                    sx={{
+                                        aspectRatio: 16 / 9,
+                                    }}
+                                />
+                            </CardContent>
+                        </Card>
                     </Grid>
                 </Grid>
             </Grid>
