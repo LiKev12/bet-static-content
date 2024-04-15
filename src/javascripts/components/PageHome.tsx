@@ -7,7 +7,6 @@ import Footer from 'src/javascripts/components/Footer';
 import LogoWithNameAndSlogan from 'src/assets/logo_with_slogan.png';
 import AuthenticationModel from 'src/javascripts/models/AuthenticationModel';
 import { THEME } from 'src/javascripts/Theme';
-import useMediaQuery from '@mui/material/useMediaQuery';
 
 import type { IRootState } from 'src/javascripts/store';
 
@@ -21,8 +20,6 @@ const PageHome: React.FC = () => {
         }
         // eslint-disable-next-line
     }, [sliceAuthenticationStateData]);
-
-    const isScreenSmall = !useMediaQuery(THEME.breakpoints.up(1480));
 
     return (
         <Box
@@ -42,46 +39,24 @@ const PageHome: React.FC = () => {
                     alignItems: 'center',
                     display: 'flex',
                     verticalAlign: 'middle',
+                    paddingBottom: '24px',
                 }}
             >
-                {!isScreenSmall ? (
-                    <Box sx={{ justifyContent: 'center' }}>
-                        <Grid container>
-                            <Grid item sx={{ justifyContent: 'center' }}>
-                                <Box
-                                    sx={{
-                                        width: '1100px',
-                                        height: '100%',
-                                        padding: '0px 24px 0px 0px',
-                                    }}
-                                >
-                                    <img src={LogoWithNameAndSlogan} alt="logo with name and slogan" width="1100px" />
-                                </Box>
-                            </Grid>
-                            <Grid item sx={{ alignItems: 'center', display: 'flex' }}>
-                                <LoginAndSignupForms />
-                            </Grid>
-                        </Grid>
-                    </Box>
-                ) : (
-                    <Grid container direction="column">
-                        <Grid item sx={{ display: 'flex', justifyContent: 'center', paddingBottom: '48px' }}>
-                            <Box
-                                sx={{
-                                    width: '100%',
-                                    height: '100%',
-                                    justifyContent: 'center',
-                                    display: 'flex',
-                                }}
-                            >
-                                <img src={LogoWithNameAndSlogan} alt="logo with name and slogan" width="80%" />
-                            </Box>
-                        </Grid>
-                        <Grid item sx={{ display: 'flex', justifyContent: 'center' }}>
-                            <LoginAndSignupForms />
-                        </Grid>
+                <Grid container sx={{ justifyContent: 'center', display: 'flex' }}>
+                    <Grid item sx={{ justifyContent: 'center', paddingBottom: '24px' }}>
+                        <Box
+                            sx={{
+                                width: '100%',
+                                height: '100%',
+                            }}
+                        >
+                            <img src={LogoWithNameAndSlogan} alt="logo with name and slogan" width="100%%" />
+                        </Box>
                     </Grid>
-                )}
+                    <Grid item sx={{ alignItems: 'center', display: 'flex' }}>
+                        <LoginAndSignupForms />
+                    </Grid>
+                </Grid>
             </Box>
             <Footer />
         </Box>
